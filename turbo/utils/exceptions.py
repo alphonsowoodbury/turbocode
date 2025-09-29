@@ -16,7 +16,9 @@ class TurboBaseException(Exception):
 class ResourceNotFoundError(TurboBaseException):
     """Base class for resource not found errors."""
 
-    def __init__(self, resource_type: str, resource_id: UUID, error_code: Optional[str] = None) -> None:
+    def __init__(
+        self, resource_type: str, resource_id: UUID, error_code: Optional[str] = None
+    ) -> None:
         message = f"{resource_type} with ID {resource_id} not found"
         super().__init__(message, error_code)
         self.resource_type = resource_type

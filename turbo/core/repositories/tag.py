@@ -26,9 +26,7 @@ class TagRepository(BaseRepository[Tag, TagCreate, TagCreate]):
 
     async def search_by_name(self, name_pattern: str) -> List[Tag]:
         """Search tags by name pattern."""
-        stmt = select(self._model).where(
-            self._model.name.ilike(f"%{name_pattern}%")
-        )
+        stmt = select(self._model).where(self._model.name.ilike(f"%{name_pattern}%"))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 

@@ -18,11 +18,9 @@ from turbo.utils.exceptions import ProjectNotFoundError, ValidationError
 console = Console()
 
 # Valid choices for CLI options
-PRIORITY_CHOICES = ['low', 'medium', 'high', 'critical']
-STATUS_CHOICES = ['active', 'on_hold', 'completed', 'archived']
-FORMAT_CHOICES = ['table', 'json', 'csv']
-
-
+PRIORITY_CHOICES = ["low", "medium", "high", "critical"]
+STATUS_CHOICES = ["active", "on_hold", "completed", "archived"]
+FORMAT_CHOICES = ["table", "json", "csv"]
 
 
 @click.group()
@@ -32,14 +30,30 @@ def projects_group():
 
 
 @projects_group.command()
-@click.option('--name', required=True, help='Project name')
-@click.option('--description', required=True, help='Project description')
-@click.option('--priority', type=click.Choice(PRIORITY_CHOICES), default='medium', help='Project priority')
-@click.option('--status', type=click.Choice(STATUS_CHOICES), default='active', help='Project status')
-@click.option('--completion', type=click.FloatRange(0, 100), default=0.0, help='Completion percentage')
+@click.option("--name", required=True, help="Project name")
+@click.option("--description", required=True, help="Project description")
+@click.option(
+    "--priority",
+    type=click.Choice(PRIORITY_CHOICES),
+    default="medium",
+    help="Project priority",
+)
+@click.option(
+    "--status",
+    type=click.Choice(STATUS_CHOICES),
+    default="active",
+    help="Project status",
+)
+@click.option(
+    "--completion",
+    type=click.FloatRange(0, 100),
+    default=0.0,
+    help="Completion percentage",
+)
 @handle_exceptions
 def create(name, description, priority, status, completion):
     """Create a new project."""
+
     async def _create():
         # Get database session and service
         async for session in get_db_session():
@@ -50,7 +64,7 @@ def create(name, description, priority, status, completion):
                 description=description,
                 priority=priority,
                 status=status,
-                completion_percentage=completion
+                completion_percentage=completion,
             )
 
             project = await service.create_project(project_data)
@@ -67,14 +81,19 @@ def create(name, description, priority, status, completion):
 
 
 @projects_group.command()
-@click.option('--status', type=click.Choice(STATUS_CHOICES), help='Filter by status')
-@click.option('--priority', type=click.Choice(PRIORITY_CHOICES), help='Filter by priority')
-@click.option('--format', type=click.Choice(FORMAT_CHOICES), default='table', help='Output format')
-@click.option('--limit', type=int, help='Limit number of results')
-@click.option('--offset', type=int, help='Offset for pagination')
+@click.option("--status", type=click.Choice(STATUS_CHOICES), help="Filter by status")
+@click.option(
+    "--priority", type=click.Choice(PRIORITY_CHOICES), help="Filter by priority"
+)
+@click.option(
+    "--format", type=click.Choice(FORMAT_CHOICES), default="table", help="Output format"
+)
+@click.option("--limit", type=int, help="Limit number of results")
+@click.option("--offset", type=int, help="Offset for pagination")
 @handle_exceptions
 def list(status, priority, format, limit, offset):
     """List all projects."""
+
     async def _list():
         async for session in get_db_session():
             service = create_project_service(session)
@@ -90,23 +109,25 @@ def list(status, priority, format, limit, offset):
                 console.print("[yellow]No projects found[/yellow]")
                 return
 
-            if format == 'table':
+            if format == "table":
                 _display_projects_table(projects)
-            elif format == 'json':
+            elif format == "json":
                 import json
+
                 console.print(json.dumps([p.model_dump() for p in projects], indent=2))
-            elif format == 'csv':
+            elif format == "csv":
                 _display_projects_csv(projects)
 
     run_async(_list())
 
 
 @projects_group.command()
-@click.argument('project_id', type=click.UUID)
-@click.option('--detailed', is_flag=True, help='Show detailed information')
+@click.argument("project_id", type=click.UUID)
+@click.option("--detailed", is_flag=True, help="Show detailed information")
 @handle_exceptions
 def get(project_id, detailed):
     """Get project by ID."""
+
     async def _get():
         async for session in get_db_session():
             service = create_project_service(session)
@@ -127,15 +148,18 @@ def get(project_id, detailed):
 
 
 @projects_group.command()
-@click.argument('project_id', type=click.UUID)
-@click.option('--name', help='Update project name')
-@click.option('--description', help='Update project description')
-@click.option('--priority', type=click.Choice(PRIORITY_CHOICES), help='Update priority')
-@click.option('--status', type=click.Choice(STATUS_CHOICES), help='Update status')
-@click.option('--completion', type=click.FloatRange(0, 100), help='Update completion percentage')
+@click.argument("project_id", type=click.UUID)
+@click.option("--name", help="Update project name")
+@click.option("--description", help="Update project description")
+@click.option("--priority", type=click.Choice(PRIORITY_CHOICES), help="Update priority")
+@click.option("--status", type=click.Choice(STATUS_CHOICES), help="Update status")
+@click.option(
+    "--completion", type=click.FloatRange(0, 100), help="Update completion percentage"
+)
 @handle_exceptions
 def update(project_id, name, description, priority, status, completion):
     """Update a project."""
+
     async def _update():
         async for session in get_db_session():
             service = create_project_service(session)
@@ -143,15 +167,15 @@ def update(project_id, name, description, priority, status, completion):
             # Build update data from provided options
             update_data = {}
             if name:
-                update_data['name'] = name
+                update_data["name"] = name
             if description:
-                update_data['description'] = description
+                update_data["description"] = description
             if priority:
-                update_data['priority'] = priority
+                update_data["priority"] = priority
             if status:
-                update_data['status'] = status
+                update_data["status"] = status
             if completion is not None:
-                update_data['completion_percentage'] = completion
+                update_data["completion_percentage"] = completion
 
             if not update_data:
                 console.print("[yellow]No updates provided[/yellow]")
@@ -173,13 +197,13 @@ def update(project_id, name, description, priority, status, completion):
 
 
 @projects_group.command()
-@click.argument('project_id', type=click.UUID)
-@click.option('--confirm', is_flag=True, help='Skip confirmation prompt')
+@click.argument("project_id", type=click.UUID)
+@click.option("--confirm", is_flag=True, help="Skip confirmation prompt")
 @handle_exceptions
 def delete(project_id, confirm):
     """Delete a project."""
     if not confirm:
-        if not click.confirm('Are you sure you want to delete this project?'):
+        if not click.confirm("Are you sure you want to delete this project?"):
             console.print("[yellow]Operation cancelled[/yellow]")
             return
 
@@ -198,10 +222,11 @@ def delete(project_id, confirm):
 
 
 @projects_group.command()
-@click.argument('project_id', type=click.UUID)
+@click.argument("project_id", type=click.UUID)
 @handle_exceptions
 def archive(project_id):
     """Archive a project."""
+
     async def _archive():
         async for session in get_db_session():
             service = create_project_service(session)
@@ -218,11 +243,14 @@ def archive(project_id):
 
 
 @projects_group.command()
-@click.argument('query')
-@click.option('--format', type=click.Choice(FORMAT_CHOICES), default='table', help='Output format')
+@click.argument("query")
+@click.option(
+    "--format", type=click.Choice(FORMAT_CHOICES), default="table", help="Output format"
+)
 @handle_exceptions
 def search(query, format):
     """Search projects by name."""
+
     async def _search():
         async for session in get_db_session():
             service = create_project_service(session)
@@ -233,22 +261,26 @@ def search(query, format):
                 console.print(f"[yellow]No projects found matching '{query}'[/yellow]")
                 return
 
-            console.print(f"[blue]Found {len(projects)} project(s) matching '{query}':[/blue]")
+            console.print(
+                f"[blue]Found {len(projects)} project(s) matching '{query}':[/blue]"
+            )
 
-            if format == 'table':
+            if format == "table":
                 _display_projects_table(projects)
-            elif format == 'json':
+            elif format == "json":
                 import json
+
                 console.print(json.dumps([p.model_dump() for p in projects], indent=2))
 
     run_async(_search())
 
 
 @projects_group.command()
-@click.argument('project_id', type=click.UUID)
+@click.argument("project_id", type=click.UUID)
 @handle_exceptions
 def stats(project_id):
     """Get project statistics."""
+
     async def _stats():
         async for session in get_db_session():
             service = create_project_service(session)
@@ -262,10 +294,12 @@ def stats(project_id):
                 table.add_column("Metric", style="cyan")
                 table.add_column("Value", style="green")
 
-                table.add_row("Total Issues", str(stats.get('total_issues', 0)))
-                table.add_row("Open Issues", str(stats.get('open_issues', 0)))
-                table.add_row("Closed Issues", str(stats.get('closed_issues', 0)))
-                table.add_row("Completion Rate", f"{stats.get('completion_rate', 0):.1f}%")
+                table.add_row("Total Issues", str(stats.get("total_issues", 0)))
+                table.add_row("Open Issues", str(stats.get("open_issues", 0)))
+                table.add_row("Closed Issues", str(stats.get("closed_issues", 0)))
+                table.add_row(
+                    "Completion Rate", f"{stats.get('completion_rate', 0):.1f}%"
+                )
 
                 console.print(table)
 
@@ -286,14 +320,18 @@ def _display_projects_table(projects):
     table.add_column("Created", style="dim")
 
     for project in projects:
-        created = project.created_at.strftime('%Y-%m-%d') if hasattr(project.created_at, 'strftime') else str(project.created_at)[:10]
+        created = (
+            project.created_at.strftime("%Y-%m-%d")
+            if hasattr(project.created_at, "strftime")
+            else str(project.created_at)[:10]
+        )
         table.add_row(
             str(project.id)[:8] + "...",
             project.name,
             project.status,
             project.priority,
             f"{project.completion_percentage:.1f}%",
-            created
+            created,
         )
 
     console.print(table)
@@ -303,8 +341,14 @@ def _display_projects_csv(projects):
     """Display projects in CSV format."""
     console.print("ID,Name,Status,Priority,Completion,Created")
     for project in projects:
-        created = project.created_at.strftime('%Y-%m-%d') if hasattr(project.created_at, 'strftime') else str(project.created_at)[:10]
-        console.print(f"{project.id},{project.name},{project.status},{project.priority},{project.completion_percentage},{created}")
+        created = (
+            project.created_at.strftime("%Y-%m-%d")
+            if hasattr(project.created_at, "strftime")
+            else str(project.created_at)[:10]
+        )
+        console.print(
+            f"{project.id},{project.name},{project.status},{project.priority},{project.completion_percentage},{created}"
+        )
 
 
 def _display_project_summary(project):
@@ -331,8 +375,16 @@ def _display_project_detailed(project):
     table.add_row("Completion", f"{project.completion_percentage:.1f}%")
     table.add_row("Archived", "Yes" if project.is_archived else "No")
 
-    created = project.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(project.created_at, 'strftime') else str(project.created_at)
-    updated = project.updated_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(project.updated_at, 'strftime') else str(project.updated_at)
+    created = (
+        project.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        if hasattr(project.created_at, "strftime")
+        else str(project.created_at)
+    )
+    updated = (
+        project.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+        if hasattr(project.updated_at, "strftime")
+        else str(project.updated_at)
+    )
 
     table.add_row("Created", created)
     table.add_row("Updated", updated)

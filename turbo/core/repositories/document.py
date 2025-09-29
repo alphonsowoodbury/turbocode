@@ -44,9 +44,7 @@ class DocumentRepository(BaseRepository[Document, DocumentCreate, DocumentUpdate
 
     async def search_by_title(self, title_pattern: str) -> List[Document]:
         """Search documents by title pattern."""
-        stmt = select(self._model).where(
-            self._model.title.ilike(f"%{title_pattern}%")
-        )
+        stmt = select(self._model).where(self._model.title.ilike(f"%{title_pattern}%"))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -61,8 +59,8 @@ class DocumentRepository(BaseRepository[Document, DocumentCreate, DocumentUpdate
     async def get_project_specifications(self, project_id: UUID) -> List[Document]:
         """Get specification documents for a project."""
         stmt = select(self._model).where(
-            (self._model.project_id == project_id) &
-            (self._model.type == "specification")
+            (self._model.project_id == project_id)
+            & (self._model.type == "specification")
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
@@ -70,19 +68,21 @@ class DocumentRepository(BaseRepository[Document, DocumentCreate, DocumentUpdate
     async def get_project_documentation(self, project_id: UUID) -> List[Document]:
         """Get documentation documents for a project."""
         stmt = select(self._model).where(
-            (self._model.project_id == project_id) &
-            (self._model.type.in_(["user_guide", "api_doc", "readme"]))
+            (self._model.project_id == project_id)
+            & (self._model.type.in_(["user_guide", "api_doc", "readme"]))
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_latest_version(self, project_id: UUID, document_type: str) -> Optional[Document]:
+    async def get_latest_version(
+        self, project_id: UUID, document_type: str
+    ) -> Optional[Document]:
         """Get the latest version of a document type for a project."""
         stmt = (
             select(self._model)
             .where(
-                (self._model.project_id == project_id) &
-                (self._model.type == document_type)
+                (self._model.project_id == project_id)
+                & (self._model.type == document_type)
             )
             .order_by(self._model.updated_at.desc())
             .limit(1)
@@ -107,9 +107,7 @@ class DocumentRepository(BaseRepository[Document, DocumentCreate, DocumentUpdate
         return list(result.scalars().all())
 
     async def get_recent_documents(
-        self,
-        limit: int = 10,
-        project_id: Optional[UUID] = None
+        self, limit: int = 10, project_id: Optional[UUID] = None
     ) -> List[Document]:
         """Get recently updated documents."""
         stmt = select(self._model).order_by(self._model.updated_at.desc())

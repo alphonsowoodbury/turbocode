@@ -8,16 +8,11 @@ from pydantic import BaseModel
 
 from turbo.api.dependencies import get_issue_service
 from turbo.core.services import IssueService
-from turbo.core.schemas import (
-    IssueCreate,
-    IssueUpdate,
-    IssueResponse,
-    TagResponse
-)
+from turbo.core.schemas import IssueCreate, IssueUpdate, IssueResponse, TagResponse
 from turbo.utils.exceptions import (
     IssueNotFoundError,
     ProjectNotFoundError,
-    ValidationError as TurboValidationError
+    ValidationError as TurboValidationError,
 )
 
 router = APIRouter()
@@ -25,13 +20,13 @@ router = APIRouter()
 
 class AssignmentRequest(BaseModel):
     """Request model for issue assignment."""
+
     assignee: str
 
 
 @router.post("/", response_model=IssueResponse, status_code=status.HTTP_201_CREATED)
 async def create_issue(
-    issue_data: IssueCreate,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_data: IssueCreate, issue_service: IssueService = Depends(get_issue_service)
 ) -> IssueResponse:
     """Create a new issue."""
     try:
@@ -39,19 +34,17 @@ async def create_issue(
     except ProjectNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Project with id {issue_data.project_id} not found"
+            detail=f"Project with id {issue_data.project_id} not found",
         )
     except TurboValidationError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e)
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         )
 
 
 @router.get("/{issue_id}", response_model=IssueResponse)
 async def get_issue(
-    issue_id: UUID,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_id: UUID, issue_service: IssueService = Depends(get_issue_service)
 ) -> IssueResponse:
     """Get an issue by ID."""
     try:
@@ -59,7 +52,7 @@ async def get_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
 
 
@@ -70,7 +63,7 @@ async def get_issues(
     project_id: Optional[UUID] = Query(None),
     limit: Optional[int] = Query(None, ge=1, le=100),
     offset: Optional[int] = Query(None, ge=0),
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_service: IssueService = Depends(get_issue_service),
 ) -> List[IssueResponse]:
     """Get all issues with optional filtering."""
     if status_filter:
@@ -87,7 +80,7 @@ async def get_issues(
 async def update_issue(
     issue_id: UUID,
     issue_data: IssueUpdate,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_service: IssueService = Depends(get_issue_service),
 ) -> IssueResponse:
     """Update an issue."""
     try:
@@ -95,19 +88,17 @@ async def update_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
     except TurboValidationError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e)
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         )
 
 
 @router.delete("/{issue_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_issue(
-    issue_id: UUID,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_id: UUID, issue_service: IssueService = Depends(get_issue_service)
 ) -> None:
     """Delete an issue."""
     try:
@@ -115,7 +106,7 @@ async def delete_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
 
 
@@ -123,7 +114,7 @@ async def delete_issue(
 async def assign_issue(
     issue_id: UUID,
     assignment: AssignmentRequest,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_service: IssueService = Depends(get_issue_service),
 ) -> IssueResponse:
     """Assign an issue to someone."""
     try:
@@ -131,19 +122,17 @@ async def assign_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
     except TurboValidationError as e:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=str(e)
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         )
 
 
 @router.post("/{issue_id}/close", response_model=IssueResponse)
 async def close_issue(
-    issue_id: UUID,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_id: UUID, issue_service: IssueService = Depends(get_issue_service)
 ) -> IssueResponse:
     """Close an issue."""
     try:
@@ -151,14 +140,13 @@ async def close_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
 
 
 @router.post("/{issue_id}/reopen", response_model=IssueResponse)
 async def reopen_issue(
-    issue_id: UUID,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_id: UUID, issue_service: IssueService = Depends(get_issue_service)
 ) -> IssueResponse:
     """Reopen a closed issue."""
     try:
@@ -166,14 +154,14 @@ async def reopen_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
 
 
 @router.get("/search", response_model=List[IssueResponse])
 async def search_issues(
     query: str = Query(..., min_length=1),
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_service: IssueService = Depends(get_issue_service),
 ) -> List[IssueResponse]:
     """Search issues by title."""
     return await issue_service.search_issues_by_title(query)
@@ -183,7 +171,7 @@ async def search_issues(
 async def add_tag_to_issue(
     issue_id: UUID,
     tag_id: UUID,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_service: IssueService = Depends(get_issue_service),
 ) -> IssueResponse:
     """Add a tag to an issue."""
     try:
@@ -191,20 +179,17 @@ async def add_tag_to_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.delete("/{issue_id}/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def remove_tag_from_issue(
     issue_id: UUID,
     tag_id: UUID,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_service: IssueService = Depends(get_issue_service),
 ) -> None:
     """Remove a tag from an issue."""
     try:
@@ -212,14 +197,13 @@ async def remove_tag_from_issue(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )
 
 
 @router.get("/{issue_id}/tags", response_model=List[TagResponse])
 async def get_issue_tags(
-    issue_id: UUID,
-    issue_service: IssueService = Depends(get_issue_service)
+    issue_id: UUID, issue_service: IssueService = Depends(get_issue_service)
 ) -> List[TagResponse]:
     """Get all tags for an issue."""
     try:
@@ -227,5 +211,5 @@ async def get_issue_tags(
     except IssueNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Issue with id {issue_id} not found"
+            detail=f"Issue with id {issue_id} not found",
         )

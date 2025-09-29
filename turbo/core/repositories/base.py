@@ -40,9 +40,7 @@ class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]
         return result.scalar_one_or_none()
 
     async def get_all(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[ModelType]:
         """Get all records with optional pagination."""
         stmt = select(self._model)
@@ -54,11 +52,7 @@ class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def update(
-        self,
-        id: UUID,
-        obj_in: UpdateSchemaType
-    ) -> Optional[ModelType]:
+    async def update(self, id: UUID, obj_in: UpdateSchemaType) -> Optional[ModelType]:
         """Update a record by ID."""
         # Get the existing record
         db_obj = await self.get_by_id(id)

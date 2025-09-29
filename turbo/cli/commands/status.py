@@ -9,8 +9,18 @@ from rich.table import Table
 from rich import box
 
 from turbo.cli.utils import run_async, handle_exceptions
-from turbo.core.repositories import ProjectRepository, IssueRepository, DocumentRepository, TagRepository
-from turbo.core.services import ProjectService, IssueService, DocumentService, TagService
+from turbo.core.repositories import (
+    ProjectRepository,
+    IssueRepository,
+    DocumentRepository,
+    TagRepository,
+)
+from turbo.core.services import (
+    ProjectService,
+    IssueService,
+    DocumentService,
+    TagService,
+)
 from turbo.core.database import get_db_session
 
 console = Console()
@@ -32,27 +42,40 @@ def _create_services(session):
 
 
 @click.command()
-@click.option('--health', is_flag=True, help='Show system health status')
-@click.option('--recent', is_flag=True, help='Show recent activity')
-@click.option('--detailed', is_flag=True, help='Show detailed statistics')
+@click.option("--health", is_flag=True, help="Show system health status")
+@click.option("--recent", is_flag=True, help="Show recent activity")
+@click.option("--detailed", is_flag=True, help="Show detailed statistics")
 @handle_exceptions
 def status_command(health, recent, detailed):
     """Show workspace status and statistics."""
+
     async def _status():
         async for session in get_db_session():
-            project_service, issue_service, document_service, tag_service = _create_services(session)
+            project_service, issue_service, document_service, tag_service = (
+                _create_services(session)
+            )
 
             if health:
                 await _show_health_status(session)
             elif recent:
-                await _show_recent_activity(project_service, issue_service, document_service)
+                await _show_recent_activity(
+                    project_service, issue_service, document_service
+                )
             else:
-                await _show_overview(project_service, issue_service, document_service, tag_service, detailed)
+                await _show_overview(
+                    project_service,
+                    issue_service,
+                    document_service,
+                    tag_service,
+                    detailed,
+                )
 
     run_async(_status())
 
 
-async def _show_overview(project_service, issue_service, document_service, tag_service, detailed=False):
+async def _show_overview(
+    project_service, issue_service, document_service, tag_service, detailed=False
+):
     """Show general overview of workspace."""
     console.print("[bold blue]Turbo Workspace Overview[/bold blue]\n")
 
@@ -136,6 +159,7 @@ async def _show_health_status(session):
     # Configuration
     try:
         from turbo.utils.config import get_settings
+
         get_settings()
         config_status = "[green]✓ Valid[/green]"
     except Exception:
@@ -145,8 +169,13 @@ async def _show_health_status(session):
 
     # Workspace directory
     from pathlib import Path
-    turbo_dir = Path.cwd() / '.turbo'
-    workspace_status = "[green]✓ Initialized[/green]" if turbo_dir.exists() else "[yellow]! Not initialized[/yellow]"
+
+    turbo_dir = Path.cwd() / ".turbo"
+    workspace_status = (
+        "[green]✓ Initialized[/green]"
+        if turbo_dir.exists()
+        else "[yellow]! Not initialized[/yellow]"
+    )
     health_table.add_row("Workspace", workspace_status)
 
     console.print(health_table)
@@ -172,13 +201,15 @@ async def _show_recent_activity(project_service, issue_service, document_service
         # Combine and sort by creation date
         activity = []
         for project in recent_projects:
-            activity.append(('project', 'Created', project.name, project.created_at))
+            activity.append(("project", "Created", project.name, project.created_at))
 
         for issue in recent_issues:
-            activity.append(('issue', 'Created', issue.title, issue.created_at))
+            activity.append(("issue", "Created", issue.title, issue.created_at))
 
         for document in recent_documents:
-            activity.append(('document', 'Created', document.title, document.created_at))
+            activity.append(
+                ("document", "Created", document.title, document.created_at)
+            )
 
         activity.sort(key=lambda x: x[3], reverse=True)
 
@@ -190,12 +221,16 @@ async def _show_recent_activity(project_service, issue_service, document_service
             activity_table.add_column("Date", style="dim")
 
             for item_type, action, name, date in activity[:10]:  # Show last 10 items
-                formatted_date = date.strftime('%Y-%m-%d %H:%M') if hasattr(date, 'strftime') else str(date)
+                formatted_date = (
+                    date.strftime("%Y-%m-%d %H:%M")
+                    if hasattr(date, "strftime")
+                    else str(date)
+                )
                 activity_table.add_row(
                     item_type.title(),
                     action,
                     name[:50] + "..." if len(name) > 50 else name,
-                    formatted_date
+                    formatted_date,
                 )
 
             console.print(activity_table)

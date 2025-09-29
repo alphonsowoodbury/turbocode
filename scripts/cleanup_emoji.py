@@ -18,18 +18,18 @@ def get_emoji_pattern():
     """
     emoji_pattern = re.compile(
         "["
-        "\U0001F600-\U0001F64F"  # emoticons
-        "\U0001F300-\U0001F5FF"  # symbols & pictographs
-        "\U0001F680-\U0001F6FF"  # transport & map symbols
-        "\U0001F1E0-\U0001F1FF"  # flags (iOS)
-        "\U00002702-\U000027B0"  # dingbats
-        "\U000024C2-\U0001F251"  # enclosed characters
-        "\U0001F900-\U0001F9FF"  # supplemental symbols
-        "\U0001FA70-\U0001FAFF"  # symbols and pictographs extended-A
-        "\U00002600-\U000026FF"  # miscellaneous symbols
-        "\U00002700-\U000027BF"  # dingbats
+        "\U0001f600-\U0001f64f"  # emoticons
+        "\U0001f300-\U0001f5ff"  # symbols & pictographs
+        "\U0001f680-\U0001f6ff"  # transport & map symbols
+        "\U0001f1e0-\U0001f1ff"  # flags (iOS)
+        "\U00002702-\U000027b0"  # dingbats
+        "\U000024c2-\U0001f251"  # enclosed characters
+        "\U0001f900-\U0001f9ff"  # supplemental symbols
+        "\U0001fa70-\U0001faff"  # symbols and pictographs extended-A
+        "\U00002600-\U000026ff"  # miscellaneous symbols
+        "\U00002700-\U000027bf"  # dingbats
         "]+",
-        flags=re.UNICODE
+        flags=re.UNICODE,
     )
     return emoji_pattern
 
@@ -46,14 +46,14 @@ def clean_file_content(content: str) -> tuple[str, int]:
     emoji_count = len(emoji_matches)
 
     # Remove emoji
-    cleaned_content = emoji_pattern.sub('', content)
+    cleaned_content = emoji_pattern.sub("", content)
 
     # Clean up any multiple spaces that might result, but preserve line breaks
     # Replace multiple spaces (but not newlines) with single space
-    cleaned_content = re.sub(r'[^\S\n]+', ' ', cleaned_content)
+    cleaned_content = re.sub(r"[^\S\n]+", " ", cleaned_content)
 
     # Clean up any multiple consecutive newlines (more than 2)
-    cleaned_content = re.sub(r'\n{3,}', '\n\n', cleaned_content)
+    cleaned_content = re.sub(r"\n{3,}", "\n\n", cleaned_content)
 
     return cleaned_content, emoji_count
 
@@ -74,14 +74,14 @@ def clean_file(file_path: Path, dry_run: bool = False) -> tuple[bool, int]:
     Returns (was_modified, emoji_count).
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             original_content = f.read()
 
         cleaned_content, emoji_count = clean_file_content(original_content)
 
         if emoji_count > 0:
             if not dry_run:
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.write(cleaned_content)
             return True, emoji_count
 
@@ -99,7 +99,7 @@ def clean_directory(
     directory: Path,
     include_extensions: Set[str],
     exclude_dirs: Set[str],
-    dry_run: bool = False
+    dry_run: bool = False,
 ) -> tuple[int, int]:
     """
     Recursively clean emoji from all files in directory.
@@ -137,32 +137,29 @@ def main():
         "paths",
         nargs="*",
         default=["."],
-        help="Files or directories to clean (default: current directory)"
+        help="Files or directories to clean (default: current directory)",
     )
     parser.add_argument(
         "--extensions",
         "-e",
         nargs="*",
         default=[".md", ".py", ".txt", ".rst", ".json", ".yaml", ".yml", ".toml"],
-        help="File extensions to process (default: common text files)"
+        help="File extensions to process (default: common text files)",
     )
     parser.add_argument(
         "--exclude-dirs",
         nargs="*",
         default=[".git", ".venv", "__pycache__", "node_modules", ".idea"],
-        help="Directories to exclude from processing"
+        help="Directories to exclude from processing",
     )
     parser.add_argument(
         "--dry-run",
         "-n",
         action="store_true",
-        help="Show what would be cleaned without making changes"
+        help="Show what would be cleaned without making changes",
     )
     parser.add_argument(
-        "--verbose",
-        "-v",
-        action="store_true",
-        help="Show detailed output"
+        "--verbose", "-v", action="store_true", help="Show detailed output"
     )
 
     args = parser.parse_args()
@@ -201,8 +198,10 @@ def main():
 
     # Summary
     action = "Would modify" if args.dry_run else "Modified"
-    print(f"\nSummary: {action} {total_files_modified} files, "
-          f"removed {total_emoji_removed} emoji total")
+    print(
+        f"\nSummary: {action} {total_files_modified} files, "
+        f"removed {total_emoji_removed} emoji total"
+    )
 
     if args.dry_run and total_emoji_removed > 0:
         print("Run without --dry-run to apply changes")

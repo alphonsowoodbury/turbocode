@@ -39,9 +39,7 @@ class TagService:
         return None
 
     async def get_all_tags(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[TagResponse]:
         """Get all tags with optional pagination."""
         tags = await self._tag_repository.get_all(limit=limit, offset=offset)

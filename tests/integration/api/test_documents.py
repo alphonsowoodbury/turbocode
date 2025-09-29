@@ -9,7 +9,9 @@ class TestDocumentAPI:
     """Test document API endpoints."""
 
     @pytest.mark.asyncio
-    async def test_create_document_success(self, test_client: AsyncClient, sample_project):
+    async def test_create_document_success(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test successful document creation."""
         document_data = {
             "title": "Test Document",
@@ -17,7 +19,7 @@ class TestDocumentAPI:
             "type": "specification",
             "format": "markdown",
             "version": "1.0",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/documents/", json=document_data)
@@ -33,12 +35,14 @@ class TestDocumentAPI:
         assert "id" in data
 
     @pytest.mark.asyncio
-    async def test_create_document_validation_error(self, test_client: AsyncClient, sample_project):
+    async def test_create_document_validation_error(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test document creation with invalid data."""
         invalid_data = {
             "title": "",  # Empty title should fail
             "content": "Test content",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/documents/", json=invalid_data)
@@ -46,7 +50,9 @@ class TestDocumentAPI:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_get_document_by_id_success(self, test_client: AsyncClient, sample_document):
+    async def test_get_document_by_id_success(
+        self, test_client: AsyncClient, sample_document
+    ):
         """Test getting document by ID."""
         response = await test_client.get(f"/api/v1/documents/{sample_document.id}")
 
@@ -64,7 +70,9 @@ class TestDocumentAPI:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_get_all_documents(self, test_client: AsyncClient, populated_database):
+    async def test_get_all_documents(
+        self, test_client: AsyncClient, populated_database
+    ):
         """Test getting all documents."""
         response = await test_client.get("/api/v1/documents/")
 
@@ -73,7 +81,9 @@ class TestDocumentAPI:
         assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_documents_with_pagination(self, test_client: AsyncClient, populated_database):
+    async def test_get_documents_with_pagination(
+        self, test_client: AsyncClient, populated_database
+    ):
         """Test getting documents with pagination."""
         response = await test_client.get("/api/v1/documents?limit=3&offset=1")
 
@@ -83,17 +93,18 @@ class TestDocumentAPI:
         assert len(data) <= 3
 
     @pytest.mark.asyncio
-    async def test_update_document_success(self, test_client: AsyncClient, sample_document):
+    async def test_update_document_success(
+        self, test_client: AsyncClient, sample_document
+    ):
         """Test successful document update."""
         update_data = {
             "title": "Updated Document Title",
             "content": "# Updated Content\n\nThis is updated content.",
-            "version": "2.0"
+            "version": "2.0",
         }
 
         response = await test_client.put(
-            f"/api/v1/documents/{sample_document.id}",
-            json=update_data
+            f"/api/v1/documents/{sample_document.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -109,14 +120,15 @@ class TestDocumentAPI:
         update_data = {"title": "Updated Title"}
 
         response = await test_client.put(
-            f"/api/v1/documents/{non_existent_id}",
-            json=update_data
+            f"/api/v1/documents/{non_existent_id}", json=update_data
         )
 
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_delete_document_success(self, test_client: AsyncClient, sample_document):
+    async def test_delete_document_success(
+        self, test_client: AsyncClient, sample_document
+    ):
         """Test successful document deletion."""
         response = await test_client.delete(f"/api/v1/documents/{sample_document.id}")
 
@@ -131,9 +143,13 @@ class TestDocumentAPI:
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_get_documents_by_project(self, test_client: AsyncClient, sample_project):
+    async def test_get_documents_by_project(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test getting documents for a specific project."""
-        response = await test_client.get(f"/api/v1/projects/{sample_project.id}/documents")
+        response = await test_client.get(
+            f"/api/v1/projects/{sample_project.id}/documents"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -175,9 +191,13 @@ class TestDocumentAPI:
         assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_document_versions(self, test_client: AsyncClient, sample_document):
+    async def test_get_document_versions(
+        self, test_client: AsyncClient, sample_document
+    ):
         """Test getting document version history."""
-        response = await test_client.get(f"/api/v1/documents/{sample_document.id}/versions")
+        response = await test_client.get(
+            f"/api/v1/documents/{sample_document.id}/versions"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -207,13 +227,15 @@ class TestDocumentAPIValidation:
     """Test document API validation."""
 
     @pytest.mark.asyncio
-    async def test_invalid_document_type(self, test_client: AsyncClient, sample_project):
+    async def test_invalid_document_type(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test creating document with invalid type."""
         invalid_data = {
             "title": "Test Document",
             "content": "Test content",
             "type": "invalid_type",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/documents/", json=invalid_data)
@@ -221,13 +243,15 @@ class TestDocumentAPIValidation:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_invalid_document_format(self, test_client: AsyncClient, sample_project):
+    async def test_invalid_document_format(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test creating document with invalid format."""
         invalid_data = {
             "title": "Test Document",
             "content": "Test content",
             "format": "invalid_format",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/documents/", json=invalid_data)
@@ -241,7 +265,7 @@ class TestDocumentAPIValidation:
             "title": "Test Document",
             "content": "Test content",
             "author": "not-an-email",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/documents/", json=invalid_data)
@@ -254,7 +278,7 @@ class TestDocumentAPIValidation:
         invalid_data = {
             "title": "Test Document",
             "content": "",  # Empty content should fail
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/documents/", json=invalid_data)
@@ -266,7 +290,7 @@ class TestDocumentAPIValidation:
         """Test creating document without project_id."""
         invalid_data = {
             "title": "Test Document",
-            "content": "Test content"
+            "content": "Test content",
             # Missing project_id
         }
 
@@ -279,21 +303,19 @@ class TestDocumentAPITemplates:
     """Test document API template functionality."""
 
     @pytest.mark.asyncio
-    async def test_create_document_from_template(self, test_client: AsyncClient, sample_project):
+    async def test_create_document_from_template(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test creating document from template."""
         template_data = {
             "template_name": "api_specification",
             "title": "API Documentation",
             "project_id": str(sample_project.id),
-            "variables": {
-                "api_name": "Turbo API",
-                "version": "1.0"
-            }
+            "variables": {"api_name": "Turbo API", "version": "1.0"},
         }
 
         response = await test_client.post(
-            "/api/v1/documents/from-template",
-            json=template_data
+            "/api/v1/documents/from-template", json=template_data
         )
 
         assert response.status_code == 201
@@ -324,14 +346,10 @@ class TestDocumentAPICollaboration:
     @pytest.mark.asyncio
     async def test_duplicate_document(self, test_client: AsyncClient, sample_document):
         """Test duplicating a document."""
-        duplicate_data = {
-            "title": "Duplicated Document",
-            "version": "1.0"
-        }
+        duplicate_data = {"title": "Duplicated Document", "version": "1.0"}
 
         response = await test_client.post(
-            f"/api/v1/documents/{sample_document.id}/duplicate",
-            json=duplicate_data
+            f"/api/v1/documents/{sample_document.id}/duplicate", json=duplicate_data
         )
 
         assert response.status_code == 201
@@ -349,14 +367,16 @@ class TestDocumentAPICollaboration:
             doc_data = {
                 "title": f"Bulk Test Doc {i}",
                 "content": f"Content {i}",
-                "project_id": str(sample_project.id)
+                "project_id": str(sample_project.id),
             }
             response = await test_client.post("/api/v1/documents/", json=doc_data)
             doc_ids.append(response.json()["id"])
 
         # Test bulk delete
         bulk_data = {"document_ids": doc_ids}
-        response = await test_client.post("/api/v1/documents/bulk-delete", json=bulk_data)
+        response = await test_client.post(
+            "/api/v1/documents/bulk-delete", json=bulk_data
+        )
 
         assert response.status_code == 200
         data = response.json()

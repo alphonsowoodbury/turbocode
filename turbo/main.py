@@ -28,6 +28,7 @@ def create_app() -> FastAPI:
 
     # Add API routes
     from turbo.api.v1 import router as api_router
+
     app.include_router(api_router)
 
     @app.get("/")
@@ -49,6 +50,7 @@ app = create_app()
 
 if __name__ == "__main__":
     import uvicorn
+
     settings = get_settings()
 
     uvicorn.run(

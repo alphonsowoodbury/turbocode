@@ -26,24 +26,18 @@ class Project(Base):
 
     # Relationships
     issues = relationship(
-        "Issue",
-        back_populates="project",
-        cascade="all, delete-orphan",
-        lazy="dynamic"
+        "Issue", back_populates="project", cascade="all, delete-orphan", lazy="dynamic"
     )
 
     documents = relationship(
         "Document",
         back_populates="project",
         cascade="all, delete-orphan",
-        lazy="select"
+        lazy="select",
     )
 
     tags = relationship(
-        "Tag",
-        secondary=project_tags,
-        back_populates="projects",
-        lazy="select"
+        "Tag", secondary=project_tags, back_populates="projects", lazy="select"
     )
 
     def __repr__(self) -> str:

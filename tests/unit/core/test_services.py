@@ -55,22 +55,24 @@ class TestProjectService:
         return AsyncMock()
 
     @pytest.fixture
-    def project_service(self, mock_project_repository, mock_issue_repository, mock_document_repository):
+    def project_service(
+        self, mock_project_repository, mock_issue_repository, mock_document_repository
+    ):
         """Project service with mocked dependencies."""
         return ProjectService(
             project_repository=mock_project_repository,
             issue_repository=mock_issue_repository,
-            document_repository=mock_document_repository
+            document_repository=mock_document_repository,
         )
 
     @pytest.mark.asyncio
-    async def test_create_project_success(self, project_service, mock_project_repository):
+    async def test_create_project_success(
+        self, project_service, mock_project_repository
+    ):
         """Test successful project creation."""
         # Arrange
         project_data = ProjectCreate(
-            name="Test Project",
-            description="A test project",
-            priority="high"
+            name="Test Project", description="A test project", priority="high"
         )
 
         expected_project = Project(
@@ -80,7 +82,7 @@ class TestProjectService:
             priority="high",
             status="active",
             created_at=datetime.now(),
-            updated_at=datetime.now()
+            updated_at=datetime.now(),
         )
 
         mock_project_repository.create.return_value = expected_project
@@ -96,7 +98,9 @@ class TestProjectService:
         mock_project_repository.create.assert_called_once_with(project_data)
 
     @pytest.mark.asyncio
-    async def test_get_project_by_id_success(self, project_service, mock_project_repository):
+    async def test_get_project_by_id_success(
+        self, project_service, mock_project_repository
+    ):
         """Test successful project retrieval by ID."""
         # Arrange
         project_id = uuid4()
@@ -104,7 +108,7 @@ class TestProjectService:
             id=project_id,
             name="Test Project",
             description="A test project",
-            status="active"
+            status="active",
         )
 
         mock_project_repository.get_by_id.return_value = expected_project
@@ -119,7 +123,9 @@ class TestProjectService:
         mock_project_repository.get_by_id.assert_called_once_with(project_id)
 
     @pytest.mark.asyncio
-    async def test_get_project_by_id_not_found(self, project_service, mock_project_repository):
+    async def test_get_project_by_id_not_found(
+        self, project_service, mock_project_repository
+    ):
         """Test project not found scenario."""
         # Arrange
         project_id = uuid4()
@@ -137,7 +143,12 @@ class TestProjectService:
         """Test retrieving all projects."""
         # Arrange
         projects = [
-            Project(id=uuid4(), name=f"Project {i}", description=f"Description {i}", status="active")
+            Project(
+                id=uuid4(),
+                name=f"Project {i}",
+                description=f"Description {i}",
+                status="active",
+            )
             for i in range(3)
         ]
 
@@ -155,11 +166,18 @@ class TestProjectService:
         mock_project_repository.get_all.assert_called_once_with(limit=None, offset=None)
 
     @pytest.mark.asyncio
-    async def test_get_all_projects_with_pagination(self, project_service, mock_project_repository):
+    async def test_get_all_projects_with_pagination(
+        self, project_service, mock_project_repository
+    ):
         """Test retrieving projects with pagination."""
         # Arrange
         projects = [
-            Project(id=uuid4(), name=f"Project {i}", description=f"Description {i}", status="active")
+            Project(
+                id=uuid4(),
+                name=f"Project {i}",
+                description=f"Description {i}",
+                status="active",
+            )
             for i in range(2)
         ]
 
@@ -173,21 +191,20 @@ class TestProjectService:
         mock_project_repository.get_all.assert_called_once_with(limit=10, offset=5)
 
     @pytest.mark.asyncio
-    async def test_update_project_success(self, project_service, mock_project_repository):
+    async def test_update_project_success(
+        self, project_service, mock_project_repository
+    ):
         """Test successful project update."""
         # Arrange
         project_id = uuid4()
-        update_data = ProjectUpdate(
-            name="Updated Project",
-            priority="critical"
-        )
+        update_data = ProjectUpdate(name="Updated Project", priority="critical")
 
         updated_project = Project(
             id=project_id,
             name="Updated Project",
             description="Original description",
             priority="critical",
-            status="active"
+            status="active",
         )
 
         mock_project_repository.update.return_value = updated_project
@@ -203,7 +220,9 @@ class TestProjectService:
         mock_project_repository.update.assert_called_once_with(project_id, update_data)
 
     @pytest.mark.asyncio
-    async def test_update_project_not_found(self, project_service, mock_project_repository):
+    async def test_update_project_not_found(
+        self, project_service, mock_project_repository
+    ):
         """Test updating non-existent project."""
         # Arrange
         project_id = uuid4()
@@ -219,7 +238,9 @@ class TestProjectService:
         mock_project_repository.update.assert_called_once_with(project_id, update_data)
 
     @pytest.mark.asyncio
-    async def test_delete_project_success(self, project_service, mock_project_repository):
+    async def test_delete_project_success(
+        self, project_service, mock_project_repository
+    ):
         """Test successful project deletion."""
         # Arrange
         project_id = uuid4()
@@ -233,7 +254,9 @@ class TestProjectService:
         mock_project_repository.delete.assert_called_once_with(project_id)
 
     @pytest.mark.asyncio
-    async def test_delete_project_not_found(self, project_service, mock_project_repository):
+    async def test_delete_project_not_found(
+        self, project_service, mock_project_repository
+    ):
         """Test deleting non-existent project."""
         # Arrange
         project_id = uuid4()
@@ -247,20 +270,25 @@ class TestProjectService:
         mock_project_repository.delete.assert_called_once_with(project_id)
 
     @pytest.mark.asyncio
-    async def test_get_project_statistics(self, project_service, mock_project_repository, mock_issue_repository):
+    async def test_get_project_statistics(
+        self, project_service, mock_project_repository, mock_issue_repository
+    ):
         """Test getting project statistics."""
         # Arrange
         project_id = uuid4()
         project = Project(
-            id=project_id,
-            name="Test Project",
-            description="Test",
-            status="active"
+            id=project_id, name="Test Project", description="Test", status="active"
         )
 
         issues = [
-            Issue(id=uuid4(), title=f"Issue {i}", description=f"Desc {i}",
-                  status="open" if i < 2 else "closed", type="bug", project_id=project_id)
+            Issue(
+                id=uuid4(),
+                title=f"Issue {i}",
+                description=f"Desc {i}",
+                status="open" if i < 2 else "closed",
+                type="bug",
+                project_id=project_id,
+            )
             for i in range(5)
         ]
 
@@ -289,7 +317,7 @@ class TestProjectService:
             name="Test Project",
             description="Test",
             status="active",
-            is_archived=True
+            is_archived=True,
         )
 
         mock_project_repository.update.return_value = archived_project
@@ -305,7 +333,9 @@ class TestProjectService:
         mock_project_repository.update.assert_called_once()
         call_args = mock_project_repository.update.call_args
         assert call_args[0][0] == project_id  # project_id argument
-        assert call_args[0][1].is_archived is True  # ProjectUpdate with is_archived=True
+        assert (
+            call_args[0][1].is_archived is True
+        )  # ProjectUpdate with is_archived=True
 
 
 class TestIssueService:
@@ -326,11 +356,13 @@ class TestIssueService:
         """Issue service with mocked dependencies."""
         return IssueService(
             issue_repository=mock_issue_repository,
-            project_repository=mock_project_repository
+            project_repository=mock_project_repository,
         )
 
     @pytest.mark.asyncio
-    async def test_create_issue_success(self, issue_service, mock_issue_repository, mock_project_repository):
+    async def test_create_issue_success(
+        self, issue_service, mock_issue_repository, mock_project_repository
+    ):
         """Test successful issue creation."""
         # Arrange
         project_id = uuid4()
@@ -338,17 +370,19 @@ class TestIssueService:
             title="Test Issue",
             description="A test issue",
             type="bug",
-            project_id=project_id
+            project_id=project_id,
         )
 
-        project = Project(id=project_id, name="Test Project", description="Test", status="active")
+        project = Project(
+            id=project_id, name="Test Project", description="Test", status="active"
+        )
         expected_issue = Issue(
             id=uuid4(),
             title="Test Issue",
             description="A test issue",
             type="bug",
             status="open",
-            project_id=project_id
+            project_id=project_id,
         )
 
         mock_project_repository.get_by_id.return_value = project
@@ -366,14 +400,14 @@ class TestIssueService:
         mock_issue_repository.create.assert_called_once_with(issue_data)
 
     @pytest.mark.asyncio
-    async def test_create_issue_invalid_project(self, issue_service, mock_issue_repository, mock_project_repository):
+    async def test_create_issue_invalid_project(
+        self, issue_service, mock_issue_repository, mock_project_repository
+    ):
         """Test creating issue with invalid project ID."""
         # Arrange
         project_id = uuid4()
         issue_data = IssueCreate(
-            title="Test Issue",
-            description="A test issue",
-            project_id=project_id
+            title="Test Issue", description="A test issue", project_id=project_id
         )
 
         mock_project_repository.get_by_id.return_value = None
@@ -398,7 +432,7 @@ class TestIssueService:
             description="A test issue",
             type="bug",
             status="open",
-            project_id=project_id
+            project_id=project_id,
         )
 
         mock_issue_repository.get_by_id.return_value = expected_issue
@@ -413,7 +447,9 @@ class TestIssueService:
         mock_issue_repository.get_by_id.assert_called_once_with(issue_id)
 
     @pytest.mark.asyncio
-    async def test_get_issue_by_id_not_found(self, issue_service, mock_issue_repository):
+    async def test_get_issue_by_id_not_found(
+        self, issue_service, mock_issue_repository
+    ):
         """Test issue not found scenario."""
         # Arrange
         issue_id = uuid4()
@@ -440,7 +476,7 @@ class TestIssueService:
             type="bug",
             status="open",
             assignee=assignee,
-            project_id=uuid4()
+            project_id=uuid4(),
         )
 
         mock_issue_repository.update.return_value = updated_issue
@@ -470,7 +506,7 @@ class TestIssueService:
             description="Test",
             type="bug",
             status="closed",
-            project_id=uuid4()
+            project_id=uuid4(),
         )
 
         mock_issue_repository.update.return_value = closed_issue
@@ -507,11 +543,13 @@ class TestDocumentService:
         """Document service with mocked dependencies."""
         return DocumentService(
             document_repository=mock_document_repository,
-            project_repository=mock_project_repository
+            project_repository=mock_project_repository,
         )
 
     @pytest.mark.asyncio
-    async def test_create_document_success(self, document_service, mock_document_repository, mock_project_repository):
+    async def test_create_document_success(
+        self, document_service, mock_document_repository, mock_project_repository
+    ):
         """Test successful document creation."""
         # Arrange
         project_id = uuid4()
@@ -520,17 +558,19 @@ class TestDocumentService:
             content="# Test Document\n\nContent here",
             type="specification",
             format="markdown",
-            project_id=project_id
+            project_id=project_id,
         )
 
-        project = Project(id=project_id, name="Test Project", description="Test", status="active")
+        project = Project(
+            id=project_id, name="Test Project", description="Test", status="active"
+        )
         expected_document = Document(
             id=uuid4(),
             title="Test Document",
             content="# Test Document\n\nContent here",
             type="specification",
             format="markdown",
-            project_id=project_id
+            project_id=project_id,
         )
 
         mock_project_repository.get_by_id.return_value = project
@@ -548,7 +588,9 @@ class TestDocumentService:
         mock_document_repository.create.assert_called_once_with(document_data)
 
     @pytest.mark.asyncio
-    async def test_create_document_invalid_project(self, document_service, mock_document_repository, mock_project_repository):
+    async def test_create_document_invalid_project(
+        self, document_service, mock_document_repository, mock_project_repository
+    ):
         """Test creating document with invalid project ID."""
         # Arrange
         project_id = uuid4()
@@ -557,7 +599,7 @@ class TestDocumentService:
             content="Content",
             type="specification",
             format="markdown",
-            project_id=project_id
+            project_id=project_id,
         )
 
         mock_project_repository.get_by_id.return_value = None
@@ -571,7 +613,9 @@ class TestDocumentService:
         mock_document_repository.create.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_generate_document_from_template(self, document_service, mock_document_repository):
+    async def test_generate_document_from_template(
+        self, document_service, mock_document_repository
+    ):
         """Test generating document from template."""
         # Arrange
         project_id = uuid4()
@@ -584,16 +628,18 @@ class TestDocumentService:
             content="# Technical Specification for Test Project\n\nAuthor: Developer",
             type="specification",
             format="markdown",
-            project_id=project_id
+            project_id=project_id,
         )
 
         mock_document_repository.create.return_value = generated_document
 
         # Act
-        with patch('turbo.core.services.document_service.generate_from_template') as mock_generate:
+        with patch(
+            "turbo.core.services.document_service.generate_from_template"
+        ) as mock_generate:
             mock_generate.return_value = {
                 "title": "Generated Technical Specification",
-                "content": "# Technical Specification for Test Project\n\nAuthor: Developer"
+                "content": "# Technical Specification for Test Project\n\nAuthor: Developer",
             }
 
             result = await document_service.generate_document_from_template(
@@ -626,16 +672,14 @@ class TestTagService:
         """Test successful tag creation."""
         # Arrange
         tag_data = TagCreate(
-            name="frontend",
-            color="#FF5733",
-            description="Frontend development tasks"
+            name="frontend", color="#FF5733", description="Frontend development tasks"
         )
 
         expected_tag = Tag(
             id=uuid4(),
             name="frontend",
             color="#FF5733",
-            description="Frontend development tasks"
+            description="Frontend development tasks",
         )
 
         mock_tag_repository.get_by_name.return_value = None  # Tag doesn't exist
@@ -678,7 +722,7 @@ class TestTagService:
             id=tag_id,
             name="backend",
             color="#33FF57",
-            description="Backend development"
+            description="Backend development",
         )
 
         mock_tag_repository.get_by_id.return_value = expected_tag
@@ -720,7 +764,7 @@ class TestServiceErrorHandling:
         service = ProjectService(
             project_repository=mock_repo,
             issue_repository=AsyncMock(),
-            document_repository=AsyncMock()
+            document_repository=AsyncMock(),
         )
 
         # Act & Assert
@@ -736,7 +780,7 @@ class TestServiceErrorHandling:
         service = ProjectService(
             project_repository=mock_repo,
             issue_repository=AsyncMock(),
-            document_repository=AsyncMock()
+            document_repository=AsyncMock(),
         )
 
         # Test with invalid UUID (this would be caught by Pydantic in real usage)

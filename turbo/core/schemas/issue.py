@@ -13,12 +13,10 @@ class IssueBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1)
     type: str = Field(
-        default="task",
-        pattern="^(feature|bug|task|enhancement|documentation)$"
+        default="task", pattern="^(feature|bug|task|enhancement|documentation)$"
     )
     status: str = Field(
-        default="open",
-        pattern="^(open|in_progress|review|testing|closed)$"
+        default="open", pattern="^(open|in_progress|review|testing|closed)$"
     )
     priority: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
     assignee: Optional[EmailStr] = None
@@ -52,12 +50,10 @@ class IssueUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, min_length=1)
     type: Optional[str] = Field(
-        None,
-        pattern="^(feature|bug|task|enhancement|documentation)$"
+        None, pattern="^(feature|bug|task|enhancement|documentation)$"
     )
     status: Optional[str] = Field(
-        None,
-        pattern="^(open|in_progress|review|testing|closed)$"
+        None, pattern="^(open|in_progress|review|testing|closed)$"
     )
     priority: Optional[str] = Field(None, pattern="^(low|medium|high|critical)$")
     assignee: Optional[EmailStr] = None

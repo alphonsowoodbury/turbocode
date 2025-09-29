@@ -11,7 +11,12 @@ __email__ = "dev@turbo.local"
 
 # Public API exports
 from turbo.core.models import Project, Issue, Document
-from turbo.core.schemas import ProjectCreate, ProjectResponse, IssueCreate, IssueResponse
+from turbo.core.schemas import (
+    ProjectCreate,
+    ProjectResponse,
+    IssueCreate,
+    IssueResponse,
+)
 
 __all__ = [
     "__version__",

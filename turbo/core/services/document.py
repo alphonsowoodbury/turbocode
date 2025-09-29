@@ -42,18 +42,14 @@ class DocumentService:
         return DocumentResponse.model_validate(document)
 
     async def get_all_documents(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[DocumentResponse]:
         """Get all documents with optional pagination."""
         documents = await self._document_repository.get_all(limit=limit, offset=offset)
         return [DocumentResponse.model_validate(document) for document in documents]
 
     async def update_document(
-        self,
-        document_id: UUID,
-        update_data: DocumentUpdate
+        self, document_id: UUID, update_data: DocumentUpdate
     ) -> DocumentResponse:
         """Update a document."""
         document = await self._document_repository.update(document_id, update_data)
@@ -68,7 +64,9 @@ class DocumentService:
             raise DocumentNotFoundError(document_id)
         return success
 
-    async def get_documents_by_project(self, project_id: UUID) -> List[DocumentResponse]:
+    async def get_documents_by_project(
+        self, project_id: UUID
+    ) -> List[DocumentResponse]:
         """Get all documents for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -99,32 +97,41 @@ class DocumentService:
         # Combine and deduplicate results
         all_documents = {doc.id: doc for doc in title_results + content_results}
 
-        return [DocumentResponse.model_validate(document) for document in all_documents.values()]
+        return [
+            DocumentResponse.model_validate(document)
+            for document in all_documents.values()
+        ]
 
-    async def get_project_specifications(self, project_id: UUID) -> List[DocumentResponse]:
+    async def get_project_specifications(
+        self, project_id: UUID
+    ) -> List[DocumentResponse]:
         """Get specification documents for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
         if not project:
             raise ProjectNotFoundError(project_id)
 
-        documents = await self._document_repository.get_project_specifications(project_id)
+        documents = await self._document_repository.get_project_specifications(
+            project_id
+        )
         return [DocumentResponse.model_validate(document) for document in documents]
 
-    async def get_project_documentation(self, project_id: UUID) -> List[DocumentResponse]:
+    async def get_project_documentation(
+        self, project_id: UUID
+    ) -> List[DocumentResponse]:
         """Get documentation documents for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
         if not project:
             raise ProjectNotFoundError(project_id)
 
-        documents = await self._document_repository.get_project_documentation(project_id)
+        documents = await self._document_repository.get_project_documentation(
+            project_id
+        )
         return [DocumentResponse.model_validate(document) for document in documents]
 
     async def get_latest_document_version(
-        self,
-        project_id: UUID,
-        document_type: str
+        self, project_id: UUID, document_type: str
     ) -> Optional[DocumentResponse]:
         """Get the latest version of a document type for a project."""
         # Verify project exists
@@ -132,15 +139,15 @@ class DocumentService:
         if not project:
             raise ProjectNotFoundError(project_id)
 
-        document = await self._document_repository.get_latest_version(project_id, document_type)
+        document = await self._document_repository.get_latest_version(
+            project_id, document_type
+        )
         if document:
             return DocumentResponse.model_validate(document)
         return None
 
     async def get_recent_documents(
-        self,
-        limit: int = 10,
-        project_id: Optional[UUID] = None
+        self, limit: int = 10, project_id: Optional[UUID] = None
     ) -> List[DocumentResponse]:
         """Get recently updated documents."""
         if project_id:
@@ -150,16 +157,12 @@ class DocumentService:
                 raise ProjectNotFoundError(project_id)
 
         documents = await self._document_repository.get_recent_documents(
-            limit=limit,
-            project_id=project_id
+            limit=limit, project_id=project_id
         )
         return [DocumentResponse.model_validate(document) for document in documents]
 
     async def generate_document_from_template(
-        self,
-        project_id: UUID,
-        template_name: str,
-        context: Dict[str, Any]
+        self, project_id: UUID, template_name: str, context: Dict[str, Any]
     ) -> DocumentResponse:
         """Generate a document from a template with context."""
         # Verify project exists
@@ -176,22 +179,24 @@ class DocumentService:
             content=generated_content["content"],
             type="specification",
             format="markdown",
-            project_id=project_id
+            project_id=project_id,
         )
 
         document = await self._document_repository.create(document_data)
         return DocumentResponse.model_validate(document)
 
-    def _generate_from_template(self, template_name: str, context: Dict[str, Any]) -> Dict[str, str]:
+    def _generate_from_template(
+        self, template_name: str, context: Dict[str, Any]
+    ) -> Dict[str, str]:
         """Generate content from template (placeholder implementation)."""
         # This would be replaced with actual template engine integration
         if template_name == "technical_spec":
             return {
                 "title": f"Technical Specification for {context.get('project_name', 'Project')}",
-                "content": f"# Technical Specification\n\nProject: {context.get('project_name', 'Unknown')}\nAuthor: {context.get('author', 'Unknown')}\n\n## Overview\n\nThis is a generated technical specification."
+                "content": f"# Technical Specification\n\nProject: {context.get('project_name', 'Unknown')}\nAuthor: {context.get('author', 'Unknown')}\n\n## Overview\n\nThis is a generated technical specification.",
             }
         else:
             return {
                 "title": "Generated Document",
-                "content": f"# Generated Document\n\nTemplate: {template_name}\nContext: {context}"
+                "content": f"# Generated Document\n\nTemplate: {template_name}\nContext: {context}",
             }

@@ -7,6 +7,7 @@ from uuid import uuid4
 # This is an example test file that demonstrates the testing patterns
 # It will be replaced with actual tests once the core modules are implemented
 
+
 class TestExamplePatterns:
     """Example test patterns for Turbo testing standards."""
 
@@ -79,11 +80,14 @@ class TestExamplePatterns:
         # assert "Invalid input" in str(exc_info.value)
         assert True  # Placeholder
 
-    @pytest.mark.parametrize("input_val,expected", [
-        ("test1", "result1"),
-        ("test2", "result2"),
-        ("test3", "result3"),
-    ])
+    @pytest.mark.parametrize(
+        "input_val,expected",
+        [
+            ("test1", "result1"),
+            ("test2", "result2"),
+            ("test3", "result3"),
+        ],
+    )
     def test_parametrized_example(self, input_val, expected):
         """Example of parametrized testing."""
         # Act

@@ -23,17 +23,11 @@ class Tag(Base):
 
     # Relationships
     projects = relationship(
-        "Project",
-        secondary=project_tags,
-        back_populates="tags",
-        lazy="select"
+        "Project", secondary=project_tags, back_populates="tags", lazy="select"
     )
 
     issues = relationship(
-        "Issue",
-        secondary=issue_tags,
-        back_populates="tags",
-        lazy="select"
+        "Issue", secondary=issue_tags, back_populates="tags", lazy="select"
     )
 
     def __repr__(self) -> str:

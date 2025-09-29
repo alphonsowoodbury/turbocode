@@ -29,7 +29,7 @@ class TestProjectSchemas:
             "name": "Test Project",
             "description": "A test project for unit testing",
             "priority": "high",
-            "status": "active"
+            "status": "active",
         }
 
         project = ProjectCreate(**data)
@@ -41,17 +41,14 @@ class TestProjectSchemas:
 
     def test_project_create_with_defaults(self):
         """Test ProjectCreate with default values."""
-        data = {
-            "name": "Minimal Project",
-            "description": "Just name and description"
-        }
+        data = {"name": "Minimal Project", "description": "Just name and description"}
 
         project = ProjectCreate(**data)
 
         assert project.name == "Minimal Project"
         assert project.description == "Just name and description"
         assert project.priority == "medium"  # Default value
-        assert project.status == "active"    # Default value
+        assert project.status == "active"  # Default value
 
     def test_project_create_name_validation(self):
         """Test that project name validation works."""
@@ -94,18 +91,14 @@ class TestProjectSchemas:
 
         for priority in valid_priorities:
             project = ProjectCreate(
-                name="Test Project",
-                description="Test Description",
-                priority=priority
+                name="Test Project", description="Test Description", priority=priority
             )
             assert project.priority == priority
 
         # Invalid priority should fail
         with pytest.raises(ValidationError) as exc_info:
             ProjectCreate(
-                name="Test Project",
-                description="Test Description",
-                priority="invalid"
+                name="Test Project", description="Test Description", priority="invalid"
             )
 
         assert "unexpected value" in str(exc_info.value)
@@ -116,18 +109,14 @@ class TestProjectSchemas:
 
         for status in valid_statuses:
             project = ProjectCreate(
-                name="Test Project",
-                description="Test Description",
-                status=status
+                name="Test Project", description="Test Description", status=status
             )
             assert project.status == status
 
         # Invalid status should fail
         with pytest.raises(ValidationError) as exc_info:
             ProjectCreate(
-                name="Test Project",
-                description="Test Description",
-                status="invalid"
+                name="Test Project", description="Test Description", status="invalid"
             )
 
         assert "unexpected value" in str(exc_info.value)
@@ -141,7 +130,7 @@ class TestProjectSchemas:
             project = ProjectCreate(
                 name="Test Project",
                 description="Test Description",
-                completion_percentage=percentage
+                completion_percentage=percentage,
             )
             assert project.completion_percentage == percentage
 
@@ -153,11 +142,12 @@ class TestProjectSchemas:
                 ProjectCreate(
                     name="Test Project",
                     description="Test Description",
-                    completion_percentage=percentage
+                    completion_percentage=percentage,
                 )
 
-            assert ("ensure this value is greater than or equal to 0" in str(exc_info.value) or
-                    "ensure this value is less than or equal to 100" in str(exc_info.value))
+            assert "ensure this value is greater than or equal to 0" in str(
+                exc_info.value
+            ) or "ensure this value is less than or equal to 100" in str(exc_info.value)
 
     def test_project_update_schema(self):
         """Test ProjectUpdate schema allows partial updates."""
@@ -189,7 +179,7 @@ class TestProjectSchemas:
             "completion_percentage": 50.0,
             "is_archived": False,
             "created_at": now,
-            "updated_at": now
+            "updated_at": now,
         }
 
         response = ProjectResponse(**data)
@@ -217,7 +207,7 @@ class TestIssueSchemas:
             "type": "bug",
             "status": "open",
             "priority": "high",
-            "project_id": project_id
+            "project_id": project_id,
         }
 
         issue = IssueCreate(**data)
@@ -235,16 +225,16 @@ class TestIssueSchemas:
         data = {
             "title": "Minimal Issue",
             "description": "Just title and description",
-            "project_id": project_id
+            "project_id": project_id,
         }
 
         issue = IssueCreate(**data)
 
         assert issue.title == "Minimal Issue"
         assert issue.description == "Just title and description"
-        assert issue.type == "task"      # Default value
-        assert issue.status == "open"    # Default value
-        assert issue.priority == "medium" # Default value
+        assert issue.type == "task"  # Default value
+        assert issue.status == "open"  # Default value
+        assert issue.priority == "medium"  # Default value
         assert issue.project_id == project_id
 
     def test_issue_create_title_validation(self):
@@ -254,9 +244,7 @@ class TestIssueSchemas:
         # Empty title should fail
         with pytest.raises(ValidationError) as exc_info:
             IssueCreate(
-                title="",
-                description="Valid description",
-                project_id=project_id
+                title="", description="Valid description", project_id=project_id
             )
 
         assert "ensure this value has at least 1 characters" in str(exc_info.value)
@@ -265,9 +253,7 @@ class TestIssueSchemas:
         long_title = "x" * 201  # Max length is 200
         with pytest.raises(ValidationError) as exc_info:
             IssueCreate(
-                title=long_title,
-                description="Valid description",
-                project_id=project_id
+                title=long_title, description="Valid description", project_id=project_id
             )
 
         assert "ensure this value has at most 200 characters" in str(exc_info.value)
@@ -282,7 +268,7 @@ class TestIssueSchemas:
                 title="Test Issue",
                 description="Test Description",
                 type=issue_type,
-                project_id=project_id
+                project_id=project_id,
             )
             assert issue.type == issue_type
 
@@ -292,7 +278,7 @@ class TestIssueSchemas:
                 title="Test Issue",
                 description="Test Description",
                 type="invalid_type",
-                project_id=project_id
+                project_id=project_id,
             )
 
         assert "unexpected value" in str(exc_info.value)
@@ -307,7 +293,7 @@ class TestIssueSchemas:
                 title="Test Issue",
                 description="Test Description",
                 status=status,
-                project_id=project_id
+                project_id=project_id,
             )
             assert issue.status == status
 
@@ -317,7 +303,7 @@ class TestIssueSchemas:
                 title="Test Issue",
                 description="Test Description",
                 status="invalid_status",
-                project_id=project_id
+                project_id=project_id,
             )
 
         assert "unexpected value" in str(exc_info.value)
@@ -331,7 +317,7 @@ class TestIssueSchemas:
             title="Test Issue",
             description="Test Description",
             assignee="user@example.com",
-            project_id=project_id
+            project_id=project_id,
         )
         assert issue.assignee == "user@example.com"
 
@@ -341,7 +327,7 @@ class TestIssueSchemas:
                 title="Test Issue",
                 description="Test Description",
                 assignee="invalid-email",
-                project_id=project_id
+                project_id=project_id,
             )
 
         assert "value is not a valid email address" in str(exc_info.value)
@@ -378,7 +364,7 @@ class TestIssueSchemas:
             "assignee": "user@example.com",
             "project_id": project_id,
             "created_at": now,
-            "updated_at": now
+            "updated_at": now,
         }
 
         response = IssueResponse(**data)
@@ -406,7 +392,7 @@ class TestDocumentSchemas:
             "content": "# Test Document\n\nThis is test content.",
             "type": "specification",
             "format": "markdown",
-            "project_id": project_id
+            "project_id": project_id,
         }
 
         document = DocumentCreate(**data)
@@ -427,7 +413,7 @@ class TestDocumentSchemas:
             "format": "markdown",
             "version": "1.0",
             "author": "author@example.com",
-            "project_id": project_id
+            "project_id": project_id,
         }
 
         document = DocumentCreate(**data)
@@ -446,7 +432,7 @@ class TestDocumentSchemas:
                 content="Valid content",
                 type="specification",
                 format="markdown",
-                project_id=project_id
+                project_id=project_id,
             )
 
         assert "ensure this value has at least 1 characters" in str(exc_info.value)
@@ -455,8 +441,14 @@ class TestDocumentSchemas:
         """Test document type validation."""
         project_id = uuid4()
         valid_types = [
-            "specification", "user_guide", "api_doc", "readme",
-            "changelog", "requirements", "design", "other"
+            "specification",
+            "user_guide",
+            "api_doc",
+            "readme",
+            "changelog",
+            "requirements",
+            "design",
+            "other",
         ]
 
         for doc_type in valid_types:
@@ -465,7 +457,7 @@ class TestDocumentSchemas:
                 content="Test content",
                 type=doc_type,
                 format="markdown",
-                project_id=project_id
+                project_id=project_id,
             )
             assert document.type == doc_type
 
@@ -476,7 +468,7 @@ class TestDocumentSchemas:
                 content="Test content",
                 type="invalid_type",
                 format="markdown",
-                project_id=project_id
+                project_id=project_id,
             )
 
         assert "unexpected value" in str(exc_info.value)
@@ -492,7 +484,7 @@ class TestDocumentSchemas:
                 content="Test content",
                 type="specification",
                 format=doc_format,
-                project_id=project_id
+                project_id=project_id,
             )
             assert document.format == doc_format
 
@@ -503,7 +495,7 @@ class TestDocumentSchemas:
                 content="Test content",
                 type="specification",
                 format="invalid_format",
-                project_id=project_id
+                project_id=project_id,
             )
 
         assert "unexpected value" in str(exc_info.value)
@@ -519,7 +511,7 @@ class TestDocumentSchemas:
             type="specification",
             format="markdown",
             author="author@example.com",
-            project_id=project_id
+            project_id=project_id,
         )
         assert document.author == "author@example.com"
 
@@ -531,7 +523,7 @@ class TestDocumentSchemas:
                 type="specification",
                 format="markdown",
                 author="invalid-email",
-                project_id=project_id
+                project_id=project_id,
             )
 
         assert "value is not a valid email address" in str(exc_info.value)
@@ -545,7 +537,7 @@ class TestTagSchemas:
         data = {
             "name": "frontend",
             "color": "#FF5733",
-            "description": "Frontend development tasks"
+            "description": "Frontend development tasks",
         }
 
         tag = TagCreate(**data)
@@ -599,7 +591,7 @@ class TestTagSchemas:
             "id": tag_id,
             "name": "frontend",
             "color": "#FF5733",
-            "description": "Frontend development tasks"
+            "description": "Frontend development tasks",
         }
 
         response = TagResponse(**data)
@@ -624,9 +616,7 @@ class TestSchemaValidation:
         project_id = uuid4()
         with pytest.raises(ValidationError) as exc_info:
             IssueCreate(
-                title="   ",
-                description="Valid description",
-                project_id=project_id
+                title="   ", description="Valid description", project_id=project_id
             )
         assert "Title cannot be empty or whitespace" in str(exc_info.value)
 
@@ -640,21 +630,14 @@ class TestSchemaValidation:
         # Issue description
         project_id = uuid4()
         with pytest.raises(ValidationError) as exc_info:
-            IssueCreate(
-                title="Valid Title",
-                description="   ",
-                project_id=project_id
-            )
+            IssueCreate(title="Valid Title", description="   ", project_id=project_id)
         assert "Description cannot be empty or whitespace" in str(exc_info.value)
 
     def test_uuid_validation(self):
         """Test UUID field validation."""
         # Valid UUID
         valid_uuid = uuid4()
-        project = ProjectCreate(
-            name="Test Project",
-            description="Test Description"
-        )
+        project = ProjectCreate(name="Test Project", description="Test Description")
         # This would be tested in the context where project_id is passed
 
         # Invalid UUID string should fail in actual usage

@@ -18,9 +18,7 @@ class TestBaseModel:
     async def test_base_model_has_id(self, test_session):
         """Test that base model automatically generates UUID."""
         project = Project(
-            name="Test Project",
-            description="Test Description",
-            status="active"
+            name="Test Project", description="Test Description", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -32,9 +30,7 @@ class TestBaseModel:
     async def test_base_model_has_timestamps(self, test_session):
         """Test that base model has created_at and updated_at."""
         project = Project(
-            name="Test Project",
-            description="Test Description",
-            status="active"
+            name="Test Project", description="Test Description", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -48,9 +44,7 @@ class TestBaseModel:
     async def test_updated_at_changes_on_update(self, test_session):
         """Test that updated_at changes when model is updated."""
         project = Project(
-            name="Test Project",
-            description="Test Description",
-            status="active"
+            name="Test Project", description="Test Description", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -71,9 +65,7 @@ class TestProjectModel:
     async def test_create_project_with_required_fields(self, test_session):
         """Test creating a project with all required fields."""
         project = Project(
-            name="Test Project",
-            description="A test project",
-            status="active"
+            name="Test Project", description="A test project", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -92,7 +84,7 @@ class TestProjectModel:
             description="An important project",
             status="active",
             priority="high",
-            completion_percentage=25.5
+            completion_percentage=25.5,
         )
         test_session.add(project)
         await test_session.commit()
@@ -103,10 +95,7 @@ class TestProjectModel:
     @pytest.mark.asyncio
     async def test_project_name_cannot_be_null(self, test_session):
         """Test that project name is required."""
-        project = Project(
-            description="A project without name",
-            status="active"
-        )
+        project = Project(description="A project without name", status="active")
         test_session.add(project)
 
         with pytest.raises(IntegrityError):
@@ -115,10 +104,7 @@ class TestProjectModel:
     @pytest.mark.asyncio
     async def test_project_description_cannot_be_null(self, test_session):
         """Test that project description is required."""
-        project = Project(
-            name="Test Project",
-            status="active"
-        )
+        project = Project(name="Test Project", status="active")
         test_session.add(project)
 
         with pytest.raises(IntegrityError):
@@ -127,10 +113,7 @@ class TestProjectModel:
     @pytest.mark.asyncio
     async def test_project_status_cannot_be_null(self, test_session):
         """Test that project status is required."""
-        project = Project(
-            name="Test Project",
-            description="Test Description"
-        )
+        project = Project(name="Test Project", description="Test Description")
         test_session.add(project)
 
         with pytest.raises(IntegrityError):
@@ -140,9 +123,7 @@ class TestProjectModel:
     async def test_project_repr(self, test_session):
         """Test project string representation."""
         project = Project(
-            name="Test Project",
-            description="Test Description",
-            status="active"
+            name="Test Project", description="Test Description", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -155,9 +136,7 @@ class TestProjectModel:
     async def test_project_can_have_issues(self, test_session):
         """Test that project can have multiple issues."""
         project = Project(
-            name="Test Project",
-            description="Test Description",
-            status="active"
+            name="Test Project", description="Test Description", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -167,14 +146,14 @@ class TestProjectModel:
             description="First test issue",
             type="feature",
             status="open",
-            project_id=project.id
+            project_id=project.id,
         )
         issue2 = Issue(
             title="Second Issue",
             description="Second test issue",
             type="bug",
             status="open",
-            project_id=project.id
+            project_id=project.id,
         )
 
         test_session.add_all([issue1, issue2])
@@ -192,14 +171,16 @@ class TestIssueModel:
     """Test the Issue model."""
 
     @pytest.mark.asyncio
-    async def test_create_issue_with_required_fields(self, test_session, sample_project):
+    async def test_create_issue_with_required_fields(
+        self, test_session, sample_project
+    ):
         """Test creating an issue with all required fields."""
         issue = Issue(
             title="Test Issue",
             description="A test issue",
             type="feature",
             status="open",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         test_session.add(issue)
         await test_session.commit()
@@ -212,7 +193,9 @@ class TestIssueModel:
         assert issue.project_id == sample_project.id
 
     @pytest.mark.asyncio
-    async def test_create_issue_with_optional_fields(self, test_session, sample_project):
+    async def test_create_issue_with_optional_fields(
+        self, test_session, sample_project
+    ):
         """Test creating an issue with optional fields."""
         issue = Issue(
             title="High Priority Bug",
@@ -221,7 +204,7 @@ class TestIssueModel:
             status="open",
             priority="high",
             assignee="john.doe@example.com",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         test_session.add(issue)
         await test_session.commit()
@@ -237,7 +220,7 @@ class TestIssueModel:
             description="A test issue",
             type="feature",
             status="open",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         test_session.add(issue)
         await test_session.commit()
@@ -253,7 +236,7 @@ class TestIssueModel:
             title="Orphan Issue",
             description="Issue without project",
             type="feature",
-            status="open"
+            status="open",
         )
         test_session.add(issue)
 
@@ -267,7 +250,7 @@ class TestIssueModel:
             description="Issue without title",
             type="feature",
             status="open",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         test_session.add(issue)
 
@@ -279,14 +262,16 @@ class TestDocumentModel:
     """Test the Document model."""
 
     @pytest.mark.asyncio
-    async def test_create_document_with_required_fields(self, test_session, sample_project):
+    async def test_create_document_with_required_fields(
+        self, test_session, sample_project
+    ):
         """Test creating a document with all required fields."""
         document = Document(
             title="Test Document",
             content="# Test Document\n\nThis is test content.",
             type="specification",
             format="markdown",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         test_session.add(document)
         await test_session.commit()
@@ -298,7 +283,9 @@ class TestDocumentModel:
         assert document.project_id == sample_project.id
 
     @pytest.mark.asyncio
-    async def test_create_document_with_optional_fields(self, test_session, sample_project):
+    async def test_create_document_with_optional_fields(
+        self, test_session, sample_project
+    ):
         """Test creating a document with optional fields."""
         document = Document(
             title="API Documentation",
@@ -307,7 +294,7 @@ class TestDocumentModel:
             format="markdown",
             version="1.0",
             author="jane.doe@example.com",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         test_session.add(document)
         await test_session.commit()
@@ -323,7 +310,7 @@ class TestDocumentModel:
             content="Test content",
             type="specification",
             format="markdown",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         test_session.add(document)
         await test_session.commit()
@@ -339,7 +326,7 @@ class TestDocumentModel:
             title="Orphan Document",
             content="Document without project",
             type="specification",
-            format="markdown"
+            format="markdown",
         )
         test_session.add(document)
 
@@ -353,10 +340,7 @@ class TestTagModel:
     @pytest.mark.asyncio
     async def test_create_tag_with_required_fields(self, test_session):
         """Test creating a tag with all required fields."""
-        tag = Tag(
-            name="frontend",
-            color="#FF5733"
-        )
+        tag = Tag(name="frontend", color="#FF5733")
         test_session.add(tag)
         await test_session.commit()
 
@@ -367,9 +351,7 @@ class TestTagModel:
     async def test_create_tag_with_optional_description(self, test_session):
         """Test creating a tag with optional description."""
         tag = Tag(
-            name="backend",
-            color="#33FF57",
-            description="Backend development tasks"
+            name="backend", color="#33FF57", description="Backend development tasks"
         )
         test_session.add(tag)
         await test_session.commit()
@@ -406,9 +388,7 @@ class TestModelRelationships:
     async def test_project_issues_relationship(self, test_session):
         """Test the relationship between projects and issues."""
         project = Project(
-            name="Test Project",
-            description="Test Description",
-            status="active"
+            name="Test Project", description="Test Description", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -418,14 +398,14 @@ class TestModelRelationships:
             description="First issue",
             type="feature",
             status="open",
-            project_id=project.id
+            project_id=project.id,
         )
         issue2 = Issue(
             title="Issue 2",
             description="Second issue",
             type="bug",
             status="closed",
-            project_id=project.id
+            project_id=project.id,
         )
 
         test_session.add_all([issue1, issue2])
@@ -443,9 +423,7 @@ class TestModelRelationships:
     async def test_project_documents_relationship(self, test_session):
         """Test the relationship between projects and documents."""
         project = Project(
-            name="Test Project",
-            description="Test Description",
-            status="active"
+            name="Test Project", description="Test Description", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -455,14 +433,14 @@ class TestModelRelationships:
             content="Content 1",
             type="specification",
             format="markdown",
-            project_id=project.id
+            project_id=project.id,
         )
         doc2 = Document(
             title="Doc 2",
             content="Content 2",
             type="user_guide",
             format="markdown",
-            project_id=project.id
+            project_id=project.id,
         )
 
         test_session.add_all([doc1, doc2])
@@ -489,7 +467,7 @@ class TestModelRelationships:
         project = Project(
             name="Full Stack Project",
             description="Both frontend and backend",
-            status="active"
+            status="active",
         )
         project.tags.extend([frontend_tag, backend_tag])
         test_session.add(project)
@@ -519,7 +497,7 @@ class TestModelRelationships:
             description="Critical bug needs immediate attention",
             type="bug",
             status="open",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         issue.tags.extend([bug_tag, urgent_tag])
         test_session.add(issue)
@@ -538,9 +516,7 @@ class TestModelRelationships:
     async def test_cascade_delete_project_issues(self, test_session):
         """Test that deleting a project cascades to its issues."""
         project = Project(
-            name="Temporary Project",
-            description="Will be deleted",
-            status="active"
+            name="Temporary Project", description="Will be deleted", status="active"
         )
         test_session.add(project)
         await test_session.commit()
@@ -550,7 +526,7 @@ class TestModelRelationships:
             description="This issue should be deleted with project",
             type="feature",
             status="open",
-            project_id=project.id
+            project_id=project.id,
         )
         test_session.add(issue)
         await test_session.commit()
@@ -561,6 +537,7 @@ class TestModelRelationships:
 
         # Verify issue is also deleted
         from sqlalchemy import select
+
         result = await test_session.execute(select(Issue).where(Issue.id == issue.id))
         deleted_issue = result.scalar_one_or_none()
         assert deleted_issue is None

@@ -22,7 +22,12 @@ def config_group():
 
 
 @config_group.command()
-@click.option('--format', type=click.Choice(['table', 'json']), default='table', help='Output format')
+@click.option(
+    "--format",
+    type=click.Choice(["table", "json"]),
+    default="table",
+    help="Output format",
+)
 @handle_exceptions
 def show(format):
     """Show current configuration."""
@@ -30,7 +35,7 @@ def show(format):
         settings = get_settings()
         config_dict = settings.model_dump()
 
-        if format == 'table':
+        if format == "table":
             _display_config_table(config_dict)
         else:
             console.print(json.dumps(config_dict, indent=2))
@@ -40,8 +45,8 @@ def show(format):
 
 
 @config_group.command()
-@click.argument('key')
-@click.argument('value')
+@click.argument("key")
+@click.argument("value")
 @handle_exceptions
 def set(key, value):
     """Set a configuration value."""
@@ -50,14 +55,16 @@ def set(key, value):
         # For now, show what would be set
         console.print(f"[green]Configuration updated:[/green]")
         console.print(f"  {key} = {value}")
-        console.print("[yellow]Note: Configuration writing not yet implemented[/yellow]")
+        console.print(
+            "[yellow]Note: Configuration writing not yet implemented[/yellow]"
+        )
 
     except Exception as e:
         console.print(f"[red]Failed to set configuration: {e}[/red]")
 
 
 @config_group.command()
-@click.argument('key')
+@click.argument("key")
 @handle_exceptions
 def get(key):
     """Get a configuration value."""
@@ -66,7 +73,7 @@ def get(key):
         config_dict = settings.model_dump()
 
         # Navigate nested keys (e.g., "database.url")
-        keys = key.split('.')
+        keys = key.split(".")
         value = config_dict
         for k in keys:
             if isinstance(value, dict) and k in value:
@@ -99,7 +106,11 @@ def validate():
         table.add_row("Database URL", db_status)
 
         # Environment check
-        env_status = "✓ Valid" if settings.environment in ['development', 'production', 'testing'] else "✗ Invalid"
+        env_status = (
+            "✓ Valid"
+            if settings.environment in ["development", "production", "testing"]
+            else "✗ Invalid"
+        )
         table.add_row("Environment", env_status)
 
         console.print(table)
@@ -113,9 +124,9 @@ def validate():
 def path():
     """Show configuration file paths."""
     config_paths = [
-        Path.cwd() / '.turbo' / 'config.toml',
-        Path.home() / '.turbo' / 'config.toml',
-        Path('/etc/turbo/config.toml')
+        Path.cwd() / ".turbo" / "config.toml",
+        Path.home() / ".turbo" / "config.toml",
+        Path("/etc/turbo/config.toml"),
     ]
 
     console.print("[blue]Configuration file search paths:[/blue]")

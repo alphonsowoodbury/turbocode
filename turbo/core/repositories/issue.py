@@ -50,9 +50,7 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
 
     async def search_by_title(self, title_pattern: str) -> List[Issue]:
         """Search issues by title pattern."""
-        stmt = select(self._model).where(
-            self._model.title.ilike(f"%{title_pattern}%")
-        )
+        stmt = select(self._model).where(self._model.title.ilike(f"%{title_pattern}%"))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -76,17 +74,14 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
 
     async def get_high_priority_issues(self) -> List[Issue]:
         """Get high priority and critical issues."""
-        stmt = select(self._model).where(
-            self._model.priority.in_(["high", "critical"])
-        )
+        stmt = select(self._model).where(self._model.priority.in_(["high", "critical"]))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_project_open_issues(self, project_id: UUID) -> List[Issue]:
         """Get open issues for a specific project."""
         stmt = select(self._model).where(
-            (self._model.project_id == project_id) &
-            (self._model.status == "open")
+            (self._model.project_id == project_id) & (self._model.status == "open")
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
@@ -94,8 +89,7 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
     async def get_project_closed_issues(self, project_id: UUID) -> List[Issue]:
         """Get closed issues for a specific project."""
         stmt = select(self._model).where(
-            (self._model.project_id == project_id) &
-            (self._model.status == "closed")
+            (self._model.project_id == project_id) & (self._model.status == "closed")
         )
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

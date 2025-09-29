@@ -30,17 +30,14 @@ class Issue(Base):
         UUID(as_uuid=True),
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     # Relationships
     project = relationship("Project", back_populates="issues")
 
     tags = relationship(
-        "Tag",
-        secondary=issue_tags,
-        back_populates="issues",
-        lazy="select"
+        "Tag", secondary=issue_tags, back_populates="issues", lazy="select"
     )
 
     def __repr__(self) -> str:

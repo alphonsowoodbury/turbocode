@@ -17,6 +17,7 @@ from sqlalchemy.pool import StaticPool
 
 from turbo.core.database import Base, get_db_session
 from turbo.core.models import Project, Issue, Document
+
 # from turbo.main import app  # Commented out for now since we need to fix circular imports
 
 
@@ -190,16 +191,23 @@ def mock_claude_service():
     from unittest.mock import AsyncMock, Mock
 
     mock_service = Mock()
-    mock_service.generate_spec = AsyncMock(return_value={
-        "title": "Generated Specification",
-        "content": "# Generated Content\n\nThis is AI-generated content.",
-        "metadata": {"model": "claude-3.5-sonnet", "timestamp": "2025-09-28T10:00:00Z"}
-    })
-    mock_service.analyze_project = AsyncMock(return_value={
-        "health_score": 85,
-        "recommendations": ["Add more tests", "Update documentation"],
-        "risks": ["Technical debt in module X"]
-    })
+    mock_service.generate_spec = AsyncMock(
+        return_value={
+            "title": "Generated Specification",
+            "content": "# Generated Content\n\nThis is AI-generated content.",
+            "metadata": {
+                "model": "claude-3.5-sonnet",
+                "timestamp": "2025-09-28T10:00:00Z",
+            },
+        }
+    )
+    mock_service.analyze_project = AsyncMock(
+        return_value={
+            "health_score": 85,
+            "recommendations": ["Add more tests", "Update documentation"],
+            "risks": ["Technical debt in module X"],
+        }
+    )
     return mock_service
 
 
@@ -223,12 +231,14 @@ def generate_projects(count: int = 5):
     """Generate multiple test projects."""
     projects = []
     for i in range(count):
-        projects.append({
-            "name": f"Test Project {i + 1}",
-            "description": f"Description for test project {i + 1}",
-            "priority": ["low", "medium", "high"][i % 3],
-            "status": ["active", "on_hold", "completed"][i % 3],
-        })
+        projects.append(
+            {
+                "name": f"Test Project {i + 1}",
+                "description": f"Description for test project {i + 1}",
+                "priority": ["low", "medium", "high"][i % 3],
+                "status": ["active", "on_hold", "completed"][i % 3],
+            }
+        )
     return projects
 
 
@@ -236,14 +246,16 @@ def generate_issues(project_id, count: int = 3):
     """Generate multiple test issues for a project."""
     issues = []
     for i in range(count):
-        issues.append({
-            "title": f"Test Issue {i + 1}",
-            "description": f"Description for test issue {i + 1}",
-            "type": ["feature", "bug", "task"][i % 3],
-            "status": ["open", "in_progress", "closed"][i % 3],
-            "priority": ["low", "medium", "high"][i % 3],
-            "project_id": project_id,
-        })
+        issues.append(
+            {
+                "title": f"Test Issue {i + 1}",
+                "description": f"Description for test issue {i + 1}",
+                "type": ["feature", "bug", "task"][i % 3],
+                "status": ["open", "in_progress", "closed"][i % 3],
+                "priority": ["low", "medium", "high"][i % 3],
+                "project_id": project_id,
+            }
+        )
     return issues
 
 
@@ -315,15 +327,9 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "slow: marks tests as slow (deselect with '-m \"not slow\"')"
     )
-    config.addinivalue_line(
-        "markers", "integration: marks tests as integration tests"
-    )
-    config.addinivalue_line(
-        "markers", "unit: marks tests as unit tests"
-    )
-    config.addinivalue_line(
-        "markers", "e2e: marks tests as end-to-end tests"
-    )
+    config.addinivalue_line("markers", "integration: marks tests as integration tests")
+    config.addinivalue_line("markers", "unit: marks tests as unit tests")
+    config.addinivalue_line("markers", "e2e: marks tests as end-to-end tests")
     config.addinivalue_line(
         "markers", "claude: marks tests that require Claude integration"
     )

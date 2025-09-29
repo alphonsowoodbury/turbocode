@@ -41,18 +41,14 @@ class ProjectService:
         return ProjectResponse.model_validate(project)
 
     async def get_all_projects(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[ProjectResponse]:
         """Get all projects with optional pagination."""
         projects = await self._project_repository.get_all(limit=limit, offset=offset)
         return [ProjectResponse.model_validate(project) for project in projects]
 
     async def update_project(
-        self,
-        project_id: UUID,
-        update_data: ProjectUpdate
+        self, project_id: UUID, update_data: ProjectUpdate
     ) -> ProjectResponse:
         """Update a project."""
         project = await self._project_repository.update(project_id, update_data)
@@ -91,7 +87,9 @@ class ProjectService:
         total_issues = len(issues)
         open_issues = len([issue for issue in issues if issue.status == "open"])
         closed_issues = len([issue for issue in issues if issue.status == "closed"])
-        in_progress_issues = len([issue for issue in issues if issue.status == "in_progress"])
+        in_progress_issues = len(
+            [issue for issue in issues if issue.status == "in_progress"]
+        )
 
         completion_rate = 0.0
         if total_issues > 0:
@@ -120,7 +118,7 @@ class ProjectService:
             total_issues=stats["total_issues"],
             open_issues=stats["open_issues"],
             closed_issues=stats["closed_issues"],
-            completion_rate=stats["completion_rate"]
+            completion_rate=stats["completion_rate"],
         )
 
     async def get_projects_by_status(self, status: str) -> List[ProjectResponse]:
@@ -129,21 +127,19 @@ class ProjectService:
         return [ProjectResponse.model_validate(project) for project in projects]
 
     async def get_active_projects(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[ProjectResponse]:
         """Get active (non-archived) projects."""
         projects = await self._project_repository.get_active(limit=limit, offset=offset)
         return [ProjectResponse.model_validate(project) for project in projects]
 
     async def get_archived_projects(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[ProjectResponse]:
         """Get archived projects."""
-        projects = await self._project_repository.get_archived(limit=limit, offset=offset)
+        projects = await self._project_repository.get_archived(
+            limit=limit, offset=offset
+        )
         return [ProjectResponse.model_validate(project) for project in projects]
 
     async def search_projects(self, name_pattern: str) -> List[ProjectResponse]:
@@ -157,9 +153,7 @@ class ProjectService:
         return [ProjectResponse.model_validate(project) for project in projects]
 
     async def update_project_completion(
-        self,
-        project_id: UUID,
-        completion_percentage: float
+        self, project_id: UUID, completion_percentage: float
     ) -> ProjectResponse:
         """Update project completion percentage."""
         update_data = ProjectUpdate(completion_percentage=completion_percentage)

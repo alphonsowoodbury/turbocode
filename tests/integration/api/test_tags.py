@@ -14,7 +14,7 @@ class TestTagAPI:
         tag_data = {
             "name": "frontend",
             "color": "#FF5733",
-            "description": "Frontend development related"
+            "description": "Frontend development related",
         }
 
         response = await test_client.post("/api/v1/tags/", json=tag_data)
@@ -29,10 +29,7 @@ class TestTagAPI:
     @pytest.mark.asyncio
     async def test_create_tag_validation_error(self, test_client: AsyncClient):
         """Test tag creation with invalid data."""
-        invalid_data = {
-            "name": "",  # Empty name should fail
-            "color": "#FF5733"
-        }
+        invalid_data = {"name": "", "color": "#FF5733"}  # Empty name should fail
 
         response = await test_client.post("/api/v1/tags/", json=invalid_data)
 
@@ -41,10 +38,7 @@ class TestTagAPI:
     @pytest.mark.asyncio
     async def test_create_tag_duplicate_name(self, test_client: AsyncClient):
         """Test creating tag with duplicate name."""
-        tag_data = {
-            "name": "backend",
-            "color": "#33FF57"
-        }
+        tag_data = {"name": "backend", "color": "#33FF57"}
 
         # Create first tag
         response1 = await test_client.post("/api/v1/tags/", json=tag_data)
@@ -84,7 +78,7 @@ class TestTagAPI:
         tags_data = [
             {"name": "api", "color": "#FF3333"},
             {"name": "database", "color": "#33FF33"},
-            {"name": "ui", "color": "#3333FF"}
+            {"name": "ui", "color": "#3333FF"},
         ]
 
         for tag_data in tags_data:
@@ -118,13 +112,10 @@ class TestTagAPI:
         update_data = {
             "name": "performance-optimization",
             "color": "#FF8833",
-            "description": "Performance optimization tasks"
+            "description": "Performance optimization tasks",
         }
 
-        response = await test_client.put(
-            f"/api/v1/tags/{tag_id}",
-            json=update_data
-        )
+        response = await test_client.put(f"/api/v1/tags/{tag_id}", json=update_data)
 
         assert response.status_code == 200
         data = response.json()
@@ -139,8 +130,7 @@ class TestTagAPI:
         update_data = {"name": "updated-name"}
 
         response = await test_client.put(
-            f"/api/v1/tags/{non_existent_id}",
-            json=update_data
+            f"/api/v1/tags/{non_existent_id}", json=update_data
         )
 
         assert response.status_code == 404
@@ -176,7 +166,7 @@ class TestTagAPI:
         tags_data = [
             {"name": "javascript", "color": "#F7DF1E"},
             {"name": "java", "color": "#ED8B00"},
-            {"name": "python", "color": "#3776AB"}
+            {"name": "python", "color": "#3776AB"},
         ]
 
         for tag_data in tags_data:
@@ -242,7 +232,7 @@ class TestTagAPIValidation:
         """Test creating tag with invalid color format."""
         invalid_data = {
             "name": "invalid-color-tag",
-            "color": "red"  # Should be hex format
+            "color": "red",  # Should be hex format
         }
 
         response = await test_client.post("/api/v1/tags/", json=invalid_data)
@@ -252,10 +242,7 @@ class TestTagAPIValidation:
     @pytest.mark.asyncio
     async def test_color_case_insensitive(self, test_client: AsyncClient):
         """Test that color validation is case insensitive."""
-        tag_data = {
-            "name": "case-test",
-            "color": "#ff5733"  # lowercase hex
-        }
+        tag_data = {"name": "case-test", "color": "#ff5733"}  # lowercase hex
 
         response = await test_client.post("/api/v1/tags/", json=tag_data)
 
@@ -268,10 +255,7 @@ class TestTagAPIValidation:
         """Test tag name length validation."""
         # Too long name
         long_name = "a" * 51  # Assuming max length is 50
-        invalid_data = {
-            "name": long_name,
-            "color": "#FF5733"
-        }
+        invalid_data = {"name": long_name, "color": "#FF5733"}
 
         response = await test_client.post("/api/v1/tags/", json=invalid_data)
 
@@ -285,7 +269,7 @@ class TestTagAPIValidation:
         invalid_data = {
             "name": "test-tag",
             "color": "#FF5733",
-            "description": long_description
+            "description": long_description,
         }
 
         response = await test_client.post("/api/v1/tags/", json=invalid_data)
@@ -295,10 +279,7 @@ class TestTagAPIValidation:
     @pytest.mark.asyncio
     async def test_whitespace_name_validation(self, test_client: AsyncClient):
         """Test that tag names with only whitespace are rejected."""
-        invalid_data = {
-            "name": "   ",  # Only whitespace
-            "color": "#FF5733"
-        }
+        invalid_data = {"name": "   ", "color": "#FF5733"}  # Only whitespace
 
         response = await test_client.post("/api/v1/tags/", json=invalid_data)
 
@@ -325,7 +306,9 @@ class TestTagAPIRelationships:
         assert "total_usage" in data
 
     @pytest.mark.asyncio
-    async def test_get_projects_with_tag(self, test_client: AsyncClient, sample_project):
+    async def test_get_projects_with_tag(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test getting projects that have a specific tag."""
         # Create a tag and associate it with project
         tag_data = {"name": "project-tag", "color": "#654321"}
@@ -373,16 +356,14 @@ class TestTagAPIRelationships:
         # Bulk assign tags to project
         bulk_data = {"tag_ids": tag_ids}
         response = await test_client.post(
-            f"/api/v1/projects/{sample_project.id}/tags/bulk-assign",
-            json=bulk_data
+            f"/api/v1/projects/{sample_project.id}/tags/bulk-assign", json=bulk_data
         )
 
         assert response.status_code == 200
 
         # Bulk remove tags from project
         response = await test_client.post(
-            f"/api/v1/projects/{sample_project.id}/tags/bulk-remove",
-            json=bulk_data
+            f"/api/v1/projects/{sample_project.id}/tags/bulk-remove", json=bulk_data
         )
 
         assert response.status_code == 200

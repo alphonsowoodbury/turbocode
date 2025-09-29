@@ -14,7 +14,9 @@ class ProjectBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: str = Field(..., min_length=1)
     priority: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
-    status: str = Field(default="active", pattern="^(active|on_hold|completed|archived)$")
+    status: str = Field(
+        default="active", pattern="^(active|on_hold|completed|archived)$"
+    )
     completion_percentage: Optional[float] = Field(default=0.0, ge=0.0, le=100.0)
 
     @field_validator("name")

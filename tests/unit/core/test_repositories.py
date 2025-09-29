@@ -60,7 +60,7 @@ class TestProjectRepository:
             name="Test Project",
             description="A test project for repository testing",
             priority="high",
-            status="active"
+            status="active",
         )
 
         created_project = await project_repo.create(project_data)
@@ -142,9 +142,7 @@ class TestProjectRepository:
         original_updated_at = sample_project.updated_at
 
         update_data = ProjectUpdate(
-            name="Updated Project Name",
-            priority="critical",
-            completion_percentage=75.0
+            name="Updated Project Name", priority="critical", completion_percentage=75.0
         )
 
         updated_project = await project_repo.update(sample_project.id, update_data)
@@ -172,8 +170,7 @@ class TestProjectRepository:
         """Test deleting a project."""
         # Create a project to delete
         project_data = ProjectCreate(
-            name="Project to Delete",
-            description="This project will be deleted"
+            name="Project to Delete", description="This project will be deleted"
         )
         project = await project_repo.create(project_data)
         project_id = project.id
@@ -204,7 +201,9 @@ class TestProjectRepository:
             ProjectCreate(name="Active Project", description="Active", status="active")
         )
         completed_project = await project_repo.create(
-            ProjectCreate(name="Completed Project", description="Done", status="completed")
+            ProjectCreate(
+                name="Completed Project", description="Done", status="completed"
+            )
         )
 
         # Get active projects
@@ -250,16 +249,12 @@ class TestProjectRepository:
         issue_repo = IssueRepository(test_session)
         await issue_repo.create(
             IssueCreate(
-                title="Issue 1",
-                description="First issue",
-                project_id=project.id
+                title="Issue 1", description="First issue", project_id=project.id
             )
         )
         await issue_repo.create(
             IssueCreate(
-                title="Issue 2",
-                description="Second issue",
-                project_id=project.id
+                title="Issue 2", description="Second issue", project_id=project.id
             )
         )
 
@@ -290,7 +285,7 @@ class TestIssueRepository:
             type="bug",
             status="open",
             priority="high",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
 
         created_issue = await issue_repo.create(issue_data)
@@ -316,14 +311,16 @@ class TestIssueRepository:
         assert retrieved_issue.description == sample_issue.description
 
     @pytest.mark.asyncio
-    async def test_get_issues_by_project(self, issue_repo, sample_project, test_session):
+    async def test_get_issues_by_project(
+        self, issue_repo, sample_project, test_session
+    ):
         """Test retrieving all issues for a project."""
         # Create multiple issues for the project
         issues_data = [
             IssueCreate(
                 title=f"Issue {i}",
                 description=f"Description {i}",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
             for i in range(3)
         ]
@@ -351,7 +348,7 @@ class TestIssueRepository:
                 title="Open Issue",
                 description="Open",
                 status="open",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
         )
         closed_issue = await issue_repo.create(
@@ -359,7 +356,7 @@ class TestIssueRepository:
                 title="Closed Issue",
                 description="Closed",
                 status="closed",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
         )
 
@@ -382,7 +379,7 @@ class TestIssueRepository:
             title="Updated Issue Title",
             status="in_progress",
             priority="critical",
-            assignee="developer@example.com"
+            assignee="developer@example.com",
         )
 
         updated_issue = await issue_repo.update(sample_issue.id, update_data)
@@ -403,7 +400,7 @@ class TestIssueRepository:
         issue_data = IssueCreate(
             title="Issue to Delete",
             description="This issue will be deleted",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         issue = await issue_repo.create(issue_data)
         issue_id = issue.id
@@ -425,21 +422,21 @@ class TestIssueRepository:
             IssueCreate(
                 title="Fix authentication bug",
                 description="Auth issue",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
         )
         await issue_repo.create(
             IssueCreate(
                 title="Add user authentication",
                 description="New auth feature",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
         )
         await issue_repo.create(
             IssueCreate(
                 title="Update database schema",
                 description="DB changes",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
         )
 
@@ -467,7 +464,7 @@ class TestDocumentRepository:
             content="# Test Document\n\nThis is test content.",
             type="specification",
             format="markdown",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
 
         created_document = await document_repo.create(document_data)
@@ -501,7 +498,7 @@ class TestDocumentRepository:
                 content=f"Content {i}",
                 type="specification",
                 format="markdown",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
             for i in range(3)
         ]
@@ -530,7 +527,7 @@ class TestDocumentRepository:
                 content="Spec content",
                 type="specification",
                 format="markdown",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
         )
         api_doc = await document_repo.create(
@@ -539,7 +536,7 @@ class TestDocumentRepository:
                 content="API content",
                 type="api_doc",
                 format="markdown",
-                project_id=sample_project.id
+                project_id=sample_project.id,
             )
         )
 
@@ -561,7 +558,7 @@ class TestDocumentRepository:
         update_data = DocumentUpdate(
             title="Updated Document Title",
             content="# Updated Content\n\nThis is updated content.",
-            version="2.0"
+            version="2.0",
         )
 
         updated_document = await document_repo.update(sample_document.id, update_data)
@@ -569,7 +566,9 @@ class TestDocumentRepository:
         assert updated_document is not None
         assert updated_document.id == sample_document.id
         assert updated_document.title == "Updated Document Title"
-        assert updated_document.content == "# Updated Content\n\nThis is updated content."
+        assert (
+            updated_document.content == "# Updated Content\n\nThis is updated content."
+        )
         assert updated_document.version == "2.0"
         assert updated_document.type == sample_document.type  # Unchanged
         assert updated_document.updated_at > original_updated_at
@@ -583,7 +582,7 @@ class TestDocumentRepository:
             content="This document will be deleted",
             type="specification",
             format="markdown",
-            project_id=sample_project.id
+            project_id=sample_project.id,
         )
         document = await document_repo.create(document_data)
         document_id = document.id
@@ -610,9 +609,7 @@ class TestTagRepository:
     async def test_create_tag(self, tag_repo):
         """Test creating a new tag."""
         tag_data = TagCreate(
-            name="frontend",
-            color="#FF5733",
-            description="Frontend development tasks"
+            name="frontend", color="#FF5733", description="Frontend development tasks"
         )
 
         created_tag = await tag_repo.create(tag_data)
@@ -684,9 +681,7 @@ class TestTagRepository:
 
         # Update it
         update_data = TagCreate(
-            name="updated",
-            color="#FFFFFF",
-            description="Updated description"
+            name="updated", color="#FFFFFF", description="Updated description"
         )
 
         updated_tag = await tag_repo.update(created_tag.id, update_data)
@@ -741,7 +736,7 @@ class TestRepositoryErrorHandling:
         issue_data = IssueCreate(
             title="Invalid Issue",
             description="Issue with invalid project",
-            project_id=invalid_project_id
+            project_id=invalid_project_id,
         )
 
         with pytest.raises(IntegrityError):

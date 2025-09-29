@@ -5,8 +5,18 @@ import logging
 import sys
 from rich.console import Console
 
-from turbo.core.repositories import ProjectRepository, IssueRepository, DocumentRepository, TagRepository
-from turbo.core.services import ProjectService, IssueService, DocumentService, TagService
+from turbo.core.repositories import (
+    ProjectRepository,
+    IssueRepository,
+    DocumentRepository,
+    TagRepository,
+)
+from turbo.core.services import (
+    ProjectService,
+    IssueService,
+    DocumentService,
+    TagService,
+)
 
 console = Console()
 

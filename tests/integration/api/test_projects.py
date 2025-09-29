@@ -17,7 +17,7 @@ class TestProjectAPI:
             "name": "Test Project",
             "description": "A test project",
             "priority": "high",
-            "status": "active"
+            "status": "active",
         }
 
         response = await test_client.post("/api/v1/projects/", json=project_data)
@@ -37,7 +37,7 @@ class TestProjectAPI:
         """Test project creation with invalid data."""
         invalid_data = {
             "name": "",  # Empty name should fail
-            "description": "A test project"
+            "description": "A test project",
         }
 
         response = await test_client.post("/api/v1/projects/", json=invalid_data)
@@ -46,7 +46,9 @@ class TestProjectAPI:
         assert "detail" in response.json()
 
     @pytest.mark.asyncio
-    async def test_get_project_by_id_success(self, test_client: AsyncClient, sample_project):
+    async def test_get_project_by_id_success(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test getting project by ID."""
         response = await test_client.get(f"/api/v1/projects/{sample_project.id}")
 
@@ -81,7 +83,9 @@ class TestProjectAPI:
         assert "description" in project
 
     @pytest.mark.asyncio
-    async def test_get_projects_with_pagination(self, test_client: AsyncClient, populated_database):
+    async def test_get_projects_with_pagination(
+        self, test_client: AsyncClient, populated_database
+    ):
         """Test getting projects with pagination."""
         response = await test_client.get("/api/v1/projects?limit=2&offset=1")
 
@@ -91,16 +95,14 @@ class TestProjectAPI:
         assert len(data) <= 2
 
     @pytest.mark.asyncio
-    async def test_update_project_success(self, test_client: AsyncClient, sample_project):
+    async def test_update_project_success(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test successful project update."""
-        update_data = {
-            "name": "Updated Project Name",
-            "priority": "critical"
-        }
+        update_data = {"name": "Updated Project Name", "priority": "critical"}
 
         response = await test_client.put(
-            f"/api/v1/projects/{sample_project.id}",
-            json=update_data
+            f"/api/v1/projects/{sample_project.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -116,14 +118,15 @@ class TestProjectAPI:
         update_data = {"name": "Updated Name"}
 
         response = await test_client.put(
-            f"/api/v1/projects/{non_existent_id}",
-            json=update_data
+            f"/api/v1/projects/{non_existent_id}", json=update_data
         )
 
         assert response.status_code == 404
 
     @pytest.mark.asyncio
-    async def test_delete_project_success(self, test_client: AsyncClient, sample_project):
+    async def test_delete_project_success(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test successful project deletion."""
         response = await test_client.delete(f"/api/v1/projects/{sample_project.id}")
 
@@ -140,14 +143,18 @@ class TestProjectAPI:
     @pytest.mark.asyncio
     async def test_archive_project(self, test_client: AsyncClient, sample_project):
         """Test archiving a project."""
-        response = await test_client.post(f"/api/v1/projects/{sample_project.id}/archive")
+        response = await test_client.post(
+            f"/api/v1/projects/{sample_project.id}/archive"
+        )
 
         assert response.status_code == 200
         data = response.json()
         assert data["is_archived"] is True
 
     @pytest.mark.asyncio
-    async def test_get_project_statistics(self, test_client: AsyncClient, sample_project):
+    async def test_get_project_statistics(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test getting project statistics."""
         response = await test_client.get(f"/api/v1/projects/{sample_project.id}/stats")
 
@@ -168,7 +175,9 @@ class TestProjectAPI:
         assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_projects_by_status(self, test_client: AsyncClient, populated_database):
+    async def test_get_projects_by_status(
+        self, test_client: AsyncClient, populated_database
+    ):
         """Test filtering projects by status."""
         response = await test_client.get("/api/v1/projects?status=active")
 
@@ -181,7 +190,9 @@ class TestProjectAPI:
             assert project["status"] == "active"
 
     @pytest.mark.asyncio
-    async def test_get_projects_by_priority(self, test_client: AsyncClient, populated_database):
+    async def test_get_projects_by_priority(
+        self, test_client: AsyncClient, populated_database
+    ):
         """Test filtering projects by priority."""
         response = await test_client.get("/api/v1/projects?priority=high")
 
@@ -216,7 +227,7 @@ class TestProjectAPIErrorHandling:
             "name": "Test Project",
             "description": "Test description",
             "priority": "invalid_priority",  # Invalid priority
-            "completion_percentage": 150.0  # Invalid percentage
+            "completion_percentage": 150.0,  # Invalid percentage
         }
 
         response = await test_client.post("/api/v1/projects/", json=invalid_data)
@@ -248,7 +259,9 @@ class TestProjectAPIRelationships:
     """Test project API with related entities."""
 
     @pytest.mark.asyncio
-    async def test_get_project_with_issues(self, test_client: AsyncClient, sample_project, sample_issue):
+    async def test_get_project_with_issues(
+        self, test_client: AsyncClient, sample_project, sample_issue
+    ):
         """Test getting project with its issues."""
         response = await test_client.get(f"/api/v1/projects/{sample_project.id}/issues")
 
@@ -257,9 +270,13 @@ class TestProjectAPIRelationships:
         assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_project_with_documents(self, test_client: AsyncClient, sample_project, sample_document):
+    async def test_get_project_with_documents(
+        self, test_client: AsyncClient, sample_project, sample_document
+    ):
         """Test getting project with its documents."""
-        response = await test_client.get(f"/api/v1/projects/{sample_project.id}/documents")
+        response = await test_client.get(
+            f"/api/v1/projects/{sample_project.id}/documents"
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -283,7 +300,9 @@ class TestProjectAPIRelationships:
         assert response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_remove_tag_from_project(self, test_client: AsyncClient, sample_project):
+    async def test_remove_tag_from_project(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test removing tags from a project."""
         # Assuming we have a tag associated with the project
         tag_data = {"name": "backend", "color": "#33FF57"}

@@ -16,10 +16,7 @@ class DatabaseSettings(BaseSettings):
     pool_size: int = 5
     max_overflow: int = 10
 
-    model_config = {
-        "env_prefix": "DATABASE_",
-        "env_file": ".env"
-    }
+    model_config = {"env_prefix": "DATABASE_", "env_file": ".env"}
 
 
 class APISettings(BaseSettings):
@@ -30,10 +27,7 @@ class APISettings(BaseSettings):
     workers: int = 1
     reload: bool = False
 
-    model_config = {
-        "env_prefix": "API_",
-        "env_file": ".env"
-    }
+    model_config = {"env_prefix": "API_", "env_file": ".env"}
 
 
 class WebSettings(BaseSettings):
@@ -43,10 +37,7 @@ class WebSettings(BaseSettings):
     port: int = 8501
     enable_ui: bool = True
 
-    model_config = {
-        "env_prefix": "WEB_",
-        "env_file": ".env"
-    }
+    model_config = {"env_prefix": "WEB_", "env_file": ".env"}
 
 
 class ClaudeSettings(BaseSettings):
@@ -57,10 +48,7 @@ class ClaudeSettings(BaseSettings):
     templates_directory: str = ".turbo/templates"
     responses_directory: str = ".turbo/responses"
 
-    model_config = {
-        "env_prefix": "CLAUDE_",
-        "env_file": ".env"
-    }
+    model_config = {"env_prefix": "CLAUDE_", "env_file": ".env"}
 
 
 class SecuritySettings(BaseSettings):
@@ -77,10 +65,7 @@ class SecuritySettings(BaseSettings):
             return [origin.strip() for origin in v.split(",")]
         return v
 
-    model_config = {
-        "env_prefix": "SECURITY_",
-        "env_file": ".env"
-    }
+    model_config = {"env_prefix": "SECURITY_", "env_file": ".env"}
 
 
 class FeatureSettings(BaseSettings):
@@ -98,10 +83,7 @@ class FeatureSettings(BaseSettings):
             return [fmt.strip() for fmt in v.split(",")]
         return v
 
-    model_config = {
-        "env_prefix": "FEATURE_",
-        "env_file": ".env"
-    }
+    model_config = {"env_prefix": "FEATURE_", "env_file": ".env"}
 
 
 class Settings(BaseSettings):
@@ -135,13 +117,15 @@ class Settings(BaseSettings):
         """Validate environment."""
         valid_environments = ["development", "testing", "production"]
         if v.lower() not in valid_environments:
-            raise ValueError(f"Invalid environment: {v}. Must be one of {valid_environments}")
+            raise ValueError(
+                f"Invalid environment: {v}. Must be one of {valid_environments}"
+            )
         return v.lower()
 
     model_config = {
         "env_file": ".env",
         "env_nested_delimiter": "__",
-        "case_sensitive": False
+        "case_sensitive": False,
     }
 
     def is_development(self) -> bool:

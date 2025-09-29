@@ -42,18 +42,14 @@ class IssueService:
         return IssueResponse.model_validate(issue)
 
     async def get_all_issues(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[IssueResponse]:
         """Get all issues with optional pagination."""
         issues = await self._issue_repository.get_all(limit=limit, offset=offset)
         return [IssueResponse.model_validate(issue) for issue in issues]
 
     async def update_issue(
-        self,
-        issue_id: UUID,
-        update_data: IssueUpdate
+        self, issue_id: UUID, update_data: IssueUpdate
     ) -> IssueResponse:
         """Update an issue."""
         issue = await self._issue_repository.update(issue_id, update_data)

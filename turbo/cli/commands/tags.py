@@ -17,21 +17,32 @@ from turbo.utils.exceptions import TagNotFoundError, ValidationError
 console = Console()
 
 # Valid choices for CLI options
-COLOR_CHOICES = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'gray', 'black', 'white']
-FORMAT_CHOICES = ['table', 'json', 'csv']
+COLOR_CHOICES = [
+    "red",
+    "blue",
+    "green",
+    "yellow",
+    "purple",
+    "orange",
+    "pink",
+    "gray",
+    "black",
+    "white",
+]
+FORMAT_CHOICES = ["table", "json", "csv"]
 
 # Color name to hex mapping
 COLOR_HEX_MAP = {
-    'red': '#FF0000',
-    'blue': '#0000FF',
-    'green': '#00FF00',
-    'yellow': '#FFFF00',
-    'purple': '#800080',
-    'orange': '#FFA500',
-    'pink': '#FFC0CB',
-    'gray': '#808080',
-    'black': '#000000',
-    'white': '#FFFFFF'
+    "red": "#FF0000",
+    "blue": "#0000FF",
+    "green": "#00FF00",
+    "yellow": "#FFFF00",
+    "purple": "#800080",
+    "orange": "#FFA500",
+    "pink": "#FFC0CB",
+    "gray": "#808080",
+    "black": "#000000",
+    "white": "#FFFFFF",
 }
 
 # Reverse mapping for display
@@ -50,12 +61,15 @@ def tags_group():
 
 
 @tags_group.command()
-@click.option('--name', required=True, help='Tag name')
-@click.option('--description', help='Tag description')
-@click.option('--color', type=click.Choice(COLOR_CHOICES), default='blue', help='Tag color')
+@click.option("--name", required=True, help="Tag name")
+@click.option("--description", help="Tag description")
+@click.option(
+    "--color", type=click.Choice(COLOR_CHOICES), default="blue", help="Tag color"
+)
 @handle_exceptions
 def create(name, description, color):
     """Create a new tag."""
+
     async def _create():
         async for session in get_db_session():
             service = create_tag_service(session)
@@ -63,7 +77,7 @@ def create(name, description, color):
             tag_data = TagCreate(
                 name=name,
                 description=description,
-                color=COLOR_HEX_MAP.get(color, color)  # Convert color name to hex
+                color=COLOR_HEX_MAP.get(color, color),  # Convert color name to hex
             )
 
             tag = await service.create_tag(tag_data)
@@ -81,13 +95,16 @@ def create(name, description, color):
 
 
 @tags_group.command()
-@click.option('--color', type=click.Choice(COLOR_CHOICES), help='Filter by color')
-@click.option('--format', type=click.Choice(FORMAT_CHOICES), default='table', help='Output format')
-@click.option('--limit', type=int, help='Limit number of results')
-@click.option('--offset', type=int, help='Offset for pagination')
+@click.option("--color", type=click.Choice(COLOR_CHOICES), help="Filter by color")
+@click.option(
+    "--format", type=click.Choice(FORMAT_CHOICES), default="table", help="Output format"
+)
+@click.option("--limit", type=int, help="Limit number of results")
+@click.option("--offset", type=int, help="Offset for pagination")
 @handle_exceptions
 def list(color, format, limit, offset):
     """List all tags."""
+
     async def _list():
         async for session in get_db_session():
             service = create_tag_service(session)
@@ -102,23 +119,27 @@ def list(color, format, limit, offset):
                 console.print("[yellow]No tags found[/yellow]")
                 return
 
-            if format == 'table':
+            if format == "table":
                 _display_tags_table(tags)
-            elif format == 'json':
+            elif format == "json":
                 import json
-                console.print(json.dumps([t.model_dump() for t in tags], indent=2, default=str))
-            elif format == 'csv':
+
+                console.print(
+                    json.dumps([t.model_dump() for t in tags], indent=2, default=str)
+                )
+            elif format == "csv":
                 _display_tags_csv(tags)
 
     run_async(_list())
 
 
 @tags_group.command()
-@click.argument('tag_id', type=click.UUID)
-@click.option('--detailed', is_flag=True, help='Show detailed information')
+@click.argument("tag_id", type=click.UUID)
+@click.option("--detailed", is_flag=True, help="Show detailed information")
 @handle_exceptions
 def get(tag_id, detailed):
     """Get tag by ID."""
+
     async def _get():
         async for session in get_db_session():
             service = create_tag_service(session)
@@ -139,13 +160,14 @@ def get(tag_id, detailed):
 
 
 @tags_group.command()
-@click.argument('tag_id', type=click.UUID)
-@click.option('--name', help='Update tag name')
-@click.option('--description', help='Update tag description')
-@click.option('--color', type=click.Choice(COLOR_CHOICES), help='Update tag color')
+@click.argument("tag_id", type=click.UUID)
+@click.option("--name", help="Update tag name")
+@click.option("--description", help="Update tag description")
+@click.option("--color", type=click.Choice(COLOR_CHOICES), help="Update tag color")
 @handle_exceptions
 def update(tag_id, name, description, color):
     """Update a tag."""
+
     async def _update():
         async for session in get_db_session():
             service = create_tag_service(session)
@@ -153,11 +175,13 @@ def update(tag_id, name, description, color):
             # Build update data from provided options
             update_data = {}
             if name:
-                update_data['name'] = name
+                update_data["name"] = name
             if description is not None:  # Allow empty string
-                update_data['description'] = description
+                update_data["description"] = description
             if color:
-                update_data['color'] = COLOR_HEX_MAP.get(color, color)  # Convert color name to hex
+                update_data["color"] = COLOR_HEX_MAP.get(
+                    color, color
+                )  # Convert color name to hex
 
             if not update_data:
                 console.print("[yellow]No updates provided[/yellow]")
@@ -179,13 +203,13 @@ def update(tag_id, name, description, color):
 
 
 @tags_group.command()
-@click.argument('tag_id', type=click.UUID)
-@click.option('--confirm', is_flag=True, help='Skip confirmation prompt')
+@click.argument("tag_id", type=click.UUID)
+@click.option("--confirm", is_flag=True, help="Skip confirmation prompt")
 @handle_exceptions
 def delete(tag_id, confirm):
     """Delete a tag."""
     if not confirm:
-        if not click.confirm('Are you sure you want to delete this tag?'):
+        if not click.confirm("Are you sure you want to delete this tag?"):
             console.print("[yellow]Operation cancelled[/yellow]")
             return
 
@@ -204,11 +228,14 @@ def delete(tag_id, confirm):
 
 
 @tags_group.command()
-@click.argument('query')
-@click.option('--format', type=click.Choice(FORMAT_CHOICES), default='table', help='Output format')
+@click.argument("query")
+@click.option(
+    "--format", type=click.Choice(FORMAT_CHOICES), default="table", help="Output format"
+)
 @handle_exceptions
 def search(query, format):
     """Search tags by name."""
+
     async def _search():
         async for session in get_db_session():
             service = create_tag_service(session)
@@ -221,20 +248,26 @@ def search(query, format):
 
             console.print(f"[blue]Found {len(tags)} tag(s) matching '{query}':[/blue]")
 
-            if format == 'table':
+            if format == "table":
                 _display_tags_table(tags)
-            elif format == 'json':
+            elif format == "json":
                 import json
-                console.print(json.dumps([t.model_dump() for t in tags], indent=2, default=str))
+
+                console.print(
+                    json.dumps([t.model_dump() for t in tags], indent=2, default=str)
+                )
 
     run_async(_search())
 
 
 @tags_group.command()
-@click.option('--format', type=click.Choice(FORMAT_CHOICES), default='table', help='Output format')
+@click.option(
+    "--format", type=click.Choice(FORMAT_CHOICES), default="table", help="Output format"
+)
 @handle_exceptions
 def usage(format):
     """Show tag usage statistics."""
+
     async def _usage():
         async for session in get_db_session():
             service = create_tag_service(session)
@@ -247,7 +280,7 @@ def usage(format):
 
             console.print("[blue]Tag Usage Statistics:[/blue]")
 
-            if format == 'table':
+            if format == "table":
                 table = Table(box=box.SIMPLE_HEAD)
                 table.add_column("Tag", style="bold")
                 table.add_column("Color", style="cyan")
@@ -260,23 +293,26 @@ def usage(format):
                     tag_name = f"[{stat.get('color', 'white')}]{stat.get('name', 'Unknown')}[/{stat.get('color', 'white')}]"
                     table.add_row(
                         tag_name,
-                        stat.get('color', 'Unknown'),
-                        str(stat.get('project_count', 0)),
-                        str(stat.get('issue_count', 0)),
-                        str(stat.get('document_count', 0)),
-                        str(stat.get('total_usage', 0))
+                        stat.get("color", "Unknown"),
+                        str(stat.get("project_count", 0)),
+                        str(stat.get("issue_count", 0)),
+                        str(stat.get("document_count", 0)),
+                        str(stat.get("total_usage", 0)),
                     )
 
                 console.print(table)
 
-            elif format == 'json':
+            elif format == "json":
                 import json
+
                 console.print(json.dumps(stats, indent=2, default=str))
 
-            elif format == 'csv':
+            elif format == "csv":
                 console.print("Tag,Color,Projects,Issues,Documents,Total")
                 for stat in stats:
-                    console.print(f"{stat.get('name', 'Unknown')},{stat.get('color', 'Unknown')},{stat.get('project_count', 0)},{stat.get('issue_count', 0)},{stat.get('document_count', 0)},{stat.get('total_usage', 0)}")
+                    console.print(
+                        f"{stat.get('name', 'Unknown')},{stat.get('color', 'Unknown')},{stat.get('project_count', 0)},{stat.get('issue_count', 0)},{stat.get('document_count', 0)},{stat.get('total_usage', 0)}"
+                    )
 
     run_async(_usage())
 
@@ -293,16 +329,16 @@ def colors():
     table.add_column("Usage", style="dim")
 
     color_examples = {
-        'red': ('Critical, Urgent, Bug', 'High priority items'),
-        'orange': ('Warning, Review', 'Items needing attention'),
-        'yellow': ('In Progress, Pending', 'Active work items'),
-        'green': ('Complete, Success', 'Finished or successful items'),
-        'blue': ('Info, Documentation', 'Informational content'),
-        'purple': ('Feature, Enhancement', 'New functionality'),
-        'pink': ('Design, UI/UX', 'Design-related items'),
-        'gray': ('Archive, Deprecated', 'Inactive or old items'),
-        'black': ('Internal, System', 'Internal system items'),
-        'white': ('Default, General', 'General purpose tags')
+        "red": ("Critical, Urgent, Bug", "High priority items"),
+        "orange": ("Warning, Review", "Items needing attention"),
+        "yellow": ("In Progress, Pending", "Active work items"),
+        "green": ("Complete, Success", "Finished or successful items"),
+        "blue": ("Info, Documentation", "Informational content"),
+        "purple": ("Feature, Enhancement", "New functionality"),
+        "pink": ("Design, UI/UX", "Design-related items"),
+        "gray": ("Archive, Deprecated", "Inactive or old items"),
+        "black": ("Internal, System", "Internal system items"),
+        "white": ("Default, General", "General purpose tags"),
     }
 
     for color, (example, usage) in color_examples.items():
@@ -311,14 +347,17 @@ def colors():
 
     console.print(table)
 
-    console.print("\n[dim]Use: turbo tags create --name \"tag-name\" --color <color>[/dim]")
+    console.print(
+        '\n[dim]Use: turbo tags create --name "tag-name" --color <color>[/dim]'
+    )
 
 
 @tags_group.command()
-@click.argument('tag_id', type=click.UUID)
+@click.argument("tag_id", type=click.UUID)
 @handle_exceptions
 def related(tag_id):
     """Show items related to a tag."""
+
     async def _related():
         async for session in get_db_session():
             service = create_tag_service(session)
@@ -327,34 +366,38 @@ def related(tag_id):
                 # Get the tag
                 tag = await service.get_tag_by_id(tag_id)
 
-                console.print(f"[bold]Items tagged with [{tag.color}]{tag.name}[/{tag.color}]:[/bold]\n")
+                console.print(
+                    f"[bold]Items tagged with [{tag.color}]{tag.name}[/{tag.color}]:[/bold]\n"
+                )
 
                 # Get related items
                 related_items = await service.get_tag_related_items(tag_id)
 
                 # Display projects
-                if related_items.get('projects'):
+                if related_items.get("projects"):
                     console.print("[cyan]Projects:[/cyan]")
-                    for project in related_items['projects']:
+                    for project in related_items["projects"]:
                         console.print(f"  • {project.name} ({project.id})")
                     console.print()
 
                 # Display issues
-                if related_items.get('issues'):
+                if related_items.get("issues"):
                     console.print("[yellow]Issues:[/yellow]")
-                    for issue in related_items['issues']:
+                    for issue in related_items["issues"]:
                         console.print(f"  • {issue.title} ({issue.id})")
                     console.print()
 
                 # Display documents
-                if related_items.get('documents'):
+                if related_items.get("documents"):
                     console.print("[magenta]Documents:[/magenta]")
-                    for document in related_items['documents']:
+                    for document in related_items["documents"]:
                         console.print(f"  • {document.title} ({document.id})")
                     console.print()
 
                 if not any(related_items.values()):
-                    console.print("[dim]No items are currently tagged with this tag.[/dim]")
+                    console.print(
+                        "[dim]No items are currently tagged with this tag.[/dim]"
+                    )
 
             except TagNotFoundError:
                 console.print(f"[red]Tag with ID {tag_id} not found[/red]")
@@ -372,17 +415,21 @@ def _display_tags_table(tags):
     table.add_column("Created", style="dim")
 
     for tag in tags:
-        created = tag.created_at.strftime('%Y-%m-%d') if hasattr(tag.created_at, 'strftime') else str(tag.created_at)[:10]
+        created = (
+            tag.created_at.strftime("%Y-%m-%d")
+            if hasattr(tag.created_at, "strftime")
+            else str(tag.created_at)[:10]
+        )
         color_name = _get_color_name(tag.color)
         colored_name = f"[{color_name}]{tag.name}[/{color_name}]"
-        description = tag.description[:50] + "..." if tag.description and len(tag.description) > 50 else (tag.description or "")
+        description = (
+            tag.description[:50] + "..."
+            if tag.description and len(tag.description) > 50
+            else (tag.description or "")
+        )
 
         table.add_row(
-            str(tag.id)[:8] + "...",
-            colored_name,
-            color_name,
-            description,
-            created
+            str(tag.id)[:8] + "...", colored_name, color_name, description, created
         )
 
     console.print(table)
@@ -392,9 +439,13 @@ def _display_tags_csv(tags):
     """Display tags in CSV format."""
     console.print("ID,Name,Color,Description,Created")
     for tag in tags:
-        created = tag.created_at.strftime('%Y-%m-%d') if hasattr(tag.created_at, 'strftime') else str(tag.created_at)[:10]
-        name = tag.name.replace(',', ';')  # Replace commas to avoid CSV issues
-        description = (tag.description or "").replace(',', ';')
+        created = (
+            tag.created_at.strftime("%Y-%m-%d")
+            if hasattr(tag.created_at, "strftime")
+            else str(tag.created_at)[:10]
+        )
+        name = tag.name.replace(",", ";")  # Replace commas to avoid CSV issues
+        description = (tag.description or "").replace(",", ";")
         color_name = _get_color_name(tag.color)
         console.print(f"{tag.id},{name},{color_name},{description},{created}")
 
@@ -422,8 +473,16 @@ def _display_tag_detailed(tag):
     table.add_row("Color", f"[{color_name}]{color_name}[/{color_name}]")
     table.add_row("Description", tag.description or "None")
 
-    created = tag.created_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(tag.created_at, 'strftime') else str(tag.created_at)
-    updated = tag.updated_at.strftime('%Y-%m-%d %H:%M:%S') if hasattr(tag.updated_at, 'strftime') else str(tag.updated_at)
+    created = (
+        tag.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        if hasattr(tag.created_at, "strftime")
+        else str(tag.created_at)
+    )
+    updated = (
+        tag.updated_at.strftime("%Y-%m-%d %H:%M:%S")
+        if hasattr(tag.updated_at, "strftime")
+        else str(tag.updated_at)
+    )
 
     table.add_row("Created", created)
     table.add_row("Updated", updated)

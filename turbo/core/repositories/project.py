@@ -26,9 +26,7 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
 
     async def search_by_name(self, name_pattern: str) -> List[Project]:
         """Search projects by name pattern."""
-        stmt = select(self._model).where(
-            self._model.name.ilike(f"%{name_pattern}%")
-        )
+        stmt = select(self._model).where(self._model.name.ilike(f"%{name_pattern}%"))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
@@ -63,9 +61,7 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         return result.scalar_one_or_none()
 
     async def get_archived(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[Project]:
         """Get archived projects."""
         stmt = select(self._model).where(self._model.is_archived == True)
@@ -78,9 +74,7 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         return list(result.scalars().all())
 
     async def get_active(
-        self,
-        limit: Optional[int] = None,
-        offset: Optional[int] = None
+        self, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[Project]:
         """Get active (non-archived) projects."""
         stmt = select(self._model).where(self._model.is_archived == False)
@@ -100,8 +94,6 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
 
     async def get_high_priority_projects(self) -> List[Project]:
         """Get high priority and critical projects."""
-        stmt = select(self._model).where(
-            self._model.priority.in_(["high", "critical"])
-        )
+        stmt = select(self._model).where(self._model.priority.in_(["high", "critical"]))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

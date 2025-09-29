@@ -17,7 +17,7 @@ class TestIssueAPI:
             "type": "feature",
             "status": "open",
             "priority": "high",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/issues/", json=issue_data)
@@ -33,12 +33,14 @@ class TestIssueAPI:
         assert "id" in data
 
     @pytest.mark.asyncio
-    async def test_create_issue_validation_error(self, test_client: AsyncClient, sample_project):
+    async def test_create_issue_validation_error(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test issue creation with invalid data."""
         invalid_data = {
             "title": "",  # Empty title should fail
             "description": "A test issue",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/issues/", json=invalid_data)
@@ -46,7 +48,9 @@ class TestIssueAPI:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_get_issue_by_id_success(self, test_client: AsyncClient, sample_issue):
+    async def test_get_issue_by_id_success(
+        self, test_client: AsyncClient, sample_issue
+    ):
         """Test getting issue by ID."""
         response = await test_client.get(f"/api/v1/issues/{sample_issue.id}")
 
@@ -73,7 +77,9 @@ class TestIssueAPI:
         assert isinstance(data, list)
 
     @pytest.mark.asyncio
-    async def test_get_issues_with_pagination(self, test_client: AsyncClient, populated_database):
+    async def test_get_issues_with_pagination(
+        self, test_client: AsyncClient, populated_database
+    ):
         """Test getting issues with pagination."""
         response = await test_client.get("/api/v1/issues?limit=5&offset=2")
 
@@ -88,12 +94,11 @@ class TestIssueAPI:
         update_data = {
             "title": "Updated Issue Title",
             "status": "in_progress",
-            "priority": "critical"
+            "priority": "critical",
         }
 
         response = await test_client.put(
-            f"/api/v1/issues/{sample_issue.id}",
-            json=update_data
+            f"/api/v1/issues/{sample_issue.id}", json=update_data
         )
 
         assert response.status_code == 200
@@ -109,8 +114,7 @@ class TestIssueAPI:
         update_data = {"title": "Updated Title"}
 
         response = await test_client.put(
-            f"/api/v1/issues/{non_existent_id}",
-            json=update_data
+            f"/api/v1/issues/{non_existent_id}", json=update_data
         )
 
         assert response.status_code == 404
@@ -136,8 +140,7 @@ class TestIssueAPI:
         assignment_data = {"assignee": "developer@example.com"}
 
         response = await test_client.post(
-            f"/api/v1/issues/{sample_issue.id}/assign",
-            json=assignment_data
+            f"/api/v1/issues/{sample_issue.id}/assign", json=assignment_data
         )
 
         assert response.status_code == 200
@@ -167,7 +170,9 @@ class TestIssueAPI:
         assert data["status"] == "open"
 
     @pytest.mark.asyncio
-    async def test_get_issues_by_project(self, test_client: AsyncClient, sample_project):
+    async def test_get_issues_by_project(
+        self, test_client: AsyncClient, sample_project
+    ):
         """Test getting issues for a specific project."""
         response = await test_client.get(f"/api/v1/projects/{sample_project.id}/issues")
 
@@ -222,7 +227,7 @@ class TestIssueAPIValidation:
             "title": "Test Issue",
             "description": "Test description",
             "type": "invalid_type",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/issues/", json=invalid_data)
@@ -236,7 +241,7 @@ class TestIssueAPIValidation:
             "title": "Test Issue",
             "description": "Test description",
             "status": "invalid_status",
-            "project_id": str(sample_project.id)
+            "project_id": str(sample_project.id),
         }
 
         response = await test_client.post("/api/v1/issues/", json=invalid_data)
@@ -249,8 +254,7 @@ class TestIssueAPIValidation:
         invalid_assignment = {"assignee": "not-an-email"}
 
         response = await test_client.post(
-            f"/api/v1/issues/{sample_issue.id}/assign",
-            json=invalid_assignment
+            f"/api/v1/issues/{sample_issue.id}/assign", json=invalid_assignment
         )
 
         assert response.status_code == 422
@@ -260,7 +264,7 @@ class TestIssueAPIValidation:
         """Test creating issue without project_id."""
         invalid_data = {
             "title": "Test Issue",
-            "description": "Test description"
+            "description": "Test description",
             # Missing project_id
         }
 
@@ -274,7 +278,7 @@ class TestIssueAPIValidation:
         invalid_data = {
             "title": "Test Issue",
             "description": "Test description",
-            "project_id": str(uuid4())  # Non-existent project
+            "project_id": str(uuid4()),  # Non-existent project
         }
 
         response = await test_client.post("/api/v1/issues/", json=invalid_data)

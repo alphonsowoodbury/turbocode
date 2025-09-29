@@ -30,15 +30,15 @@ def setup_logging(verbose: bool, quiet: bool, debug: bool):
         level=level,
         format="%(message)s",
         datefmt="[%X]",
-        handlers=[RichHandler(console=console, rich_tracebacks=True)]
+        handlers=[RichHandler(console=console, rich_tracebacks=True)],
     )
 
 
 @click.group(invoke_without_command=True)
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
-@click.option('--quiet', '-q', is_flag=True, help='Enable quiet output')
-@click.option('--debug', is_flag=True, help='Enable debug output')
-@click.option('--version', is_flag=True, help='Show version and exit')
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
+@click.option("--quiet", "-q", is_flag=True, help="Enable quiet output")
+@click.option("--debug", is_flag=True, help="Enable debug output")
+@click.option("--version", is_flag=True, help="Show version and exit")
 @click.pass_context
 def cli(ctx, verbose, quiet, debug, version):
     """
@@ -50,9 +50,9 @@ def cli(ctx, verbose, quiet, debug, version):
     ctx.ensure_object(dict)
 
     # Store global options in context
-    ctx.obj['verbose'] = verbose
-    ctx.obj['quiet'] = quiet
-    ctx.obj['debug'] = debug
+    ctx.obj["verbose"] = verbose
+    ctx.obj["quiet"] = quiet
+    ctx.obj["debug"] = debug
 
     # Set up logging
     setup_logging(verbose, quiet, debug)
@@ -81,23 +81,22 @@ def _register_commands():
     from turbo.cli.commands.import_ import import_command
     from turbo.cli.commands.completion import completion_command
 
-    cli.add_command(projects_group, name='projects')
-    cli.add_command(issues_group, name='issues')
-    cli.add_command(documents_group, name='documents')
-    cli.add_command(tags_group, name='tags')
-    cli.add_command(init_command, name='init')
-    cli.add_command(config_group, name='config')
-    cli.add_command(status_command, name='status')
-    cli.add_command(search_command, name='search')
-    cli.add_command(export_command, name='export')
-    cli.add_command(import_command, name='import')
-    cli.add_command(completion_command, name='completion')
+    cli.add_command(projects_group, name="projects")
+    cli.add_command(issues_group, name="issues")
+    cli.add_command(documents_group, name="documents")
+    cli.add_command(tags_group, name="tags")
+    cli.add_command(init_command, name="init")
+    cli.add_command(config_group, name="config")
+    cli.add_command(status_command, name="status")
+    cli.add_command(search_command, name="search")
+    cli.add_command(export_command, name="export")
+    cli.add_command(import_command, name="import")
+    cli.add_command(completion_command, name="completion")
+
 
 # Register commands
 _register_commands()
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

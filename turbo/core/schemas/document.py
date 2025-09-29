@@ -14,12 +14,9 @@ class DocumentBase(BaseModel):
     content: str = Field(..., min_length=1)
     type: str = Field(
         default="specification",
-        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$"
+        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$",
     )
-    format: str = Field(
-        default="markdown",
-        pattern="^(markdown|html|text|pdf|docx)$"
-    )
+    format: str = Field(default="markdown", pattern="^(markdown|html|text|pdf|docx)$")
     version: Optional[str] = Field(None, max_length=20)
     author: Optional[EmailStr] = None
 
@@ -53,12 +50,9 @@ class DocumentUpdate(BaseModel):
     content: Optional[str] = Field(None, min_length=1)
     type: Optional[str] = Field(
         None,
-        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$"
+        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$",
     )
-    format: Optional[str] = Field(
-        None,
-        pattern="^(markdown|html|text|pdf|docx)$"
-    )
+    format: Optional[str] = Field(None, pattern="^(markdown|html|text|pdf|docx)$")
     version: Optional[str] = Field(None, max_length=20)
     author: Optional[EmailStr] = None
 
