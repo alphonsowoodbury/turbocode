@@ -1,0 +1,10 @@
+[database]
+url = "sqlite:///turbo.db"
+
+[api]
+port = 8000
+host = "localhost"
+
+[environment]
+debug = false
+log_level = "INFO"

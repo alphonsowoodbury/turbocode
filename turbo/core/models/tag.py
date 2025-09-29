@@ -1,0 +1,41 @@
+"""Tag model definition."""
+
+from typing import List
+
+from sqlalchemy import Column, String
+from sqlalchemy.orm import relationship
+
+from turbo.core.database.base import Base
+from turbo.core.models.associations import project_tags, issue_tags
+
+
+class Tag(Base):
+    """Tag model for categorizing projects and issues."""
+
+    __tablename__ = "tags"
+
+    # Required fields
+    name = Column(String(50), nullable=False, unique=True, index=True)
+    color = Column(String(7), nullable=False)  # Hex color code
+
+    # Optional fields
+    description = Column(String(200), nullable=True)
+
+    # Relationships
+    projects = relationship(
+        "Project",
+        secondary=project_tags,
+        back_populates="tags",
+        lazy="select"
+    )
+
+    issues = relationship(
+        "Issue",
+        secondary=issue_tags,
+        back_populates="tags",
+        lazy="select"
+    )
+
+    def __repr__(self) -> str:
+        """String representation of the tag."""
+        return f"<Tag(id={self.id}, name='{self.name}')>"
