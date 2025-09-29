@@ -1,11 +1,10 @@
 """Tag service for business logic operations."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from turbo.core.repositories.tag import TagRepository
 from turbo.core.schemas.tag import TagCreate, TagResponse
-from turbo.utils.exceptions import TagNotFoundError, DuplicateResourceError
+from turbo.utils.exceptions import DuplicateResourceError, TagNotFoundError
 
 
 class TagService:
@@ -31,7 +30,7 @@ class TagService:
             raise TagNotFoundError(tag_id)
         return TagResponse.model_validate(tag)
 
-    async def get_tag_by_name(self, name: str) -> Optional[TagResponse]:
+    async def get_tag_by_name(self, name: str) -> TagResponse | None:
         """Get tag by name."""
         tag = await self._tag_repository.get_by_name(name)
         if tag:
@@ -39,8 +38,8 @@ class TagService:
         return None
 
     async def get_all_tags(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[TagResponse]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[TagResponse]:
         """Get all tags with optional pagination."""
         tags = await self._tag_repository.get_all(limit=limit, offset=offset)
         return [TagResponse.model_validate(tag) for tag in tags]
@@ -65,22 +64,22 @@ class TagService:
             raise TagNotFoundError(tag_id)
         return success
 
-    async def search_tags(self, name_pattern: str) -> List[TagResponse]:
+    async def search_tags(self, name_pattern: str) -> list[TagResponse]:
         """Search tags by name pattern."""
         tags = await self._tag_repository.search_by_name(name_pattern)
         return [TagResponse.model_validate(tag) for tag in tags]
 
-    async def get_tags_by_color(self, color: str) -> List[TagResponse]:
+    async def get_tags_by_color(self, color: str) -> list[TagResponse]:
         """Get tags by color."""
         tags = await self._tag_repository.get_by_color(color)
         return [TagResponse.model_validate(tag) for tag in tags]
 
-    async def get_popular_tags(self, limit: int = 10) -> List[TagResponse]:
+    async def get_popular_tags(self, limit: int = 10) -> list[TagResponse]:
         """Get most popular tags."""
         tags = await self._tag_repository.get_popular_tags(limit=limit)
         return [TagResponse.model_validate(tag) for tag in tags]
 
-    async def get_unused_tags(self) -> List[TagResponse]:
+    async def get_unused_tags(self) -> list[TagResponse]:
         """Get tags that are not used by any projects or issues."""
         tags = await self._tag_repository.get_unused_tags()
         return [TagResponse.model_validate(tag) for tag in tags]

@@ -1,38 +1,34 @@
 """Unit tests for core business services."""
 
-import pytest
 from datetime import datetime
-from uuid import uuid4, UUID
-from unittest.mock import Mock, AsyncMock, patch
+from unittest.mock import AsyncMock, patch
+from uuid import uuid4
 
-import pytest_asyncio
+import pytest
 
-from turbo.core.services import (
-    ProjectService,
-    IssueService,
-    DocumentService,
-    TagService,
-)
+from turbo.core.models import Document, Issue, Project, Tag
 from turbo.core.schemas import (
-    ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
-    IssueCreate,
-    IssueUpdate,
-    IssueResponse,
     DocumentCreate,
-    DocumentUpdate,
     DocumentResponse,
+    IssueCreate,
+    IssueResponse,
+    ProjectCreate,
+    ProjectResponse,
+    ProjectUpdate,
     TagCreate,
     TagResponse,
 )
-from turbo.core.models import Project, Issue, Document, Tag
+from turbo.core.services import (
+    DocumentService,
+    IssueService,
+    ProjectService,
+    TagService,
+)
 from turbo.utils.exceptions import (
-    ProjectNotFoundError,
-    IssueNotFoundError,
-    DocumentNotFoundError,
-    TagNotFoundError,
     DuplicateResourceError,
+    IssueNotFoundError,
+    ProjectNotFoundError,
+    TagNotFoundError,
 )
 
 

@@ -3,18 +3,19 @@
 import asyncio
 import logging
 import sys
+
 from rich.console import Console
 
 from turbo.core.repositories import (
-    ProjectRepository,
-    IssueRepository,
     DocumentRepository,
+    IssueRepository,
+    ProjectRepository,
     TagRepository,
 )
 from turbo.core.services import (
-    ProjectService,
-    IssueService,
     DocumentService,
+    IssueService,
+    ProjectService,
     TagService,
 )
 
@@ -47,7 +48,7 @@ def handle_exceptions(func):
             if logging.getLogger().level == logging.DEBUG:
                 console.print_exception()
             else:
-                console.print(f"[red]Error: {str(e)}[/red]")
+                console.print(f"[red]Error: {e!s}[/red]")
             sys.exit(1)
 
     return wrapper

@@ -53,7 +53,7 @@ def _install_completion(shell):
 
         console.print(f"[green]✓[/green] Shell completion installed for {shell}")
         console.print(
-            f"[yellow]Note: You may need to restart your shell or source your profile[/yellow]"
+            "[yellow]Note: You may need to restart your shell or source your profile[/yellow]"
         )
 
     except Exception as e:
@@ -171,7 +171,7 @@ def _install_zsh_completion():
     # Add to fpath in .zshrc if not already there
     zshrc = Path.home() / ".zshrc"
     if zshrc.exists():
-        with open(zshrc, "r") as f:
+        with open(zshrc) as f:
             content = f.read()
 
         if "fpath=(~/.zsh/completions $fpath)" not in content:

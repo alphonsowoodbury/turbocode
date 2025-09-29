@@ -4,11 +4,10 @@ Emoji cleanup script for Turbo documentation and code.
 Removes all emoji characters from specified files and directories.
 """
 
-import os
-import re
 import argparse
+import os
 from pathlib import Path
-from typing import List, Set
+import re
 
 
 def get_emoji_pattern():
@@ -58,7 +57,7 @@ def clean_file_content(content: str) -> tuple[str, int]:
     return cleaned_content, emoji_count
 
 
-def should_process_file(file_path: Path, include_extensions: Set[str]) -> bool:
+def should_process_file(file_path: Path, include_extensions: set[str]) -> bool:
     """
     Check if file should be processed based on extension.
     """
@@ -74,7 +73,7 @@ def clean_file(file_path: Path, dry_run: bool = False) -> tuple[bool, int]:
     Returns (was_modified, emoji_count).
     """
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             original_content = f.read()
 
         cleaned_content, emoji_count = clean_file_content(original_content)
@@ -97,8 +96,8 @@ def clean_file(file_path: Path, dry_run: bool = False) -> tuple[bool, int]:
 
 def clean_directory(
     directory: Path,
-    include_extensions: Set[str],
-    exclude_dirs: Set[str],
+    include_extensions: set[str],
+    exclude_dirs: set[str],
     dry_run: bool = False,
 ) -> tuple[int, int]:
     """
@@ -185,9 +184,8 @@ def main():
                     total_emoji_removed += emoji_count
                     action = "Would clean" if args.dry_run else "Cleaned"
                     print(f"{action} {path}: removed {emoji_count} emoji")
-            else:
-                if args.verbose:
-                    print(f"Skipped {path}: extension not in include list")
+            elif args.verbose:
+                print(f"Skipped {path}: extension not in include list")
 
         elif path.is_dir():
             files_modified, emoji_removed = clean_directory(

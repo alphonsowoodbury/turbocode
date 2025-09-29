@@ -1,11 +1,9 @@
 """Project Pydantic schemas."""
 
-import re
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ProjectBase(BaseModel):
@@ -17,7 +15,7 @@ class ProjectBase(BaseModel):
     status: str = Field(
         default="active", pattern="^(active|on_hold|completed|archived)$"
     )
-    completion_percentage: Optional[float] = Field(default=0.0, ge=0.0, le=100.0)
+    completion_percentage: float | None = Field(default=0.0, ge=0.0, le=100.0)
 
     @field_validator("name")
     @classmethod
@@ -39,22 +37,22 @@ class ProjectBase(BaseModel):
 class ProjectCreate(ProjectBase):
     """Schema for creating new projects."""
 
-    is_archived: Optional[bool] = Field(default=False)
+    is_archived: bool | None = Field(default=False)
 
 
 class ProjectUpdate(BaseModel):
     """Schema for updating projects (all fields optional)."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=100)
-    description: Optional[str] = Field(None, min_length=1)
-    priority: Optional[str] = Field(None, pattern="^(low|medium|high|critical)$")
-    status: Optional[str] = Field(None, pattern="^(active|on_hold|completed|archived)$")
-    completion_percentage: Optional[float] = Field(None, ge=0.0, le=100.0)
-    is_archived: Optional[bool] = None
+    name: str | None = Field(None, min_length=1, max_length=100)
+    description: str | None = Field(None, min_length=1)
+    priority: str | None = Field(None, pattern="^(low|medium|high|critical)$")
+    status: str | None = Field(None, pattern="^(active|on_hold|completed|archived)$")
+    completion_percentage: float | None = Field(None, ge=0.0, le=100.0)
+    is_archived: bool | None = None
 
     @field_validator("name")
     @classmethod
-    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+    def validate_name(cls, v: str | None) -> str | None:
         """Validate project name."""
         if v is not None and not v.strip():
             raise ValueError("Name cannot be empty or whitespace")
@@ -62,7 +60,7 @@ class ProjectUpdate(BaseModel):
 
     @field_validator("description")
     @classmethod
-    def validate_description(cls, v: Optional[str]) -> Optional[str]:
+    def validate_description(cls, v: str | None) -> str | None:
         """Validate project description."""
         if v is not None and not v.strip():
             raise ValueError("Description cannot be empty or whitespace")

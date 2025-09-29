@@ -5,15 +5,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from turbo.core.database import get_db_session
 from turbo.core.repositories import (
-    ProjectRepository,
-    IssueRepository,
     DocumentRepository,
+    IssueRepository,
+    ProjectRepository,
     TagRepository,
 )
 from turbo.core.services import (
-    ProjectService,
-    IssueService,
     DocumentService,
+    IssueService,
+    ProjectService,
     TagService,
 )
 

@@ -1,29 +1,25 @@
 """Unit tests for repository pattern implementations."""
 
+from uuid import uuid4
+
 import pytest
-from datetime import datetime
-from uuid import uuid4, UUID
-from typing import List
-
-import pytest_asyncio
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import select
 
+from turbo.core.models import Project
 from turbo.core.repositories import (
     BaseRepository,
-    ProjectRepository,
-    IssueRepository,
     DocumentRepository,
+    IssueRepository,
+    ProjectRepository,
     TagRepository,
 )
-from turbo.core.models import Project, Issue, Document, Tag
 from turbo.core.schemas import (
-    ProjectCreate,
-    ProjectUpdate,
-    IssueCreate,
-    IssueUpdate,
     DocumentCreate,
     DocumentUpdate,
+    IssueCreate,
+    IssueUpdate,
+    ProjectCreate,
+    ProjectUpdate,
     TagCreate,
 )
 

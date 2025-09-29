@@ -1,13 +1,12 @@
 """Custom exceptions for Turbo application."""
 
-from typing import Optional
 from uuid import UUID
 
 
 class TurboBaseException(Exception):
     """Base exception for all Turbo-specific errors."""
 
-    def __init__(self, message: str, error_code: Optional[str] = None) -> None:
+    def __init__(self, message: str, error_code: str | None = None) -> None:
         super().__init__(message)
         self.message = message
         self.error_code = error_code
@@ -17,7 +16,7 @@ class ResourceNotFoundError(TurboBaseException):
     """Base class for resource not found errors."""
 
     def __init__(
-        self, resource_type: str, resource_id: UUID, error_code: Optional[str] = None
+        self, resource_type: str, resource_id: UUID, error_code: str | None = None
     ) -> None:
         message = f"{resource_type} with ID {resource_id} not found"
         super().__init__(message, error_code)
@@ -70,7 +69,7 @@ class DuplicateResourceError(TurboBaseException):
 class ValidationError(TurboBaseException):
     """Raised when data validation fails."""
 
-    def __init__(self, message: str, field: Optional[str] = None) -> None:
+    def __init__(self, message: str, field: str | None = None) -> None:
         super().__init__(message, "VALIDATION_ERROR")
         self.field = field
 
@@ -78,7 +77,7 @@ class ValidationError(TurboBaseException):
 class ClaudeIntegrationError(TurboBaseException):
     """Raised when Claude integration fails."""
 
-    def __init__(self, operation: str, details: Optional[str] = None) -> None:
+    def __init__(self, operation: str, details: str | None = None) -> None:
         message = f"Claude integration failed for operation: {operation}"
         if details:
             message += f" - {details}"
@@ -90,7 +89,7 @@ class ClaudeIntegrationError(TurboBaseException):
 class DatabaseError(TurboBaseException):
     """Raised when database operations fail."""
 
-    def __init__(self, message: str, operation: Optional[str] = None) -> None:
+    def __init__(self, message: str, operation: str | None = None) -> None:
         super().__init__(message, "DATABASE_ERROR")
         self.operation = operation
 
@@ -98,6 +97,6 @@ class DatabaseError(TurboBaseException):
 class ConfigurationError(TurboBaseException):
     """Raised when configuration is invalid or missing."""
 
-    def __init__(self, message: str, config_key: Optional[str] = None) -> None:
+    def __init__(self, message: str, config_key: str | None = None) -> None:
         super().__init__(message, "CONFIGURATION_ERROR")
         self.config_key = config_key

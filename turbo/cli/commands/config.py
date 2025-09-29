@@ -1,13 +1,12 @@
 """Configuration management commands."""
 
 import json
-import os
 from pathlib import Path
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
 from turbo.cli.utils import handle_exceptions
 from turbo.utils.config import get_settings
@@ -53,7 +52,7 @@ def set(key, value):
     try:
         # This would require implementing config writing
         # For now, show what would be set
-        console.print(f"[green]Configuration updated:[/green]")
+        console.print("[green]Configuration updated:[/green]")
         console.print(f"  {key} = {value}")
         console.print(
             "[yellow]Note: Configuration writing not yet implemented[/yellow]"

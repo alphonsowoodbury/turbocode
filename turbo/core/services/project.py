@@ -1,15 +1,15 @@
 """Project service for business logic operations."""
 
-from typing import Dict, List, Optional, Any
+from typing import Any
 from uuid import UUID
 
-from turbo.core.repositories.project import ProjectRepository
-from turbo.core.repositories.issue import IssueRepository
 from turbo.core.repositories.document import DocumentRepository
+from turbo.core.repositories.issue import IssueRepository
+from turbo.core.repositories.project import ProjectRepository
 from turbo.core.schemas.project import (
     ProjectCreate,
-    ProjectUpdate,
     ProjectResponse,
+    ProjectUpdate,
     ProjectWithStats,
 )
 from turbo.utils.exceptions import ProjectNotFoundError
@@ -41,8 +41,8 @@ class ProjectService:
         return ProjectResponse.model_validate(project)
 
     async def get_all_projects(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[ProjectResponse]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[ProjectResponse]:
         """Get all projects with optional pagination."""
         projects = await self._project_repository.get_all(limit=limit, offset=offset)
         return [ProjectResponse.model_validate(project) for project in projects]
@@ -73,7 +73,7 @@ class ProjectService:
         update_data = ProjectUpdate(is_archived=False)
         return await self.update_project(project_id, update_data)
 
-    async def get_project_statistics(self, project_id: UUID) -> Dict[str, Any]:
+    async def get_project_statistics(self, project_id: UUID) -> dict[str, Any]:
         """Get project statistics including issue counts and completion rates."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -121,33 +121,33 @@ class ProjectService:
             completion_rate=stats["completion_rate"],
         )
 
-    async def get_projects_by_status(self, status: str) -> List[ProjectResponse]:
+    async def get_projects_by_status(self, status: str) -> list[ProjectResponse]:
         """Get projects by status."""
         projects = await self._project_repository.get_by_status(status)
         return [ProjectResponse.model_validate(project) for project in projects]
 
     async def get_active_projects(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[ProjectResponse]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[ProjectResponse]:
         """Get active (non-archived) projects."""
         projects = await self._project_repository.get_active(limit=limit, offset=offset)
         return [ProjectResponse.model_validate(project) for project in projects]
 
     async def get_archived_projects(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[ProjectResponse]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[ProjectResponse]:
         """Get archived projects."""
         projects = await self._project_repository.get_archived(
             limit=limit, offset=offset
         )
         return [ProjectResponse.model_validate(project) for project in projects]
 
-    async def search_projects(self, name_pattern: str) -> List[ProjectResponse]:
+    async def search_projects(self, name_pattern: str) -> list[ProjectResponse]:
         """Search projects by name pattern."""
         projects = await self._project_repository.search_by_name(name_pattern)
         return [ProjectResponse.model_validate(project) for project in projects]
 
-    async def get_high_priority_projects(self) -> List[ProjectResponse]:
+    async def get_high_priority_projects(self) -> list[ProjectResponse]:
         """Get high priority and critical projects."""
         projects = await self._project_repository.get_high_priority_projects()
         return [ProjectResponse.model_validate(project) for project in projects]

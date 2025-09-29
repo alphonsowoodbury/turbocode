@@ -1,22 +1,20 @@
 """Export command."""
 
-import asyncio
-import json
 import csv
-import os
-from pathlib import Path
 from datetime import datetime
+import json
+from pathlib import Path
 
 import click
 from rich.console import Console
 
-from turbo.cli.utils import run_async, handle_exceptions
 from turbo.api.dependencies import (
-    get_project_service,
-    get_issue_service,
     get_document_service,
+    get_issue_service,
+    get_project_service,
     get_tag_service,
 )
+from turbo.cli.utils import handle_exceptions, run_async
 from turbo.core.database import get_db_session
 
 console = Console()
@@ -119,7 +117,7 @@ def _export_csv(export_data, output_path, export_type):
         base_path = output_path.with_suffix("")
 
         for entity_type in ["projects", "issues", "documents", "tags"]:
-            if entity_type in export_data and export_data[entity_type]:
+            if export_data.get(entity_type):
                 csv_path = base_path.parent / f"{base_path.name}_{entity_type}.csv"
                 _write_entity_csv(export_data[entity_type], csv_path, entity_type)
     else:
@@ -148,7 +146,7 @@ def _write_entity_csv(data, file_path, entity_type):
 def _export_txt(export_data, output_path, export_type):
     """Export data in text format."""
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write(f"Turbo Workspace Export\n")
+        f.write("Turbo Workspace Export\n")
         f.write(f"Export Date: {export_data['metadata']['export_date']}\n")
         f.write(f"Export Type: {export_type}\n")
         f.write("=" * 50 + "\n\n")

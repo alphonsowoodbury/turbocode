@@ -1,20 +1,19 @@
 """Global search command."""
 
-import asyncio
-from typing import List, Dict, Any
+from typing import Any
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
-from turbo.cli.utils import run_async, handle_exceptions
 from turbo.api.dependencies import (
-    get_project_service,
-    get_issue_service,
     get_document_service,
+    get_issue_service,
+    get_project_service,
     get_tag_service,
 )
+from turbo.cli.utils import handle_exceptions, run_async
 from turbo.core.database import get_db_session
 
 console = Console()
@@ -81,7 +80,7 @@ def search_command(query, type, format, limit):
 
 
 def _display_search_results_table(
-    results: Dict[str, List[Any]], query: str, limit: int
+    results: dict[str, list[Any]], query: str, limit: int
 ):
     """Display search results in table format."""
     total_results = sum(len(items) for items in results.values())
@@ -95,7 +94,7 @@ def _display_search_results_table(
     shown_count = 0
 
     # Display projects
-    if "projects" in results and results["projects"]:
+    if results.get("projects"):
         console.print("[bold cyan]Projects:[/bold cyan]")
         table = Table(box=box.SIMPLE)
         table.add_column("ID", style="dim")
@@ -196,7 +195,7 @@ def _display_search_results_table(
         )
 
 
-def _display_search_results_json(results: Dict[str, List[Any]], query: str, limit: int):
+def _display_search_results_json(results: dict[str, list[Any]], query: str, limit: int):
     """Display search results in JSON format."""
     import json
 

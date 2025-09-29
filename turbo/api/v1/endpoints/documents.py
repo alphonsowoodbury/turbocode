@@ -1,17 +1,18 @@
 """Document API endpoints."""
 
-from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel
 
 from turbo.api.dependencies import get_document_service
+from turbo.core.schemas import DocumentCreate, DocumentResponse, DocumentUpdate
 from turbo.core.services import DocumentService
-from turbo.core.schemas import DocumentCreate, DocumentUpdate, DocumentResponse
 from turbo.utils.exceptions import (
     DocumentNotFoundError,
     ProjectNotFoundError,
+)
+from turbo.utils.exceptions import (
     ValidationError as TurboValidationError,
 )
 
@@ -31,13 +32,13 @@ class DuplicateRequest(BaseModel):
     """Request model for duplicating document."""
 
     title: str
-    version: Optional[str] = None
+    version: str | None = None
 
 
 class BulkDeleteRequest(BaseModel):
     """Request model for bulk delete operations."""
 
-    document_ids: List[UUID]
+    document_ids: list[UUID]
 
 
 class Template(BaseModel):
@@ -45,7 +46,7 @@ class Template(BaseModel):
 
     name: str
     description: str
-    variables: List[str]
+    variables: list[str]
 
 
 @router.post("/", response_model=DocumentResponse, status_code=status.HTTP_201_CREATED)
@@ -81,15 +82,15 @@ async def get_document(
         )
 
 
-@router.get("/", response_model=List[DocumentResponse])
+@router.get("/", response_model=list[DocumentResponse])
 async def get_documents(
-    type_filter: Optional[str] = Query(None, alias="type"),
-    format_filter: Optional[str] = Query(None, alias="format"),
-    project_id: Optional[UUID] = Query(None),
-    limit: Optional[int] = Query(None, ge=1, le=100),
-    offset: Optional[int] = Query(None, ge=0),
+    type_filter: str | None = Query(None, alias="type"),
+    format_filter: str | None = Query(None, alias="format"),
+    project_id: UUID | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int | None = Query(None, ge=0),
     document_service: DocumentService = Depends(get_document_service),
-) -> List[DocumentResponse]:
+) -> list[DocumentResponse]:
     """Get all documents with optional filtering."""
     if type_filter:
         return await document_service.get_documents_by_type(type_filter)
@@ -135,19 +136,19 @@ async def delete_document(
         )
 
 
-@router.get("/search", response_model=List[DocumentResponse])
+@router.get("/search", response_model=list[DocumentResponse])
 async def search_documents(
     query: str = Query(..., min_length=1),
     document_service: DocumentService = Depends(get_document_service),
-) -> List[DocumentResponse]:
+) -> list[DocumentResponse]:
     """Search documents by title and content."""
     return await document_service.search_documents(query)
 
 
-@router.get("/{document_id}/versions", response_model=List[dict])
+@router.get("/{document_id}/versions", response_model=list[dict])
 async def get_document_versions(
     document_id: UUID, document_service: DocumentService = Depends(get_document_service)
-) -> List[dict]:
+) -> list[dict]:
     """Get document version history."""
     try:
         return await document_service.get_document_versions(document_id)
@@ -190,7 +191,7 @@ async def export_document(
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Export failed: {str(e)}",
+            detail=f"Export failed: {e!s}",
         )
 
 
@@ -220,10 +221,10 @@ async def create_document_from_template(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.get("/templates", response_model=List[Template])
+@router.get("/templates", response_model=list[Template])
 async def get_available_templates(
     document_service: DocumentService = Depends(get_document_service),
-) -> List[Template]:
+) -> list[Template]:
     """Get available document templates."""
     templates_data = await document_service.get_available_templates()
     return [

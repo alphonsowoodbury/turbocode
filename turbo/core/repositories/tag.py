@@ -1,6 +1,5 @@
 """Tag repository implementation."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,25 +17,25 @@ class TagRepository(BaseRepository[Tag, TagCreate, TagCreate]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Tag)
 
-    async def get_by_name(self, name: str) -> Optional[Tag]:
+    async def get_by_name(self, name: str) -> Tag | None:
         """Get tag by name."""
         stmt = select(self._model).where(self._model.name == name)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def search_by_name(self, name_pattern: str) -> List[Tag]:
+    async def search_by_name(self, name_pattern: str) -> list[Tag]:
         """Search tags by name pattern."""
         stmt = select(self._model).where(self._model.name.ilike(f"%{name_pattern}%"))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_color(self, color: str) -> List[Tag]:
+    async def get_by_color(self, color: str) -> list[Tag]:
         """Get tags by color."""
         stmt = select(self._model).where(self._model.color == color)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_with_projects(self, id: UUID) -> Optional[Tag]:
+    async def get_with_projects(self, id: UUID) -> Tag | None:
         """Get tag with its projects loaded."""
         stmt = (
             select(self._model)
@@ -46,7 +45,7 @@ class TagRepository(BaseRepository[Tag, TagCreate, TagCreate]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_with_issues(self, id: UUID) -> Optional[Tag]:
+    async def get_with_issues(self, id: UUID) -> Tag | None:
         """Get tag with its issues loaded."""
         stmt = (
             select(self._model)
@@ -56,7 +55,7 @@ class TagRepository(BaseRepository[Tag, TagCreate, TagCreate]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_popular_tags(self, limit: int = 10) -> List[Tag]:
+    async def get_popular_tags(self, limit: int = 10) -> list[Tag]:
         """Get most popular tags (by usage count)."""
         # This would need a more complex query to count relationships
         # For now, return all tags sorted by name
@@ -64,7 +63,7 @@ class TagRepository(BaseRepository[Tag, TagCreate, TagCreate]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_unused_tags(self) -> List[Tag]:
+    async def get_unused_tags(self) -> list[Tag]:
         """Get tags that are not used by any projects or issues."""
         # This would need a complex query with left joins
         # For now, return all tags (this would be implemented with proper joins)
@@ -72,7 +71,7 @@ class TagRepository(BaseRepository[Tag, TagCreate, TagCreate]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def update(self, id: UUID, obj_in: TagCreate) -> Optional[Tag]:
+    async def update(self, id: UUID, obj_in: TagCreate) -> Tag | None:
         """Update a tag record."""
         # Override to use TagCreate for updates (since TagUpdate is same as TagCreate)
         db_obj = await self.get_by_id(id)

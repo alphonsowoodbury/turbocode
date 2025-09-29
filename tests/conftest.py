@@ -1,22 +1,19 @@
 """Global test configuration and fixtures for Turbo."""
 
 import asyncio
+from collections.abc import AsyncGenerator, Generator
 import os
-import tempfile
 from pathlib import Path
-from typing import AsyncGenerator, Generator
-from uuid import uuid4
+import tempfile
 
-import pytest
-import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy import create_engine
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from turbo.core.database import Base, get_db_session
-from turbo.core.models import Project, Issue, Document
+from turbo.core.models import Document, Issue, Project
 
 # from turbo.main import app  # Commented out for now since we need to fix circular imports
 
@@ -84,8 +81,9 @@ def override_get_db(test_session):
 @pytest.fixture
 async def test_client(override_get_db) -> AsyncGenerator[AsyncClient, None]:
     """Create test HTTP client."""
-    from turbo.main import app
     from httpx import ASGITransport
+
+    from turbo.main import app
 
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:

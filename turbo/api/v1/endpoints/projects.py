@@ -1,24 +1,23 @@
 """Project API endpoints."""
 
-from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from pydantic import ValidationError
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from turbo.api.dependencies import get_project_service
-from turbo.core.services import ProjectService
 from turbo.core.schemas import (
-    ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
-    ProjectWithStats,
-    IssueResponse,
     DocumentResponse,
+    IssueResponse,
+    ProjectCreate,
+    ProjectResponse,
+    ProjectUpdate,
+)
+from turbo.core.services import ProjectService
+from turbo.utils.exceptions import (
+    DuplicateResourceError,
+    ProjectNotFoundError,
 )
 from turbo.utils.exceptions import (
-    ProjectNotFoundError,
-    DuplicateResourceError,
     ValidationError as TurboValidationError,
 )
 
@@ -55,14 +54,14 @@ async def get_project(
         )
 
 
-@router.get("/", response_model=List[ProjectResponse])
+@router.get("/", response_model=list[ProjectResponse])
 async def get_projects(
-    status_filter: Optional[str] = Query(None, alias="status"),
-    priority: Optional[str] = Query(None),
-    limit: Optional[int] = Query(None, ge=1, le=100),
-    offset: Optional[int] = Query(None, ge=0),
+    status_filter: str | None = Query(None, alias="status"),
+    priority: str | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int | None = Query(None, ge=0),
     project_service: ProjectService = Depends(get_project_service),
-) -> List[ProjectResponse]:
+) -> list[ProjectResponse]:
     """Get all projects with optional filtering."""
     if status_filter:
         return await project_service.get_projects_by_status(status_filter)
@@ -134,19 +133,19 @@ async def get_project_statistics(
         )
 
 
-@router.get("/search", response_model=List[ProjectResponse])
+@router.get("/search", response_model=list[ProjectResponse])
 async def search_projects(
     query: str = Query(..., min_length=1),
     project_service: ProjectService = Depends(get_project_service),
-) -> List[ProjectResponse]:
+) -> list[ProjectResponse]:
     """Search projects by name."""
     return await project_service.search_projects_by_name(query)
 
 
-@router.get("/{project_id}/issues", response_model=List[IssueResponse])
+@router.get("/{project_id}/issues", response_model=list[IssueResponse])
 async def get_project_issues(
     project_id: UUID, project_service: ProjectService = Depends(get_project_service)
-) -> List[IssueResponse]:
+) -> list[IssueResponse]:
     """Get all issues for a project."""
     try:
         return await project_service.get_project_issues(project_id)
@@ -157,10 +156,10 @@ async def get_project_issues(
         )
 
 
-@router.get("/{project_id}/documents", response_model=List[DocumentResponse])
+@router.get("/{project_id}/documents", response_model=list[DocumentResponse])
 async def get_project_documents(
     project_id: UUID, project_service: ProjectService = Depends(get_project_service)
-) -> List[DocumentResponse]:
+) -> list[DocumentResponse]:
     """Get all documents for a project."""
     try:
         return await project_service.get_project_documents(project_id)

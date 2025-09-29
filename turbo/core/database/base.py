@@ -1,13 +1,11 @@
 """SQLAlchemy declarative base and base model."""
 
-import uuid
-from datetime import datetime, timezone
 from typing import Any
+import uuid
 
-from sqlalchemy import Column, DateTime, String, func
+from sqlalchemy import Column, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import declared_attr
+from sqlalchemy.orm import declarative_base, declared_attr
 
 
 class BaseModel:

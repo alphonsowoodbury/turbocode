@@ -1,8 +1,7 @@
 """Database session management utilities."""
 
-import asyncio
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -43,7 +42,7 @@ class DatabaseSessionManager:
 
 
 # Global session manager instance
-_session_manager: Optional[DatabaseSessionManager] = None
+_session_manager: DatabaseSessionManager | None = None
 
 
 def get_session_manager() -> DatabaseSessionManager:

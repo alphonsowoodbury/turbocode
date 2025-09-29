@@ -1,11 +1,11 @@
 """Tests for document CLI commands."""
 
-import pytest
-from click.testing import CliRunner
-from unittest.mock import AsyncMock, patch, mock_open
-from uuid import uuid4
-import tempfile
 import os
+import tempfile
+from unittest.mock import AsyncMock, mock_open, patch
+from uuid import uuid4
+
+from click.testing import CliRunner
 
 from turbo.cli.commands.documents import documents_group
 from turbo.core.schemas import DocumentResponse

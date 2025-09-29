@@ -1,6 +1,5 @@
 """Project repository implementation."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,19 +17,19 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Project)
 
-    async def get_by_status(self, status: str) -> List[Project]:
+    async def get_by_status(self, status: str) -> list[Project]:
         """Get projects by status."""
         stmt = select(self._model).where(self._model.status == status)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def search_by_name(self, name_pattern: str) -> List[Project]:
+    async def search_by_name(self, name_pattern: str) -> list[Project]:
         """Search projects by name pattern."""
         stmt = select(self._model).where(self._model.name.ilike(f"%{name_pattern}%"))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_with_issues(self, id: UUID) -> Optional[Project]:
+    async def get_with_issues(self, id: UUID) -> Project | None:
         """Get project with its issues loaded."""
         stmt = (
             select(self._model)
@@ -40,7 +39,7 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_with_documents(self, id: UUID) -> Optional[Project]:
+    async def get_with_documents(self, id: UUID) -> Project | None:
         """Get project with its documents loaded."""
         stmt = (
             select(self._model)
@@ -50,7 +49,7 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_with_tags(self, id: UUID) -> Optional[Project]:
+    async def get_with_tags(self, id: UUID) -> Project | None:
         """Get project with its tags loaded."""
         stmt = (
             select(self._model)
@@ -61,10 +60,10 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         return result.scalar_one_or_none()
 
     async def get_archived(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[Project]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[Project]:
         """Get archived projects."""
-        stmt = select(self._model).where(self._model.is_archived == True)
+        stmt = select(self._model).where(self._model.is_archived)
         if offset:
             stmt = stmt.offset(offset)
         if limit:
@@ -74,10 +73,10 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         return list(result.scalars().all())
 
     async def get_active(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[Project]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[Project]:
         """Get active (non-archived) projects."""
-        stmt = select(self._model).where(self._model.is_archived == False)
+        stmt = select(self._model).where(~self._model.is_archived)
         if offset:
             stmt = stmt.offset(offset)
         if limit:
@@ -86,13 +85,13 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_priority(self, priority: str) -> List[Project]:
+    async def get_by_priority(self, priority: str) -> list[Project]:
         """Get projects by priority."""
         stmt = select(self._model).where(self._model.priority == priority)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_high_priority_projects(self) -> List[Project]:
+    async def get_high_priority_projects(self) -> list[Project]:
         """Get high priority and critical projects."""
         stmt = select(self._model).where(self._model.priority.in_(["high", "critical"]))
         result = await self._session.execute(stmt)

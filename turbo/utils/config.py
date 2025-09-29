@@ -1,8 +1,6 @@
 """Configuration management for Turbo application."""
 
-import os
 from functools import lru_cache
-from typing import List, Optional
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
@@ -54,8 +52,8 @@ class ClaudeSettings(BaseSettings):
 class SecuritySettings(BaseSettings):
     """Security configuration settings."""
 
-    secret_key: str = "dev-secret-key-change-in-production"
-    cors_origins: List[str] = ["http://localhost:8501", "http://127.0.0.1:8501"]
+    secret_key: str = "dev-secret-key-change-in-production"  # noqa: S105
+    cors_origins: list[str] = ["http://localhost:8501", "http://127.0.0.1:8501"]
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -72,7 +70,7 @@ class FeatureSettings(BaseSettings):
     """Feature flags and configuration."""
 
     ai_generation: bool = True
-    export_formats: List[str] = ["pdf", "docx", "html", "markdown"]
+    export_formats: list[str] = ["pdf", "docx", "html", "markdown"]
     git_integration: bool = True
 
     @field_validator("export_formats", mode="before")
@@ -141,7 +139,7 @@ class Settings(BaseSettings):
         return self.environment == "production"
 
 
-@lru_cache()
+@lru_cache
 def get_settings() -> Settings:
     """Get application settings (cached)."""
     return Settings()

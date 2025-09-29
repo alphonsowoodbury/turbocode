@@ -1,27 +1,26 @@
 """Status command."""
 
-import asyncio
 from datetime import datetime, timedelta
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
-from turbo.cli.utils import run_async, handle_exceptions
+from turbo.cli.utils import handle_exceptions, run_async
+from turbo.core.database import get_db_session
 from turbo.core.repositories import (
-    ProjectRepository,
-    IssueRepository,
     DocumentRepository,
+    IssueRepository,
+    ProjectRepository,
     TagRepository,
 )
 from turbo.core.services import (
-    ProjectService,
-    IssueService,
     DocumentService,
+    IssueService,
+    ProjectService,
     TagService,
 )
-from turbo.core.database import get_db_session
 
 console = Console()
 

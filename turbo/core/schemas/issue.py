@@ -1,10 +1,9 @@
 """Issue Pydantic schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class IssueBase(BaseModel):
@@ -19,7 +18,7 @@ class IssueBase(BaseModel):
         default="open", pattern="^(open|in_progress|review|testing|closed)$"
     )
     priority: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
-    assignee: Optional[EmailStr] = None
+    assignee: EmailStr | None = None
 
     @field_validator("title")
     @classmethod
@@ -47,20 +46,20 @@ class IssueCreate(IssueBase):
 class IssueUpdate(BaseModel):
     """Schema for updating issues (all fields optional)."""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=200)
-    description: Optional[str] = Field(None, min_length=1)
-    type: Optional[str] = Field(
+    title: str | None = Field(None, min_length=1, max_length=200)
+    description: str | None = Field(None, min_length=1)
+    type: str | None = Field(
         None, pattern="^(feature|bug|task|enhancement|documentation)$"
     )
-    status: Optional[str] = Field(
+    status: str | None = Field(
         None, pattern="^(open|in_progress|review|testing|closed)$"
     )
-    priority: Optional[str] = Field(None, pattern="^(low|medium|high|critical)$")
-    assignee: Optional[EmailStr] = None
+    priority: str | None = Field(None, pattern="^(low|medium|high|critical)$")
+    assignee: EmailStr | None = None
 
     @field_validator("title")
     @classmethod
-    def validate_title(cls, v: Optional[str]) -> Optional[str]:
+    def validate_title(cls, v: str | None) -> str | None:
         """Validate issue title."""
         if v is not None and not v.strip():
             raise ValueError("Title cannot be empty or whitespace")
@@ -68,7 +67,7 @@ class IssueUpdate(BaseModel):
 
     @field_validator("description")
     @classmethod
-    def validate_description(cls, v: Optional[str]) -> Optional[str]:
+    def validate_description(cls, v: str | None) -> str | None:
         """Validate issue description."""
         if v is not None and not v.strip():
             raise ValueError("Description cannot be empty or whitespace")
@@ -94,6 +93,6 @@ class IssueSummary(BaseModel):
     type: str
     status: str
     priority: str
-    assignee: Optional[str] = None
+    assignee: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -1,9 +1,9 @@
 """Tests for project CLI commands."""
 
-import pytest
-from click.testing import CliRunner
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
+
+from click.testing import CliRunner
 
 from turbo.cli.commands.projects import projects_group
 from turbo.core.schemas import ProjectResponse

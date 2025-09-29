@@ -1,15 +1,11 @@
 """Main CLI application entry point."""
 
-import asyncio
 import logging
 import sys
-from pathlib import Path
 
 import click
 from rich.console import Console
 from rich.logging import RichHandler
-
-from turbo.utils.config import get_settings
 
 # Global console for rich output
 console = Console()
@@ -69,17 +65,17 @@ def cli(ctx, verbose, quiet, debug, version):
 # Add all command groups (import locally to avoid circular imports)
 def _register_commands():
     """Register all CLI commands."""
-    from turbo.cli.commands.projects import projects_group
-    from turbo.cli.commands.issues import issues_group
-    from turbo.cli.commands.documents import documents_group
-    from turbo.cli.commands.tags import tags_group
-    from turbo.cli.commands.init import init_command
+    from turbo.cli.commands.completion import completion_command
     from turbo.cli.commands.config import config_group
-    from turbo.cli.commands.status import status_command
-    from turbo.cli.commands.search import search_command
+    from turbo.cli.commands.documents import documents_group
     from turbo.cli.commands.export import export_command
     from turbo.cli.commands.import_ import import_command
-    from turbo.cli.commands.completion import completion_command
+    from turbo.cli.commands.init import init_command
+    from turbo.cli.commands.issues import issues_group
+    from turbo.cli.commands.projects import projects_group
+    from turbo.cli.commands.search import search_command
+    from turbo.cli.commands.status import status_command
+    from turbo.cli.commands.tags import tags_group
 
     cli.add_command(projects_group, name="projects")
     cli.add_command(issues_group, name="issues")

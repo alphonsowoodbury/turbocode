@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from turbo.api.v1.endpoints import projects, issues, documents, tags
+from turbo.api.v1.endpoints import documents, issues, projects, tags
 
 # Create the main API router
 router = APIRouter(prefix="/api/v1")

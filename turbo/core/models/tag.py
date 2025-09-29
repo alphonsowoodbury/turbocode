@@ -1,12 +1,11 @@
 """Tag model definition."""
 
-from typing import List
 
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 
 from turbo.core.database.base import Base
-from turbo.core.models.associations import project_tags, issue_tags
+from turbo.core.models.associations import issue_tags, project_tags
 
 
 class Tag(Base):

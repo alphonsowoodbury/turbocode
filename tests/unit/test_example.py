@@ -1,8 +1,8 @@
 """Example unit test to demonstrate testing patterns."""
 
+from unittest.mock import AsyncMock, Mock
+
 import pytest
-from unittest.mock import Mock, AsyncMock
-from uuid import uuid4
 
 # This is an example test file that demonstrates the testing patterns
 # It will be replaced with actual tests once the core modules are implemented

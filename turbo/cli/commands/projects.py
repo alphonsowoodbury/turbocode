@@ -1,18 +1,14 @@
 """Project CLI commands."""
 
-import asyncio
-import sys
-from uuid import UUID
-from typing import Optional
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
-from turbo.cli.utils import run_async, handle_exceptions, create_project_service
-from turbo.core.schemas import ProjectCreate, ProjectUpdate
+from turbo.cli.utils import create_project_service, handle_exceptions, run_async
 from turbo.core.database import get_db_session
+from turbo.core.schemas import ProjectCreate, ProjectUpdate
 from turbo.utils.exceptions import ProjectNotFoundError, ValidationError
 
 console = Console()
@@ -69,7 +65,7 @@ def create(name, description, priority, status, completion):
 
             project = await service.create_project(project_data)
 
-            console.print(f"[green]✓[/green] Project created successfully!")
+            console.print("[green]✓[/green] Project created successfully!")
             console.print(f"  ID: {project.id}")
             console.print(f"  Name: {project.name}")
             console.print(f"  Status: {project.status}")
@@ -185,7 +181,7 @@ def update(project_id, name, description, priority, status, completion):
                 project_update = ProjectUpdate(**update_data)
                 project = await service.update_project(project_id, project_update)
 
-                console.print(f"[green]✓[/green] Project updated successfully!")
+                console.print("[green]✓[/green] Project updated successfully!")
                 _display_project_summary(project)
 
             except ProjectNotFoundError:
@@ -213,7 +209,7 @@ def delete(project_id, confirm):
 
             try:
                 await service.delete_project(project_id)
-                console.print(f"[green]✓[/green] Project deleted successfully!")
+                console.print("[green]✓[/green] Project deleted successfully!")
 
             except ProjectNotFoundError:
                 console.print(f"[red]Project with ID {project_id} not found[/red]")
@@ -233,7 +229,7 @@ def archive(project_id):
 
             try:
                 project = await service.archive_project(project_id)
-                console.print(f"[green]✓[/green] Project archived successfully!")
+                console.print("[green]✓[/green] Project archived successfully!")
                 _display_project_summary(project)
 
             except ProjectNotFoundError:

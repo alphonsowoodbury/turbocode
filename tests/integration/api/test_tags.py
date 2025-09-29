@@ -1,8 +1,9 @@
 """Integration tests for tag API endpoints."""
 
-import pytest
-from httpx import AsyncClient
 from uuid import uuid4
+
+from httpx import AsyncClient
+import pytest
 
 
 class TestTagAPI:

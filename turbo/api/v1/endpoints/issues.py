@@ -1,17 +1,18 @@
 """Issue API endpoints."""
 
-from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from turbo.api.dependencies import get_issue_service
+from turbo.core.schemas import IssueCreate, IssueResponse, IssueUpdate, TagResponse
 from turbo.core.services import IssueService
-from turbo.core.schemas import IssueCreate, IssueUpdate, IssueResponse, TagResponse
 from turbo.utils.exceptions import (
     IssueNotFoundError,
     ProjectNotFoundError,
+)
+from turbo.utils.exceptions import (
     ValidationError as TurboValidationError,
 )
 
@@ -56,15 +57,15 @@ async def get_issue(
         )
 
 
-@router.get("/", response_model=List[IssueResponse])
+@router.get("/", response_model=list[IssueResponse])
 async def get_issues(
-    status_filter: Optional[str] = Query(None, alias="status"),
-    assignee: Optional[str] = Query(None),
-    project_id: Optional[UUID] = Query(None),
-    limit: Optional[int] = Query(None, ge=1, le=100),
-    offset: Optional[int] = Query(None, ge=0),
+    status_filter: str | None = Query(None, alias="status"),
+    assignee: str | None = Query(None),
+    project_id: UUID | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int | None = Query(None, ge=0),
     issue_service: IssueService = Depends(get_issue_service),
-) -> List[IssueResponse]:
+) -> list[IssueResponse]:
     """Get all issues with optional filtering."""
     if status_filter:
         return await issue_service.get_issues_by_status(status_filter)
@@ -158,11 +159,11 @@ async def reopen_issue(
         )
 
 
-@router.get("/search", response_model=List[IssueResponse])
+@router.get("/search", response_model=list[IssueResponse])
 async def search_issues(
     query: str = Query(..., min_length=1),
     issue_service: IssueService = Depends(get_issue_service),
-) -> List[IssueResponse]:
+) -> list[IssueResponse]:
     """Search issues by title."""
     return await issue_service.search_issues_by_title(query)
 
@@ -201,10 +202,10 @@ async def remove_tag_from_issue(
         )
 
 
-@router.get("/{issue_id}/tags", response_model=List[TagResponse])
+@router.get("/{issue_id}/tags", response_model=list[TagResponse])
 async def get_issue_tags(
     issue_id: UUID, issue_service: IssueService = Depends(get_issue_service)
-) -> List[TagResponse]:
+) -> list[TagResponse]:
     """Get all tags for an issue."""
     try:
         return await issue_service.get_issue_tags(issue_id)

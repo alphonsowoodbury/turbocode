@@ -1,22 +1,19 @@
 """Issue CLI commands."""
 
-import asyncio
-from uuid import UUID
-from typing import Optional
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
 from turbo.cli.utils import (
-    run_async,
-    handle_exceptions,
     create_issue_service,
     create_project_service,
+    handle_exceptions,
+    run_async,
 )
-from turbo.core.schemas import IssueCreate, IssueUpdate
 from turbo.core.database import get_db_session
+from turbo.core.schemas import IssueCreate, IssueUpdate
 from turbo.utils.exceptions import (
     IssueNotFoundError,
     ProjectNotFoundError,
@@ -87,7 +84,7 @@ def create(title, description, project_id, priority, status, issue_type, assigne
 
             issue = await issue_service.create_issue(issue_data)
 
-            console.print(f"[green]✓[/green] Issue created successfully!")
+            console.print("[green]✓[/green] Issue created successfully!")
             console.print(f"  ID: {issue.id}")
             console.print(f"  Title: {issue.title}")
             console.print(f"  Status: {issue.status}")
@@ -218,7 +215,7 @@ def update(issue_id, title, description, priority, status, issue_type, assignee)
                 issue_update = IssueUpdate(**update_data)
                 issue = await service.update_issue(issue_id, issue_update)
 
-                console.print(f"[green]✓[/green] Issue updated successfully!")
+                console.print("[green]✓[/green] Issue updated successfully!")
                 _display_issue_summary(issue)
 
             except IssueNotFoundError:
@@ -279,7 +276,7 @@ def close(issue_id, resolution):
                 issue_update = IssueUpdate(**update_data)
                 issue = await service.update_issue(issue_id, issue_update)
 
-                console.print(f"[green]✓[/green] Issue closed successfully!")
+                console.print("[green]✓[/green] Issue closed successfully!")
                 _display_issue_summary(issue)
 
             except IssueNotFoundError:
@@ -302,7 +299,7 @@ def reopen(issue_id):
                 issue_update = IssueUpdate(status="open")
                 issue = await service.update_issue(issue_id, issue_update)
 
-                console.print(f"[green]✓[/green] Issue reopened successfully!")
+                console.print("[green]✓[/green] Issue reopened successfully!")
                 _display_issue_summary(issue)
 
             except IssueNotFoundError:
@@ -328,7 +325,7 @@ def delete(issue_id, confirm):
 
             try:
                 await service.delete_issue(issue_id)
-                console.print(f"[green]✓[/green] Issue deleted successfully!")
+                console.print("[green]✓[/green] Issue deleted successfully!")
 
             except IssueNotFoundError:
                 console.print(f"[red]Issue with ID {issue_id} not found[/red]")

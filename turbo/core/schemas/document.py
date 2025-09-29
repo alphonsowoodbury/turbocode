@@ -1,10 +1,9 @@
 """Document Pydantic schemas."""
 
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, EmailStr, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class DocumentBase(BaseModel):
@@ -17,8 +16,8 @@ class DocumentBase(BaseModel):
         pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$",
     )
     format: str = Field(default="markdown", pattern="^(markdown|html|text|pdf|docx)$")
-    version: Optional[str] = Field(None, max_length=20)
-    author: Optional[EmailStr] = None
+    version: str | None = Field(None, max_length=20)
+    author: EmailStr | None = None
 
     @field_validator("title")
     @classmethod
@@ -46,19 +45,19 @@ class DocumentCreate(DocumentBase):
 class DocumentUpdate(BaseModel):
     """Schema for updating documents (all fields optional)."""
 
-    title: Optional[str] = Field(None, min_length=1, max_length=200)
-    content: Optional[str] = Field(None, min_length=1)
-    type: Optional[str] = Field(
+    title: str | None = Field(None, min_length=1, max_length=200)
+    content: str | None = Field(None, min_length=1)
+    type: str | None = Field(
         None,
         pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$",
     )
-    format: Optional[str] = Field(None, pattern="^(markdown|html|text|pdf|docx)$")
-    version: Optional[str] = Field(None, max_length=20)
-    author: Optional[EmailStr] = None
+    format: str | None = Field(None, pattern="^(markdown|html|text|pdf|docx)$")
+    version: str | None = Field(None, max_length=20)
+    author: EmailStr | None = None
 
     @field_validator("title")
     @classmethod
-    def validate_title(cls, v: Optional[str]) -> Optional[str]:
+    def validate_title(cls, v: str | None) -> str | None:
         """Validate document title."""
         if v is not None and not v.strip():
             raise ValueError("Title cannot be empty or whitespace")
@@ -66,11 +65,11 @@ class DocumentUpdate(BaseModel):
 
     @field_validator("content")
     @classmethod
-    def validate_content(cls, v: Optional[str]) -> Optional[str]:
+    def validate_content(cls, v: str | None) -> str | None:
         """Validate document content."""
         if v is not None and not v.strip():
             raise ValueError("Content cannot be empty or whitespace")
-        return v if v else v
+        return v
 
 
 class DocumentResponse(DocumentBase):
@@ -91,7 +90,7 @@ class DocumentSummary(BaseModel):
     title: str
     type: str
     format: str
-    version: Optional[str] = None
-    author: Optional[str] = None
+    version: str | None = None
+    author: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

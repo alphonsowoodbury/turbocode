@@ -1,14 +1,14 @@
 """Document service for business logic operations."""
 
-from typing import List, Optional, Dict, Any
+from typing import Any
 from uuid import UUID
 
 from turbo.core.repositories.document import DocumentRepository
 from turbo.core.repositories.project import ProjectRepository
 from turbo.core.schemas.document import (
     DocumentCreate,
-    DocumentUpdate,
     DocumentResponse,
+    DocumentUpdate,
 )
 from turbo.utils.exceptions import DocumentNotFoundError, ProjectNotFoundError
 
@@ -42,8 +42,8 @@ class DocumentService:
         return DocumentResponse.model_validate(document)
 
     async def get_all_documents(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[DocumentResponse]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[DocumentResponse]:
         """Get all documents with optional pagination."""
         documents = await self._document_repository.get_all(limit=limit, offset=offset)
         return [DocumentResponse.model_validate(document) for document in documents]
@@ -66,7 +66,7 @@ class DocumentService:
 
     async def get_documents_by_project(
         self, project_id: UUID
-    ) -> List[DocumentResponse]:
+    ) -> list[DocumentResponse]:
         """Get all documents for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -76,17 +76,17 @@ class DocumentService:
         documents = await self._document_repository.get_by_project(project_id)
         return [DocumentResponse.model_validate(document) for document in documents]
 
-    async def get_documents_by_type(self, document_type: str) -> List[DocumentResponse]:
+    async def get_documents_by_type(self, document_type: str) -> list[DocumentResponse]:
         """Get documents by type."""
         documents = await self._document_repository.get_by_type(document_type)
         return [DocumentResponse.model_validate(document) for document in documents]
 
-    async def get_documents_by_author(self, author: str) -> List[DocumentResponse]:
+    async def get_documents_by_author(self, author: str) -> list[DocumentResponse]:
         """Get documents by author."""
         documents = await self._document_repository.get_by_author(author)
         return [DocumentResponse.model_validate(document) for document in documents]
 
-    async def search_documents(self, search_term: str) -> List[DocumentResponse]:
+    async def search_documents(self, search_term: str) -> list[DocumentResponse]:
         """Search documents by title and content."""
         # Search by title
         title_results = await self._document_repository.search_by_title(search_term)
@@ -104,7 +104,7 @@ class DocumentService:
 
     async def get_project_specifications(
         self, project_id: UUID
-    ) -> List[DocumentResponse]:
+    ) -> list[DocumentResponse]:
         """Get specification documents for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -118,7 +118,7 @@ class DocumentService:
 
     async def get_project_documentation(
         self, project_id: UUID
-    ) -> List[DocumentResponse]:
+    ) -> list[DocumentResponse]:
         """Get documentation documents for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -132,7 +132,7 @@ class DocumentService:
 
     async def get_latest_document_version(
         self, project_id: UUID, document_type: str
-    ) -> Optional[DocumentResponse]:
+    ) -> DocumentResponse | None:
         """Get the latest version of a document type for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -147,8 +147,8 @@ class DocumentService:
         return None
 
     async def get_recent_documents(
-        self, limit: int = 10, project_id: Optional[UUID] = None
-    ) -> List[DocumentResponse]:
+        self, limit: int = 10, project_id: UUID | None = None
+    ) -> list[DocumentResponse]:
         """Get recently updated documents."""
         if project_id:
             # Verify project exists
@@ -162,7 +162,7 @@ class DocumentService:
         return [DocumentResponse.model_validate(document) for document in documents]
 
     async def generate_document_from_template(
-        self, project_id: UUID, template_name: str, context: Dict[str, Any]
+        self, project_id: UUID, template_name: str, context: dict[str, Any]
     ) -> DocumentResponse:
         """Generate a document from a template with context."""
         # Verify project exists
@@ -186,8 +186,8 @@ class DocumentService:
         return DocumentResponse.model_validate(document)
 
     def _generate_from_template(
-        self, template_name: str, context: Dict[str, Any]
-    ) -> Dict[str, str]:
+        self, template_name: str, context: dict[str, Any]
+    ) -> dict[str, str]:
         """Generate content from template (placeholder implementation)."""
         # This would be replaced with actual template engine integration
         if template_name == "technical_spec":

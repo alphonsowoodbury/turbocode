@@ -1,14 +1,13 @@
 """Issue service for business logic operations."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from turbo.core.repositories.issue import IssueRepository
 from turbo.core.repositories.project import ProjectRepository
 from turbo.core.schemas.issue import (
     IssueCreate,
-    IssueUpdate,
     IssueResponse,
+    IssueUpdate,
 )
 from turbo.utils.exceptions import IssueNotFoundError, ProjectNotFoundError
 
@@ -42,8 +41,8 @@ class IssueService:
         return IssueResponse.model_validate(issue)
 
     async def get_all_issues(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[IssueResponse]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[IssueResponse]:
         """Get all issues with optional pagination."""
         issues = await self._issue_repository.get_all(limit=limit, offset=offset)
         return [IssueResponse.model_validate(issue) for issue in issues]
@@ -104,7 +103,7 @@ class IssueService:
             raise IssueNotFoundError(issue_id)
         return IssueResponse.model_validate(issue)
 
-    async def get_issues_by_project(self, project_id: UUID) -> List[IssueResponse]:
+    async def get_issues_by_project(self, project_id: UUID) -> list[IssueResponse]:
         """Get all issues for a project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -114,42 +113,42 @@ class IssueService:
         issues = await self._issue_repository.get_by_project(project_id)
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_issues_by_status(self, status: str) -> List[IssueResponse]:
+    async def get_issues_by_status(self, status: str) -> list[IssueResponse]:
         """Get issues by status."""
         issues = await self._issue_repository.get_by_status(status)
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_issues_by_assignee(self, assignee: str) -> List[IssueResponse]:
+    async def get_issues_by_assignee(self, assignee: str) -> list[IssueResponse]:
         """Get issues assigned to a specific person."""
         issues = await self._issue_repository.get_by_assignee(assignee)
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_open_issues(self) -> List[IssueResponse]:
+    async def get_open_issues(self) -> list[IssueResponse]:
         """Get all open issues."""
         issues = await self._issue_repository.get_open_issues()
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_closed_issues(self) -> List[IssueResponse]:
+    async def get_closed_issues(self) -> list[IssueResponse]:
         """Get all closed issues."""
         issues = await self._issue_repository.get_closed_issues()
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_unassigned_issues(self) -> List[IssueResponse]:
+    async def get_unassigned_issues(self) -> list[IssueResponse]:
         """Get issues without assignee."""
         issues = await self._issue_repository.get_unassigned_issues()
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_high_priority_issues(self) -> List[IssueResponse]:
+    async def get_high_priority_issues(self) -> list[IssueResponse]:
         """Get high priority and critical issues."""
         issues = await self._issue_repository.get_high_priority_issues()
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def search_issues(self, title_pattern: str) -> List[IssueResponse]:
+    async def search_issues(self, title_pattern: str) -> list[IssueResponse]:
         """Search issues by title pattern."""
         issues = await self._issue_repository.search_by_title(title_pattern)
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_project_open_issues(self, project_id: UUID) -> List[IssueResponse]:
+    async def get_project_open_issues(self, project_id: UUID) -> list[IssueResponse]:
         """Get open issues for a specific project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)
@@ -159,7 +158,7 @@ class IssueService:
         issues = await self._issue_repository.get_project_open_issues(project_id)
         return [IssueResponse.model_validate(issue) for issue in issues]
 
-    async def get_project_closed_issues(self, project_id: UUID) -> List[IssueResponse]:
+    async def get_project_closed_issues(self, project_id: UUID) -> list[IssueResponse]:
         """Get closed issues for a specific project."""
         # Verify project exists
         project = await self._project_repository.get_by_id(project_id)

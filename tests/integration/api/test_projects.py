@@ -1,10 +1,9 @@
 """Integration tests for project API endpoints."""
 
-import pytest
-from httpx import AsyncClient
 from uuid import uuid4
 
-from turbo.core.models import Project
+from httpx import AsyncClient
+import pytest
 
 
 class TestProjectAPI:

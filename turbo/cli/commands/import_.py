@@ -1,22 +1,21 @@
 """Import command."""
 
-import asyncio
-import json
 import csv
+import json
 from pathlib import Path
 
 import click
 from rich.console import Console
 
-from turbo.cli.utils import run_async, handle_exceptions
 from turbo.api.dependencies import (
-    get_project_service,
-    get_issue_service,
     get_document_service,
+    get_issue_service,
+    get_project_service,
     get_tag_service,
 )
-from turbo.core.schemas import ProjectCreate, IssueCreate, DocumentCreate, TagCreate
+from turbo.cli.utils import handle_exceptions, run_async
 from turbo.core.database import get_db_session
+from turbo.core.schemas import DocumentCreate, IssueCreate, ProjectCreate, TagCreate
 
 console = Console()
 
@@ -59,7 +58,7 @@ def import_command(import_file, type, dry_run, skip_existing):
 
                 # Load data based on file extension
                 if import_path.suffix.lower() == ".json":
-                    with open(import_path, "r", encoding="utf-8") as f:
+                    with open(import_path, encoding="utf-8") as f:
                         import_data = json.load(f)
                 elif import_path.suffix.lower() == ".csv":
                     import_data = _load_csv_data(import_path, type)
@@ -109,7 +108,7 @@ def _load_csv_data(file_path, import_type):
     """Load data from CSV file."""
     import_data = {}
 
-    with open(file_path, "r", encoding="utf-8") as f:
+    with open(file_path, encoding="utf-8") as f:
         reader = csv.DictReader(f)
         data = list(reader)
 
@@ -139,9 +138,7 @@ def _show_import_preview(import_data, import_type):
             for i, item in enumerate(items[:3]):
                 if entity_type == "projects":
                     console.print(f"  - {item.get('name', 'Unknown')}")
-                elif entity_type == "issues":
-                    console.print(f"  - {item.get('title', 'Unknown')}")
-                elif entity_type == "documents":
+                elif entity_type == "issues" or entity_type == "documents":
                     console.print(f"  - {item.get('title', 'Unknown')}")
                 elif entity_type == "tags":
                     console.print(f"  - {item.get('name', 'Unknown')}")
@@ -341,7 +338,7 @@ def _show_import_results(results):
         total_skipped += stats["skipped"]
         total_errors += stats["errors"]
 
-    console.print(f"\n[bold]Total:[/bold]")
+    console.print("\n[bold]Total:[/bold]")
     console.print(f"  Imported: [green]{total_imported}[/green]")
     if total_skipped > 0:
         console.print(f"  Skipped: [yellow]{total_skipped}[/yellow]")
@@ -349,8 +346,8 @@ def _show_import_results(results):
         console.print(f"  Errors: [red]{total_errors}[/red]")
 
     if total_imported > 0:
-        console.print(f"\n[green]✓[/green] Import completed successfully!")
+        console.print("\n[green]✓[/green] Import completed successfully!")
     elif total_errors > 0:
-        console.print(f"\n[red]✗[/red] Import completed with errors")
+        console.print("\n[red]✗[/red] Import completed with errors")
     else:
-        console.print(f"\n[yellow]![/yellow] No items were imported")
+        console.print("\n[yellow]![/yellow] No items were imported")

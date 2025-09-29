@@ -1,13 +1,12 @@
 """Base repository with common CRUD operations."""
 
-from abc import ABC, abstractmethod
-from typing import Any, Generic, List, Optional, TypeVar, Type
+from abc import ABC
+from typing import Generic, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel
-from sqlalchemy import select, update, delete
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from turbo.core.database.base import Base
 
@@ -20,7 +19,7 @@ UpdateSchemaType = TypeVar("UpdateSchemaType", bound=BaseModel)
 class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
     """Base repository with common CRUD operations."""
 
-    def __init__(self, session: AsyncSession, model: Type[ModelType]) -> None:
+    def __init__(self, session: AsyncSession, model: type[ModelType]) -> None:
         self._session = session
         self._model = model
 
@@ -33,15 +32,15 @@ class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]
         await self._session.refresh(db_obj)
         return db_obj
 
-    async def get_by_id(self, id: UUID) -> Optional[ModelType]:
+    async def get_by_id(self, id: UUID) -> ModelType | None:
         """Get record by ID."""
         stmt = select(self._model).where(self._model.id == id)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_all(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[ModelType]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[ModelType]:
         """Get all records with optional pagination."""
         stmt = select(self._model)
         if offset:
@@ -52,7 +51,7 @@ class BaseRepository(ABC, Generic[ModelType, CreateSchemaType, UpdateSchemaType]
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def update(self, id: UUID, obj_in: UpdateSchemaType) -> Optional[ModelType]:
+    async def update(self, id: UUID, obj_in: UpdateSchemaType) -> ModelType | None:
         """Update a record by ID."""
         # Get the existing record
         db_obj = await self.get_by_id(id)

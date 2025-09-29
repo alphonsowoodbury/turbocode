@@ -1,14 +1,11 @@
 """Unit tests for core database models."""
 
-import pytest
-from datetime import datetime, timezone
-from uuid import uuid4
+from datetime import datetime
 
-import pytest_asyncio
+import pytest
 from sqlalchemy.exc import IntegrityError
 
-from turbo.core.models import Project, Issue, Document, Tag
-from turbo.core.database import Base
+from turbo.core.models import Document, Issue, Project, Tag
 
 
 class TestBaseModel:

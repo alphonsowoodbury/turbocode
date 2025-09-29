@@ -1,22 +1,18 @@
 """Document CLI commands."""
 
-import asyncio
 import os
-import tempfile
 import subprocess
-from uuid import UUID
-from typing import Optional
-from pathlib import Path
+import tempfile
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
-from turbo.cli.utils import run_async, handle_exceptions
 from turbo.api.dependencies import get_document_service, get_project_service
-from turbo.core.schemas import DocumentCreate, DocumentUpdate
+from turbo.cli.utils import handle_exceptions, run_async
 from turbo.core.database import get_db_session
+from turbo.core.schemas import DocumentCreate, DocumentUpdate
 from turbo.utils.exceptions import (
     DocumentNotFoundError,
     ProjectNotFoundError,
@@ -74,7 +70,7 @@ def create(title, content, content_file, project_id, doc_type, path):
 
             # Get content from file if provided
             if content_file:
-                with open(content_file, "r", encoding="utf-8") as f:
+                with open(content_file, encoding="utf-8") as f:
                     content = f.read()
             elif not content:
                 content = ""
@@ -89,7 +85,7 @@ def create(title, content, content_file, project_id, doc_type, path):
 
             document = await document_service.create_document(document_data)
 
-            console.print(f"[green]✓[/green] Document created successfully!")
+            console.print("[green]✓[/green] Document created successfully!")
             console.print(f"  ID: {document.id}")
             console.print(f"  Title: {document.title}")
             console.print(f"  Type: {document.document_type}")
@@ -205,7 +201,7 @@ def update(document_id, title, content, content_file, doc_type, path):
 
             # Get content from file if provided
             if content_file:
-                with open(content_file, "r", encoding="utf-8") as f:
+                with open(content_file, encoding="utf-8") as f:
                     content = f.read()
 
             # Build update data from provided options
@@ -227,7 +223,7 @@ def update(document_id, title, content, content_file, doc_type, path):
                 document_update = DocumentUpdate(**update_data)
                 document = await service.update_document(document_id, document_update)
 
-                console.print(f"[green]✓[/green] Document updated successfully!")
+                console.print("[green]✓[/green] Document updated successfully!")
                 _display_document_summary(document)
 
             except DocumentNotFoundError:
@@ -255,7 +251,7 @@ def delete(document_id, confirm):
 
             try:
                 await service.delete_document(document_id)
-                console.print(f"[green]✓[/green] Document deleted successfully!")
+                console.print("[green]✓[/green] Document deleted successfully!")
 
             except DocumentNotFoundError:
                 console.print(f"[red]Document with ID {document_id} not found[/red]")
@@ -424,7 +420,7 @@ def edit(document_id, editor):
                     subprocess.run([editor, temp_file], check=True)
 
                     # Read updated content
-                    with open(temp_file, "r", encoding="utf-8") as f:
+                    with open(temp_file, encoding="utf-8") as f:
                         new_content = f.read()
 
                     # Update document if content changed
@@ -432,7 +428,7 @@ def edit(document_id, editor):
                         document_update = DocumentUpdate(content=new_content)
                         await service.update_document(document_id, document_update)
                         console.print(
-                            f"[green]✓[/green] Document updated successfully!"
+                            "[green]✓[/green] Document updated successfully!"
                         )
                     else:
                         console.print("[yellow]No changes made[/yellow]")

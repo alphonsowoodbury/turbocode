@@ -1,17 +1,14 @@
 """Tag CLI commands."""
 
-import asyncio
-from uuid import UUID
-from typing import Optional
 
 import click
+from rich import box
 from rich.console import Console
 from rich.table import Table
-from rich import box
 
-from turbo.cli.utils import run_async, handle_exceptions, create_tag_service
-from turbo.core.schemas import TagCreate, TagUpdate
+from turbo.cli.utils import create_tag_service, handle_exceptions, run_async
 from turbo.core.database import get_db_session
+from turbo.core.schemas import TagCreate, TagUpdate
 from turbo.utils.exceptions import TagNotFoundError, ValidationError
 
 console = Console()
@@ -82,7 +79,7 @@ def create(name, description, color):
 
             tag = await service.create_tag(tag_data)
 
-            console.print(f"[green]✓[/green] Tag created successfully!")
+            console.print("[green]✓[/green] Tag created successfully!")
             console.print(f"  ID: {tag.id}")
             color_name = _get_color_name(tag.color)
             console.print(f"  Name: [{color_name}]{tag.name}[/{color_name}]")
@@ -191,7 +188,7 @@ def update(tag_id, name, description, color):
                 tag_update = TagUpdate(**update_data)
                 tag = await service.update_tag(tag_id, tag_update)
 
-                console.print(f"[green]✓[/green] Tag updated successfully!")
+                console.print("[green]✓[/green] Tag updated successfully!")
                 _display_tag_summary(tag)
 
             except TagNotFoundError:
@@ -219,7 +216,7 @@ def delete(tag_id, confirm):
 
             try:
                 await service.delete_tag(tag_id)
-                console.print(f"[green]✓[/green] Tag deleted successfully!")
+                console.print("[green]✓[/green] Tag deleted successfully!")
 
             except TagNotFoundError:
                 console.print(f"[red]Tag with ID {tag_id} not found[/red]")

@@ -1,11 +1,10 @@
 """Tag Pydantic schemas."""
 
-import re
 from datetime import datetime
-from typing import Optional
+import re
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class TagBase(BaseModel):
@@ -13,7 +12,7 @@ class TagBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=50)
     color: str = Field(..., pattern="^#[0-9A-Fa-f]{6}$")
-    description: Optional[str] = Field(None, max_length=200)
+    description: str | None = Field(None, max_length=200)
 
     @field_validator("name")
     @classmethod
@@ -41,13 +40,13 @@ class TagCreate(TagBase):
 class TagUpdate(BaseModel):
     """Schema for updating tags."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=50)
-    color: Optional[str] = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
-    description: Optional[str] = Field(None, max_length=200)
+    name: str | None = Field(None, min_length=1, max_length=50)
+    color: str | None = Field(None, pattern="^#[0-9A-Fa-f]{6}$")
+    description: str | None = Field(None, max_length=200)
 
     @field_validator("name")
     @classmethod
-    def validate_name(cls, v: Optional[str]) -> Optional[str]:
+    def validate_name(cls, v: str | None) -> str | None:
         """Validate tag name."""
         if v is not None:
             if not v.strip():
@@ -57,7 +56,7 @@ class TagUpdate(BaseModel):
 
     @field_validator("color")
     @classmethod
-    def validate_color(cls, v: Optional[str]) -> Optional[str]:
+    def validate_color(cls, v: str | None) -> str | None:
         """Validate hex color format."""
         if v is not None:
             if not re.match(r"^#[0-9A-Fa-f]{6}$", v):

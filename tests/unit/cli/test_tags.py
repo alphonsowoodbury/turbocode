@@ -1,12 +1,12 @@
 """Tests for tag CLI commands."""
 
-import pytest
-from click.testing import CliRunner
 from unittest.mock import AsyncMock, patch
 from uuid import uuid4
 
+from click.testing import CliRunner
+
 from turbo.cli.commands.tags import tags_group
-from turbo.core.schemas import TagResponse, ProjectResponse, IssueResponse
+from turbo.core.schemas import IssueResponse, ProjectResponse, TagResponse
 
 
 class TestTagCLI:
@@ -476,8 +476,8 @@ class TestTagCLIBulkOperations:
         mock_get_service.return_value = mock_service
 
         # Mock file content
-        import tempfile
         import os
+        import tempfile
 
         tags_data = """frontend,#FF5733,Frontend development
 backend,#33FF57,Backend development

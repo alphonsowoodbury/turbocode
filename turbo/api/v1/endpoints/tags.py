@@ -1,17 +1,18 @@
 """Tag API endpoints."""
 
-from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 
 from turbo.api.dependencies import get_tag_service
+from turbo.core.schemas import IssueResponse, ProjectResponse, TagCreate, TagResponse
 from turbo.core.services import TagService
-from turbo.core.schemas import TagCreate, TagResponse, ProjectResponse, IssueResponse
 from turbo.utils.exceptions import (
-    TagNotFoundError,
     DuplicateResourceError,
+    TagNotFoundError,
+)
+from turbo.utils.exceptions import (
     ValidationError as TurboValidationError,
 )
 
@@ -21,7 +22,7 @@ router = APIRouter()
 class BulkTagRequest(BaseModel):
     """Request model for bulk tag operations."""
 
-    tag_ids: List[UUID]
+    tag_ids: list[UUID]
 
 
 class TagUsageStats(BaseModel):
@@ -61,13 +62,13 @@ async def get_tag(
         )
 
 
-@router.get("/", response_model=List[TagResponse])
+@router.get("/", response_model=list[TagResponse])
 async def get_tags(
-    color: Optional[str] = Query(None),
-    limit: Optional[int] = Query(None, ge=1, le=100),
-    offset: Optional[int] = Query(None, ge=0),
+    color: str | None = Query(None),
+    limit: int | None = Query(None, ge=1, le=100),
+    offset: int | None = Query(None, ge=0),
     tag_service: TagService = Depends(get_tag_service),
-) -> List[TagResponse]:
+) -> list[TagResponse]:
     """Get all tags with optional filtering."""
     if color:
         return await tag_service.get_tags_by_color(color)
@@ -111,28 +112,28 @@ async def delete_tag(
         )
 
 
-@router.get("/search", response_model=List[TagResponse])
+@router.get("/search", response_model=list[TagResponse])
 async def search_tags(
     query: str = Query(..., min_length=1),
     tag_service: TagService = Depends(get_tag_service),
-) -> List[TagResponse]:
+) -> list[TagResponse]:
     """Search tags by name."""
     return await tag_service.search_tags(query)
 
 
-@router.get("/popular", response_model=List[TagResponse])
+@router.get("/popular", response_model=list[TagResponse])
 async def get_popular_tags(
     limit: int = Query(10, ge=1, le=50),
     tag_service: TagService = Depends(get_tag_service),
-) -> List[TagResponse]:
+) -> list[TagResponse]:
     """Get most popular tags."""
     return await tag_service.get_popular_tags(limit=limit)
 
 
-@router.get("/unused", response_model=List[TagResponse])
+@router.get("/unused", response_model=list[TagResponse])
 async def get_unused_tags(
     tag_service: TagService = Depends(get_tag_service),
-) -> List[TagResponse]:
+) -> list[TagResponse]:
     """Get tags that are not used by any projects or issues."""
     return await tag_service.get_unused_tags()
 
@@ -156,10 +157,10 @@ async def get_tag_usage_statistics(
         )
 
 
-@router.get("/{tag_id}/projects", response_model=List[ProjectResponse])
+@router.get("/{tag_id}/projects", response_model=list[ProjectResponse])
 async def get_projects_with_tag(
     tag_id: UUID, tag_service: TagService = Depends(get_tag_service)
-) -> List[ProjectResponse]:
+) -> list[ProjectResponse]:
     """Get projects that have a specific tag."""
     try:
         return await tag_service.get_projects_with_tag(tag_id)
@@ -170,10 +171,10 @@ async def get_projects_with_tag(
         )
 
 
-@router.get("/{tag_id}/issues", response_model=List[IssueResponse])
+@router.get("/{tag_id}/issues", response_model=list[IssueResponse])
 async def get_issues_with_tag(
     tag_id: UUID, tag_service: TagService = Depends(get_tag_service)
-) -> List[IssueResponse]:
+) -> list[IssueResponse]:
     """Get issues that have a specific tag."""
     try:
         return await tag_service.get_issues_with_tag(tag_id)

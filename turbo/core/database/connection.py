@@ -1,23 +1,21 @@
 """Database connection and session management."""
 
-import asyncio
-from typing import AsyncGenerator, Optional
+from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
-    AsyncEngine,
 )
 from sqlalchemy.pool import StaticPool
 
-from turbo.utils.config import get_settings
 from turbo.core.database.base import Base
-
+from turbo.utils.config import get_settings
 
 # Global engine instance
-_engine: Optional[AsyncEngine] = None
-_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
+_engine: AsyncEngine | None = None
+_session_factory: async_sessionmaker[AsyncSession] | None = None
 
 
 def create_engine() -> AsyncEngine:
@@ -86,7 +84,7 @@ async def init_database() -> None:
     engine = get_engine()
     async with engine.begin() as conn:
         # Import all models to ensure they're registered
-        from turbo.core.models import Project, Issue, Document, Tag  # noqa: F401
+        from turbo.core.models import Document, Issue, Project, Tag  # noqa: F401
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)
@@ -108,7 +106,7 @@ class DatabaseConnection:
     """Context manager for database operations."""
 
     def __init__(self) -> None:
-        self.session: Optional[AsyncSession] = None
+        self.session: AsyncSession | None = None
 
     async def __aenter__(self) -> AsyncSession:
         """Enter async context."""

@@ -1,10 +1,10 @@
 """Tests for main CLI application and global commands."""
 
-import pytest
-from click.testing import CliRunner
-from unittest.mock import AsyncMock, patch, mock_open
-import tempfile
 import os
+import tempfile
+from unittest.mock import patch
+
+from click.testing import CliRunner
 
 from turbo.cli.main import cli
 

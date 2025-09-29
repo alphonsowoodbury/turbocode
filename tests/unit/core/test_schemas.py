@@ -1,20 +1,19 @@
 """Unit tests for Pydantic schemas."""
 
-import pytest
 from datetime import datetime
-from uuid import uuid4, UUID
+from uuid import uuid4
+
 from pydantic import ValidationError
+import pytest
 
 from turbo.core.schemas import (
-    ProjectCreate,
-    ProjectUpdate,
-    ProjectResponse,
-    IssueCreate,
-    IssueUpdate,
-    IssueResponse,
     DocumentCreate,
-    DocumentUpdate,
-    DocumentResponse,
+    IssueCreate,
+    IssueResponse,
+    IssueUpdate,
+    ProjectCreate,
+    ProjectResponse,
+    ProjectUpdate,
     TagCreate,
     TagResponse,
 )

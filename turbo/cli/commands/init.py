@@ -1,8 +1,7 @@
 """Initialization command."""
 
-import os
-import shutil
 from pathlib import Path
+import shutil
 
 import click
 from rich.console import Console
@@ -67,7 +66,7 @@ log_level = "INFO"
                 f"[green]✓[/green] Workspace initialized successfully at {workspace_path}"
             )
             console.print(f"  Configuration: {turbo_dir / 'config.toml'}")
-            console.print(f"  Database initialized")
+            console.print("  Database initialized")
         except Exception as e:
             console.print(
                 f"[yellow]Workspace created but database initialization failed: {e}[/yellow]"

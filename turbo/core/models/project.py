@@ -1,8 +1,7 @@
 """Project model definition."""
 
-from typing import List
 
-from sqlalchemy import Column, String, Boolean, Float
+from sqlalchemy import Boolean, Column, Float, String
 from sqlalchemy.orm import relationship
 
 from turbo.core.database.base import Base

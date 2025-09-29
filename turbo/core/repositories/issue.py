@@ -1,6 +1,5 @@
 """Issue repository implementation."""
 
-from typing import List, Optional
 from uuid import UUID
 
 from sqlalchemy import select
@@ -18,67 +17,67 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
     def __init__(self, session: AsyncSession) -> None:
         super().__init__(session, Issue)
 
-    async def get_by_project(self, project_id: UUID) -> List[Issue]:
+    async def get_by_project(self, project_id: UUID) -> list[Issue]:
         """Get issues by project ID."""
         stmt = select(self._model).where(self._model.project_id == project_id)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_status(self, status: str) -> List[Issue]:
+    async def get_by_status(self, status: str) -> list[Issue]:
         """Get issues by status."""
         stmt = select(self._model).where(self._model.status == status)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_type(self, issue_type: str) -> List[Issue]:
+    async def get_by_type(self, issue_type: str) -> list[Issue]:
         """Get issues by type."""
         stmt = select(self._model).where(self._model.type == issue_type)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_assignee(self, assignee: str) -> List[Issue]:
+    async def get_by_assignee(self, assignee: str) -> list[Issue]:
         """Get issues by assignee."""
         stmt = select(self._model).where(self._model.assignee == assignee)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_by_priority(self, priority: str) -> List[Issue]:
+    async def get_by_priority(self, priority: str) -> list[Issue]:
         """Get issues by priority."""
         stmt = select(self._model).where(self._model.priority == priority)
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def search_by_title(self, title_pattern: str) -> List[Issue]:
+    async def search_by_title(self, title_pattern: str) -> list[Issue]:
         """Search issues by title pattern."""
         stmt = select(self._model).where(self._model.title.ilike(f"%{title_pattern}%"))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_open_issues(self) -> List[Issue]:
+    async def get_open_issues(self) -> list[Issue]:
         """Get all open issues."""
         stmt = select(self._model).where(self._model.status == "open")
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_closed_issues(self) -> List[Issue]:
+    async def get_closed_issues(self) -> list[Issue]:
         """Get all closed issues."""
         stmt = select(self._model).where(self._model.status == "closed")
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_unassigned_issues(self) -> List[Issue]:
+    async def get_unassigned_issues(self) -> list[Issue]:
         """Get issues without assignee."""
         stmt = select(self._model).where(self._model.assignee.is_(None))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_high_priority_issues(self) -> List[Issue]:
+    async def get_high_priority_issues(self) -> list[Issue]:
         """Get high priority and critical issues."""
         stmt = select(self._model).where(self._model.priority.in_(["high", "critical"]))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_project_open_issues(self, project_id: UUID) -> List[Issue]:
+    async def get_project_open_issues(self, project_id: UUID) -> list[Issue]:
         """Get open issues for a specific project."""
         stmt = select(self._model).where(
             (self._model.project_id == project_id) & (self._model.status == "open")
@@ -86,7 +85,7 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_project_closed_issues(self, project_id: UUID) -> List[Issue]:
+    async def get_project_closed_issues(self, project_id: UUID) -> list[Issue]:
         """Get closed issues for a specific project."""
         stmt = select(self._model).where(
             (self._model.project_id == project_id) & (self._model.status == "closed")
@@ -94,7 +93,7 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
-    async def get_with_project(self, id: UUID) -> Optional[Issue]:
+    async def get_with_project(self, id: UUID) -> Issue | None:
         """Get issue with its project loaded."""
         stmt = (
             select(self._model)
@@ -104,7 +103,7 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def get_with_tags(self, id: UUID) -> Optional[Issue]:
+    async def get_with_tags(self, id: UUID) -> Issue | None:
         """Get issue with its tags loaded."""
         stmt = (
             select(self._model)
