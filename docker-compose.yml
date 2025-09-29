@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: turbo-postgres
+    environment:
+      POSTGRES_DB: turbo
+      POSTGRES_USER: turbo
+      POSTGRES_PASSWORD: turbo_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - turbo-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U turbo -d turbo"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Turbo Code API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: turbo-api
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://turbo:turbo_password@postgres:5432/turbo
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - TURBO_ENVIRONMENT=production
+      - TURBO_DEBUG=false
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - turbo-network
+    volumes:
+      - api_data:/app/.turbo
+      - api_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis (for future caching/sessions)
+  redis:
+    image: redis:7-alpine
+    container_name: turbo-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - turbo-network
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Development database for testing
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: turbo-postgres-test
+    environment:
+      POSTGRES_DB: turbo_test
+      POSTGRES_USER: turbo_test
+      POSTGRES_PASSWORD: turbo_test_password
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5433:5432"
+    networks:
+      - turbo-network
+    profiles:
+      - testing
+    tmpfs:
+      - /var/lib/postgresql/data
+
+networks:
+  turbo-network:
+    driver: bridge
+    name: turbo-network
+
+volumes:
+  postgres_data:
+    name: turbo-postgres-data
+  redis_data:
+    name: turbo-redis-data
+  api_data:
+    name: turbo-api-data
+  api_logs:
+    name: turbo-api-logs
