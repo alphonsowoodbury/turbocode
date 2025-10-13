@@ -18,6 +18,10 @@ from turbo.core.schemas.terminal import (
     TerminalSessionUpdate,
 )
 
+# Global dict to store PTY processes across all service instances
+_active_sessions: Dict[str, ptyprocess.PtyProcess] = {}
+_session_tasks: Dict[str, asyncio.Task] = {}
+
 
 class TerminalService:
     """Service for managing terminal sessions with PTY."""
@@ -25,8 +29,9 @@ class TerminalService:
     def __init__(self, session: AsyncSession) -> None:
         """Initialize the terminal service."""
         self.session = session
-        self.active_sessions: Dict[str, ptyprocess.PtyProcess] = {}
-        self.session_tasks: Dict[str, asyncio.Task] = {}
+        # Use global dicts instead of instance variables
+        self.active_sessions = _active_sessions
+        self.session_tasks = _session_tasks
 
     async def create_session(
         self, create_data: TerminalSessionCreate
@@ -55,12 +60,21 @@ class TerminalService:
 
         # Create PTY process
         try:
+            # Use interactive flag for bash/sh
+            shell_args = [create_data.shell]
+            if 'bash' in create_data.shell or 'sh' in create_data.shell:
+                shell_args.append('-i')  # Interactive mode
+
             pty = ptyprocess.PtyProcess.spawn(
-                [create_data.shell],
+                shell_args,
                 dimensions=(24, 80),
                 cwd=working_dir,
                 env=env,
             )
+
+            # Send initial newline to trigger prompt
+            pty.write(b'\n')
+
             self.active_sessions[session_id] = pty
 
             # Create database record directly
@@ -118,8 +132,7 @@ class TerminalService:
 
         try:
             pty.write(data.encode("utf-8"))
-            # Update last activity
-            await self._update_activity(session_id)
+            # Don't update activity here - it causes database transaction conflicts
             return True
         except Exception:
             return False
@@ -133,15 +146,53 @@ class TerminalService:
             return None
 
         try:
-            # Non-blocking read
-            data = pty.read(timeout=timeout)
-            if data:
-                await self._update_activity(session_id)
-                return data.decode("utf-8", errors="replace")
-        except Exception:
-            pass
+            # Use os.read on the file descriptor in non-blocking mode
+            import os
+            import fcntl
+            import errno
 
-        return None
+            # Get the file descriptor
+            fd = pty.fd
+
+            # Set non-blocking
+            flags = fcntl.fcntl(fd, fcntl.F_GETFL)
+            fcntl.fcntl(fd, fcntl.F_SETFL, flags | os.O_NONBLOCK)
+
+            # Read all available data in chunks until EAGAIN
+            chunks = []
+            read_count = 0
+            while True:
+                try:
+                    chunk = os.read(fd, 4096)
+                    read_count += 1
+                    if chunk:
+                        print(f"Read chunk {read_count}: {len(chunk)} bytes", flush=True)
+                        chunks.append(chunk)
+                    else:
+                        # Empty read means EOF
+                        print(f"Empty read on attempt {read_count}", flush=True)
+                        break
+                except OSError as e:
+                    # EAGAIN/EWOULDBLOCK means no more data available right now
+                    if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+                        print(f"EAGAIN on attempt {read_count}, no data available", flush=True)
+                        break
+                    else:
+                        print(f"OSError reading from PTY: {e}", flush=True)
+                        break
+
+            if chunks:
+                data = b''.join(chunks)
+                print(f"Returning {len(data)} total bytes", flush=True)
+                # Don't update activity here - it causes database transaction conflicts
+                return data.decode("utf-8", errors="replace")
+            else:
+                print(f"No chunks read, returning None", flush=True)
+
+            return None
+        except Exception as e:
+            print(f"Exception reading from PTY: {type(e).__name__}: {e}", flush=True)
+            return None
 
     async def resize_session(self, session_id: str, rows: int, cols: int) -> bool:
         """Resize terminal session."""

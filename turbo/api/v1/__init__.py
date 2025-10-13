@@ -5,6 +5,7 @@ from fastapi import APIRouter
 from turbo.api.v1.endpoints import (
     blueprints,
     calendar,
+    calendar_events,
     comments,
     dependencies,
     documents,
@@ -18,6 +19,7 @@ from turbo.api.v1.endpoints import (
     podcasts,
     projects,
     saved_filters,
+    skills,
     tags,
     terminal,
 )
@@ -42,4 +44,6 @@ router.include_router(saved_filters.router, prefix="/saved-filters", tags=["save
 router.include_router(forms.router)
 router.include_router(graph.router, prefix="/graph", tags=["graph"])
 router.include_router(calendar.router)
+router.include_router(calendar_events.router, prefix="/calendar-events", tags=["calendar-events"])
+router.include_router(skills.router, prefix="/skills", tags=["skills"])
 router.include_router(terminal.router)

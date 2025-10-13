@@ -1,5 +1,11 @@
 """Pydantic schemas for API request/response validation."""
 
+from turbo.core.schemas.calendar_event import (
+    CalendarEventCreate,
+    CalendarEventResponse,
+    CalendarEventSummary,
+    CalendarEventUpdate,
+)
 from turbo.core.schemas.document import (
     DocumentCreate,
     DocumentResponse,
@@ -60,6 +66,12 @@ from turbo.core.schemas.saved_filter import (
     SavedFilterResponse,
     SavedFilterUpdate,
 )
+from turbo.core.schemas.skill import (
+    SkillCreate,
+    SkillResponse,
+    SkillSummary,
+    SkillUpdate,
+)
 from turbo.core.schemas.tag import (
     TagCreate,
     TagResponse,
@@ -67,6 +79,10 @@ from turbo.core.schemas.tag import (
 )
 
 __all__ = [
+    "CalendarEventCreate",
+    "CalendarEventResponse",
+    "CalendarEventSummary",
+    "CalendarEventUpdate",
     "DocumentCreate",
     "DocumentResponse",
     "DocumentUpdate",
@@ -108,6 +124,10 @@ __all__ = [
     "SavedFilterCreate",
     "SavedFilterResponse",
     "SavedFilterUpdate",
+    "SkillCreate",
+    "SkillResponse",
+    "SkillSummary",
+    "SkillUpdate",
     "TagCreate",
     "TagResponse",
     "TagUpdate",

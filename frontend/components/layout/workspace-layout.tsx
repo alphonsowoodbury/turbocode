@@ -64,7 +64,7 @@ export function WorkspaceLayout({
 
       {/* Sidebar */}
       <div
-        className="border-r bg-background overflow-y-auto"
+        className="border-r bg-background"
         style={{ gridArea: "sidebar" }}
       >
         {sidebar}

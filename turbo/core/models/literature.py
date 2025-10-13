@@ -4,9 +4,10 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import DateTime, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from turbo.core.models.base import Base
+from turbo.core.models.associations import literature_tags
 
 
 class Literature(Base):
@@ -31,9 +32,6 @@ class Literature(Base):
     # Publication info
     published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    # Tags/Categories
-    tags: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
-
     # Book/Paper specific
     isbn: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     doi: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -49,6 +47,11 @@ class Literature(Base):
 
     # Progress tracking
     progress: Mapped[Optional[int]] = mapped_column(nullable=True)  # Progress percentage or position
+
+    # Relationships
+    tags = relationship(
+        "Tag", secondary=literature_tags, back_populates="literature", lazy="select"
+    )
 
     def __repr__(self) -> str:
         """String representation."""

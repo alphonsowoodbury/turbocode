@@ -5,7 +5,14 @@ from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
 
 from turbo.core.database.base import Base
-from turbo.core.models.associations import initiative_tags, issue_tags, milestone_tags, project_tags
+from turbo.core.models.associations import (
+    initiative_tags,
+    issue_tags,
+    literature_tags,
+    milestone_tags,
+    project_tags,
+    skill_tags,
+)
 
 
 class Tag(Base):
@@ -35,6 +42,14 @@ class Tag(Base):
 
     initiatives = relationship(
         "Initiative", secondary=initiative_tags, back_populates="tags", lazy="select"
+    )
+
+    literature = relationship(
+        "Literature", secondary=literature_tags, back_populates="tags", lazy="select"
+    )
+
+    skills = relationship(
+        "Skill", secondary=skill_tags, back_populates="tags", lazy="select"
     )
 
     def __repr__(self) -> str:

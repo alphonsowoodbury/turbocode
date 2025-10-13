@@ -1,6 +1,7 @@
 """SQLAlchemy models for Turbo core entities."""
 
 from turbo.core.models.agent import Agent
+from turbo.core.models.calendar_event import CalendarEvent
 from turbo.core.models.form import Form, FormResponse, FormResponseAudit
 from turbo.core.models.literature import Literature
 from turbo.core.models.podcast import PodcastShow, PodcastEpisode
@@ -26,6 +27,7 @@ from turbo.core.models.issue import Issue
 from turbo.core.models.milestone import Milestone
 from turbo.core.models.project import Project
 from turbo.core.models.saved_filter import SavedFilter
+from turbo.core.models.skill import Skill
 from turbo.core.models.tag import Tag
 from turbo.core.models.terminal import TerminalSession
 
@@ -33,6 +35,7 @@ __all__ = [
     "Agent",
     "BaseModel",
     "Blueprint",
+    "CalendarEvent",
     "Comment",
     "Document",
     "Favorite",
@@ -47,6 +50,7 @@ __all__ = [
     "PodcastEpisode",
     "Project",
     "SavedFilter",
+    "Skill",
     "Tag",
     "TerminalSession",
     "initiative_documents",

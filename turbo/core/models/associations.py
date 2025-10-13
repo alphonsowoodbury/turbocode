@@ -169,6 +169,42 @@ initiative_documents = Table(
     ),
 )
 
+# Many-to-many association table for literature and tags
+literature_tags = Table(
+    "literature_tags",
+    Base.metadata,
+    Column(
+        "literature_id",
+        UUID(as_uuid=True),
+        ForeignKey("literature.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "tag_id",
+        UUID(as_uuid=True),
+        ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+# Many-to-many association table for skills and tags
+skill_tags = Table(
+    "skill_tags",
+    Base.metadata,
+    Column(
+        "skill_id",
+        UUID(as_uuid=True),
+        ForeignKey("skills.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "tag_id",
+        UUID(as_uuid=True),
+        ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
 # Issue dependency tracking table
 # Represents blocking relationships between issues
 issue_dependencies = Table(

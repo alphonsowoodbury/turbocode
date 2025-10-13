@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
+import { getTerminalWebSocketUrl } from "@/lib/api/terminal";
 import "@xterm/xterm/css/xterm.css";
 
 interface TerminalProps {
@@ -11,42 +13,77 @@ interface TerminalProps {
   onClose?: () => void;
 }
 
+// Dark theme colors
+const darkTheme = {
+  background: "#1e1e1e",
+  foreground: "#d4d4d4",
+  cursor: "#d4d4d4",
+  cursorAccent: "#1e1e1e",
+  selectionBackground: "#264f78",
+  black: "#000000",
+  red: "#cd3131",
+  green: "#0dbc79",
+  yellow: "#e5e510",
+  blue: "#2472c8",
+  magenta: "#bc3fbc",
+  cyan: "#11a8cd",
+  white: "#e5e5e5",
+  brightBlack: "#666666",
+  brightRed: "#f14c4c",
+  brightGreen: "#23d18b",
+  brightYellow: "#f5f543",
+  brightBlue: "#3b8eea",
+  brightMagenta: "#d670d6",
+  brightCyan: "#29b8db",
+  brightWhite: "#ffffff",
+};
+
+// Light theme colors
+const lightTheme = {
+  background: "#ffffff",
+  foreground: "#383a42",
+  cursor: "#383a42",
+  cursorAccent: "#ffffff",
+  selectionBackground: "#d7d7d7",
+  black: "#383a42",
+  red: "#e45649",
+  green: "#50a14f",
+  yellow: "#c18401",
+  blue: "#0184bc",
+  magenta: "#a626a4",
+  cyan: "#0997b3",
+  white: "#fafafa",
+  brightBlack: "#4f525e",
+  brightRed: "#e06c75",
+  brightGreen: "#98c379",
+  brightYellow: "#e5c07b",
+  brightBlue: "#61afef",
+  brightMagenta: "#c678dd",
+  brightCyan: "#56b6c2",
+  brightWhite: "#ffffff",
+};
+
 export function Terminal({ sessionId, onClose }: TerminalProps) {
   const terminalRef = useRef<HTMLDivElement>(null);
   const xtermRef = useRef<XTerm | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const { theme, systemTheme } = useTheme();
 
   useEffect(() => {
     if (!terminalRef.current) return;
+
+    // Determine current theme
+    const currentTheme = theme === "system" ? systemTheme : theme;
+    const terminalTheme = currentTheme === "dark" ? darkTheme : lightTheme;
 
     // Create terminal instance
     const term = new XTerm({
       cursorBlink: true,
       fontSize: 14,
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-      theme: {
-        background: "#1e1e1e",
-        foreground: "#d4d4d4",
-        cursor: "#d4d4d4",
-        black: "#000000",
-        red: "#cd3131",
-        green: "#0dbc79",
-        yellow: "#e5e510",
-        blue: "#2472c8",
-        magenta: "#bc3fbc",
-        cyan: "#11a8cd",
-        white: "#e5e5e5",
-        brightBlack: "#666666",
-        brightRed: "#f14c4c",
-        brightGreen: "#23d18b",
-        brightYellow: "#f5f543",
-        brightBlue: "#3b8eea",
-        brightMagenta: "#d670d6",
-        brightCyan: "#29b8db",
-        brightWhite: "#ffffff",
-      },
+      theme: terminalTheme,
       rows: 24,
       cols: 80,
       scrollback: 1000,
@@ -66,7 +103,7 @@ export function Terminal({ sessionId, onClose }: TerminalProps) {
     fitAddonRef.current = fitAddon;
 
     // Connect WebSocket
-    const wsUrl = `ws://localhost:8000/api/v1/terminal/ws/${sessionId}`;
+    const wsUrl = getTerminalWebSocketUrl(sessionId);
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -100,15 +137,21 @@ export function Terminal({ sessionId, onClose }: TerminalProps) {
 
     // Handle terminal input
     term.onData((data) => {
+      console.log("Terminal onData fired with:", data, "WebSocket state:", ws.readyState);
       if (ws.readyState === WebSocket.OPEN) {
-        ws.send(
-          JSON.stringify({
-            type: "input",
-            data: data,
-          })
-        );
+        const message = JSON.stringify({
+          type: "input",
+          data: data,
+        });
+        console.log("Sending to WebSocket:", message);
+        ws.send(message);
+      } else {
+        console.log("WebSocket not open, state:", ws.readyState);
       }
     });
+
+    // Focus the terminal to enable input
+    term.focus();
 
     // Handle resize
     const handleResize = () => {
@@ -132,7 +175,7 @@ export function Terminal({ sessionId, onClose }: TerminalProps) {
       ws.close();
       term.dispose();
     };
-  }, [sessionId]);
+  }, [sessionId, theme, systemTheme]);
 
   return (
     <div className="flex flex-col h-full">

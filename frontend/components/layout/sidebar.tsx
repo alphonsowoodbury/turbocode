@@ -25,6 +25,16 @@ import {
   Radio,
   Calendar,
   StickyNote,
+  Briefcase,
+  User,
+  Search,
+  Users,
+  Handshake,
+  Package,
+  DollarSign,
+  FileCheck,
+  Award,
+  Sparkles,
 } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useIssues } from "@/hooks/use-issues";
@@ -35,11 +45,7 @@ import { NotesWidget } from "@/components/widgets/notes-widget";
 
 const navigation = [
   { name: "Discovery", href: "/discoveries", icon: Compass },
-  { name: "Podcasts", href: "/podcasts", icon: Radio },
-  { name: "Literature", href: "/literature", icon: BookMarked },
-  { name: "Documents", href: "/documents", icon: FileText },
   { name: "Tags", href: "/tags", icon: Tags },
-  { name: "Blueprints", href: "/blueprints", icon: FileCode2 },
 ];
 
 const widgets: Widget[] = [
@@ -60,6 +66,8 @@ const widgets: Widget[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const [projectsExpanded, setProjectsExpanded] = useState(true);
+  const [workExpanded, setWorkExpanded] = useState(true);
+  const [literatureExpanded, setLiteratureExpanded] = useState(true);
   const { data: favorites = [] } = useFavorites();
   const { data: allIssues = [] } = useIssues();
   const { isCollapsed, toggle } = useSidebar();
@@ -73,7 +81,14 @@ export function Sidebar() {
   const isProjectsActive = pathname.startsWith("/projects") ||
                            pathname.startsWith("/issues") ||
                            pathname.startsWith("/milestones") ||
-                           pathname.startsWith("/initiatives");
+                           pathname.startsWith("/initiatives") ||
+                           pathname.startsWith("/blueprints") ||
+                           pathname.startsWith("/documents");
+
+  const isWorkActive = pathname.startsWith("/work");
+
+  const isLiteratureActive = pathname.startsWith("/literature") ||
+                             pathname.startsWith("/podcasts");
 
   return (
     <div className={cn(
@@ -112,31 +127,33 @@ export function Sidebar() {
 
       <Separator className="my-0" />
 
-      {/* Favorites */}
-      {!isCollapsed && favoriteIssues.length > 0 && (
-        <div className="p-2 space-y-1">
-          <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Favorites</div>
-          {favoriteIssues.map((issue) => (
-            <Link key={issue.id} href={`/issues/${issue.id}`}>
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-2 h-7 px-2 text-xs",
-                  pathname === `/issues/${issue.id}` && "bg-secondary"
-                )}
-              >
-                <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
-                <span className="truncate">{issue.title}</span>
-              </Button>
-            </Link>
-          ))}
-        </div>
-      )}
+      {/* Scrollable Navigation Area */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
+        {/* Favorites */}
+        {!isCollapsed && favoriteIssues.length > 0 && (
+          <div className="p-2 space-y-1">
+            <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Favorites</div>
+            {favoriteIssues.map((issue) => (
+              <Link key={issue.id} href={`/issues/${issue.id}`}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    "w-full justify-start gap-2 h-7 px-2 text-xs",
+                    pathname === `/issues/${issue.id}` && "bg-secondary"
+                  )}
+                >
+                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                  <span className="truncate">{issue.title}</span>
+                </Button>
+              </Link>
+            ))}
+          </div>
+        )}
 
-      {!isCollapsed && favoriteIssues.length > 0 && <Separator className="my-0" />}
+        {!isCollapsed && favoriteIssues.length > 0 && <Separator className="my-0" />}
 
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
+        {/* Navigation */}
+        <nav className="space-y-1 p-2">
         {/* Dashboard */}
         <Link href="/">
           <Button
@@ -250,6 +267,32 @@ export function Sidebar() {
                     Initiatives
                   </Button>
                 </Link>
+
+                <Link href="/documents">
+                  <Button
+                    variant={pathname.startsWith("/documents") ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname.startsWith("/documents") && "bg-secondary"
+                    )}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Documents
+                  </Button>
+                </Link>
+
+                <Link href="/blueprints">
+                  <Button
+                    variant={pathname.startsWith("/blueprints") ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname.startsWith("/blueprints") && "bg-secondary"
+                    )}
+                  >
+                    <FileCode2 className="h-4 w-4" />
+                    Blueprints
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
@@ -263,6 +306,284 @@ export function Sidebar() {
               )}
             >
               <FolderKanban className="h-4 w-4 flex-shrink-0" />
+            </Button>
+          </Link>
+        )}
+
+        {/* Work Section with Submenu */}
+        {!isCollapsed ? (
+          <div>
+            <div
+              className={cn(
+                "flex items-center w-full rounded-md",
+                isWorkActive && "bg-secondary"
+              )}
+            >
+              <Link href="/work" className="flex-1">
+                <Button
+                  variant={isWorkActive ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-3 rounded-r-none",
+                    isWorkActive && "bg-secondary hover:bg-secondary"
+                  )}
+                >
+                  <Briefcase className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">Work</span>
+                </Button>
+              </Link>
+              <Button
+                variant={isWorkActive ? "secondary" : "ghost"}
+                size="sm"
+                className={cn(
+                  "px-2 rounded-l-none border-l",
+                  isWorkActive && "bg-secondary hover:bg-secondary"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setWorkExpanded(!workExpanded);
+                }}
+              >
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    workExpanded ? "rotate-0" : "-rotate-90"
+                  )}
+                />
+              </Button>
+            </div>
+
+            {/* Work Submenu */}
+            {workExpanded && (
+              <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+                <Link href="/work/job-search">
+                  <Button
+                    variant={pathname === "/work/job-search" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/job-search" && "bg-secondary"
+                    )}
+                  >
+                    <Search className="h-4 w-4" />
+                    Job Search
+                  </Button>
+                </Link>
+
+                <Link href="/work/applications">
+                  <Button
+                    variant={pathname === "/work/applications" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/applications" && "bg-secondary"
+                    )}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Applications
+                  </Button>
+                </Link>
+
+                <Link href="/work/jobs">
+                  <Button
+                    variant={pathname === "/work/jobs" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/jobs" && "bg-secondary"
+                    )}
+                  >
+                    <Briefcase className="h-4 w-4" />
+                    Jobs
+                  </Button>
+                </Link>
+
+                <Link href="/work/contracts">
+                  <Button
+                    variant={pathname === "/work/contracts" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/contracts" && "bg-secondary"
+                    )}
+                  >
+                    <Package className="h-4 w-4" />
+                    Contracts
+                  </Button>
+                </Link>
+
+                <Link href="/work/clients">
+                  <Button
+                    variant={pathname === "/work/clients" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/clients" && "bg-secondary"
+                    )}
+                  >
+                    <Users className="h-4 w-4" />
+                    Clients
+                  </Button>
+                </Link>
+
+                <Link href="/work/invoices">
+                  <Button
+                    variant={pathname === "/work/invoices" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/invoices" && "bg-secondary"
+                    )}
+                  >
+                    <DollarSign className="h-4 w-4" />
+                    Invoices
+                  </Button>
+                </Link>
+
+                <Link href="/work/proposals">
+                  <Button
+                    variant={pathname === "/work/proposals" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/proposals" && "bg-secondary"
+                    )}
+                  >
+                    <FileCheck className="h-4 w-4" />
+                    Proposals
+                  </Button>
+                </Link>
+
+                <Link href="/work/profile">
+                  <Button
+                    variant={pathname === "/work/profile" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/profile" && "bg-secondary"
+                    )}
+                  >
+                    <User className="h-4 w-4" />
+                    Profile
+                  </Button>
+                </Link>
+
+                <Link href="/work/experiences">
+                  <Button
+                    variant={pathname === "/work/experiences" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/experiences" && "bg-secondary"
+                    )}
+                  >
+                    <Award className="h-4 w-4" />
+                    Experiences
+                  </Button>
+                </Link>
+
+                <Link href="/work/skills">
+                  <Button
+                    variant={pathname === "/work/skills" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/skills" && "bg-secondary"
+                    )}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Skills
+                  </Button>
+                </Link>
+
+                <Link href="/work/network">
+                  <Button
+                    variant={pathname === "/work/network" ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname === "/work/network" && "bg-secondary"
+                    )}
+                  >
+                    <Handshake className="h-4 w-4" />
+                    Network
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link href="/work">
+            <Button
+              variant={isWorkActive ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-center px-2",
+                isWorkActive && "bg-secondary"
+              )}
+            >
+              <Briefcase className="h-4 w-4 flex-shrink-0" />
+            </Button>
+          </Link>
+        )}
+
+        {/* Literature Section with Submenu */}
+        {!isCollapsed ? (
+          <div>
+            <div
+              className={cn(
+                "flex items-center w-full rounded-md",
+                isLiteratureActive && "bg-secondary"
+              )}
+            >
+              <Link href="/literature" className="flex-1">
+                <Button
+                  variant={isLiteratureActive ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-3 rounded-r-none",
+                    isLiteratureActive && "bg-secondary hover:bg-secondary"
+                  )}
+                >
+                  <BookMarked className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">Literature</span>
+                </Button>
+              </Link>
+              <Button
+                variant={isLiteratureActive ? "secondary" : "ghost"}
+                size="sm"
+                className={cn(
+                  "px-2 rounded-l-none border-l",
+                  isLiteratureActive && "bg-secondary hover:bg-secondary"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLiteratureExpanded(!literatureExpanded);
+                }}
+              >
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    literatureExpanded ? "rotate-0" : "-rotate-90"
+                  )}
+                />
+              </Button>
+            </div>
+
+            {/* Literature Submenu */}
+            {literatureExpanded && (
+              <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+                <Link href="/podcasts">
+                  <Button
+                    variant={pathname.startsWith("/podcasts") ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname.startsWith("/podcasts") && "bg-secondary"
+                    )}
+                  >
+                    <Radio className="h-4 w-4" />
+                    Podcasts
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link href="/literature">
+            <Button
+              variant={isLiteratureActive ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-center px-2",
+                isLiteratureActive && "bg-secondary"
+              )}
+            >
+              <BookMarked className="h-4 w-4 flex-shrink-0" />
             </Button>
           </Link>
         )}
@@ -286,11 +607,12 @@ export function Sidebar() {
             </Link>
           );
         })}
-      </nav>
+        </nav>
+      </div>
 
-      {/* Widgets */}
+      {/* Widgets - Fixed at bottom */}
       {!isCollapsed && (
-        <div className="p-2">
+        <div className="flex-none p-2">
           <WidgetContainer
             widgets={widgets}
             defaultWidget="calendar"
@@ -299,10 +621,10 @@ export function Sidebar() {
         </div>
       )}
 
-      <Separator />
+      <Separator className="flex-none" />
 
-      {/* Settings */}
-      <div className="p-2">
+      {/* Settings - Fixed at bottom */}
+      <div className="flex-none p-2">
         <Link href="/settings">
           <Button
             variant="ghost"
