@@ -5,6 +5,7 @@ from typing import Any
 import click
 from rich import box
 from rich.console import Console
+from rich.panel import Panel
 from rich.table import Table
 
 from turbo.api.dependencies import (
@@ -15,6 +16,9 @@ from turbo.api.dependencies import (
 )
 from turbo.cli.utils import handle_exceptions, run_async
 from turbo.core.database import get_db_session
+from turbo.core.schemas.graph import GraphSearchQuery
+from turbo.core.services.graph import GraphService
+from turbo.utils.config import get_settings
 
 console = Console()
 
@@ -35,48 +39,146 @@ FORMAT_CHOICES = ["table", "json"]
     "--format", type=click.Choice(FORMAT_CHOICES), default="table", help="Output format"
 )
 @click.option("--limit", type=int, default=20, help="Limit number of results")
+@click.option(
+    "--semantic",
+    is_flag=True,
+    help="Use semantic search (knowledge graph) - understands meaning, not just keywords",
+)
+@click.option(
+    "--min-relevance",
+    type=float,
+    default=0.5,
+    help="Minimum relevance score for semantic search (0.0-1.0)",
+)
 @handle_exceptions
-def search_command(query, type, format, limit):
-    """Search across all entities in the workspace."""
+def search_command(query, type, format, limit, semantic, min_relevance):
+    """
+    Search across all entities in the workspace.
+
+    Two search modes:
+
+    \b
+    1. Keyword search (default): Fast exact/partial text matching
+       Example: turbo search "authentication"
+
+    \b
+    2. Semantic search (--semantic): AI-powered meaning-based search
+       Example: turbo search "user login problems" --semantic
+
+    \b
+    Semantic search understands concepts and finds related items even if
+    they use different words. It's powered by local embeddings - no API
+    keys needed, completely private, and free forever.
+    """
 
     async def _search():
-        async for session in get_db_session():
-            project_service = get_project_service(session)
-            issue_service = get_issue_service(session)
-            document_service = get_document_service(session)
-            tag_service = get_tag_service(session)
-
-            results = {}
-
-            try:
-                if type in ["all", "projects"]:
-                    results["projects"] = await project_service.search_projects_by_name(
-                        query
-                    )
-
-                if type in ["all", "issues"]:
-                    results["issues"] = await issue_service.search_issues_by_title(
-                        query
-                    )
-
-                if type in ["all", "documents"]:
-                    results["documents"] = await document_service.search_documents(
-                        query
-                    )
-
-                if type in ["all", "tags"]:
-                    results["tags"] = await tag_service.search_tags_by_name(query)
-
-                # Display results
-                if format == "table":
-                    _display_search_results_table(results, query, limit)
-                else:
-                    _display_search_results_json(results, query, limit)
-
-            except Exception as e:
-                console.print(f"[red]Search failed: {e}[/red]")
+        # Check if semantic search is requested
+        if semantic:
+            await _semantic_search(query, type, format, limit, min_relevance)
+        else:
+            await _keyword_search(query, type, format, limit)
 
     run_async(_search())
+
+
+async def _semantic_search(query: str, entity_type: str, output_format: str, limit: int, min_relevance: float):
+    """Perform semantic search using the knowledge graph."""
+    settings = get_settings()
+
+    if not settings.graph.enabled:
+        console.print("[yellow]Knowledge graph is disabled in settings.[/yellow]")
+        console.print("[dim]Run 'turbo config' to enable it, or use keyword search without --semantic flag[/dim]")
+        return
+
+    # Show that we're using semantic search
+    console.print(Panel.fit(
+        f"[bold cyan]Semantic Search:[/bold cyan] {query}\n"
+        f"[dim]Understanding meaning, not just keywords...[/dim]",
+        border_style="cyan"
+    ))
+
+    graph_service = GraphService()
+
+    try:
+        # Check Neo4j connection
+        health = await graph_service.health_check()
+        if health["status"] != "healthy":
+            console.print("[red]Neo4j is not available. Make sure it's running:[/red]")
+            console.print("[dim]docker-compose up -d neo4j[/dim]\n")
+            return
+
+        # Build entity type filter
+        entity_types = None
+        if entity_type != "all":
+            # Map CLI type to graph entity types
+            type_map = {
+                "projects": ["project"],
+                "issues": ["issue"],
+                "documents": ["document"],
+                "tags": ["tag"],
+            }
+            entity_types = type_map.get(entity_type)
+
+        # Perform semantic search
+        search_query = GraphSearchQuery(
+            query=query,
+            limit=limit,
+            entity_types=entity_types,
+            min_relevance=min_relevance,
+        )
+
+        results = await graph_service.search(search_query)
+
+        # Display results
+        if output_format == "table":
+            _display_semantic_results_table(results)
+        else:
+            _display_semantic_results_json(results)
+
+    except Exception as e:
+        console.print(f"[red]Semantic search failed: {e}[/red]")
+        console.print("[dim]Try keyword search without --semantic flag[/dim]")
+    finally:
+        await graph_service.close()
+
+
+async def _keyword_search(query: str, entity_type: str, output_format: str, limit: int):
+    """Perform traditional keyword search."""
+    async for session in get_db_session():
+        project_service = get_project_service(session)
+        issue_service = get_issue_service(session)
+        document_service = get_document_service(session)
+        tag_service = get_tag_service(session)
+
+        results = {}
+
+        try:
+            if entity_type in ["all", "projects"]:
+                results["projects"] = await project_service.search_projects_by_name(
+                    query
+                )
+
+            if entity_type in ["all", "issues"]:
+                results["issues"] = await issue_service.search_issues_by_title(
+                    query
+                )
+
+            if entity_type in ["all", "documents"]:
+                results["documents"] = await document_service.search_documents(
+                    query
+                )
+
+            if entity_type in ["all", "tags"]:
+                results["tags"] = await tag_service.search_tags_by_name(query)
+
+            # Display results
+            if output_format == "table":
+                _display_search_results_table(results, query, limit)
+            else:
+                _display_search_results_json(results, query, limit)
+
+        except Exception as e:
+            console.print(f"[red]Search failed: {e}[/red]")
 
 
 def _display_search_results_table(
@@ -212,3 +314,119 @@ def _display_search_results_json(results: dict[str, list[Any]], query: str, limi
             ]
 
     console.print(json.dumps(output, indent=2, default=str))
+
+
+def _display_semantic_results_table(results):
+    """Display semantic search results in table format."""
+    from turbo.core.schemas.graph import GraphSearchResponse
+
+    if not isinstance(results, GraphSearchResponse):
+        console.print("[red]Invalid search results[/red]")
+        return
+
+    if results.total_results == 0:
+        console.print(f"[yellow]No results found for '{results.query}'[/yellow]")
+        console.print("[dim]Try lowering --min-relevance threshold or different search terms[/dim]")
+        return
+
+    # Create results table
+    table = Table(
+        title=f"Found {results.total_results} result(s) in {results.execution_time_ms:.0f}ms",
+        box=box.ROUNDED
+    )
+    table.add_column("Relevance", style="cyan", width=8, justify="right")
+    table.add_column("Type", style="magenta", width=10)
+    table.add_column("Title", style="green")
+    table.add_column("ID", style="dim", width=10)
+
+    for result in results.results:
+        # Extract title from metadata or content preview
+        title = result.metadata.get("title", "No title")
+        if not title or title == "No title":
+            # Use content preview if no title
+            title = result.content[:60] + "..." if len(result.content) > 60 else result.content
+
+        # Truncate long titles
+        if len(title) > 60:
+            title = title[:57] + "..."
+
+        # Format relevance score
+        relevance = f"{result.relevance_score:.3f}"
+
+        # Color code relevance
+        if result.relevance_score >= 0.8:
+            relevance = f"[bold green]{relevance}[/bold green]"
+        elif result.relevance_score >= 0.6:
+            relevance = f"[green]{relevance}[/green]"
+        elif result.relevance_score >= 0.4:
+            relevance = f"[yellow]{relevance}[/yellow]"
+        else:
+            relevance = f"[dim]{relevance}[/dim]"
+
+        table.add_row(
+            relevance,
+            result.entity_type,
+            title,
+            str(result.entity_id)[:8] + "..."
+        )
+
+    console.print(table)
+
+    # Show top result details
+    if results.results:
+        top = results.results[0]
+        title = top.metadata.get("title", "No title")
+        content_preview = top.content[:200] + "..." if len(top.content) > 200 else top.content
+
+        # Extract additional metadata
+        metadata_lines = []
+        if "status" in top.metadata:
+            metadata_lines.append(f"Status: {top.metadata['status']}")
+        if "priority" in top.metadata:
+            metadata_lines.append(f"Priority: {top.metadata['priority']}")
+        if "type" in top.metadata:
+            metadata_lines.append(f"Type: {top.metadata['type']}")
+
+        metadata_str = " | ".join(metadata_lines) if metadata_lines else ""
+
+        panel_content = f"[bold]{title}[/bold]"
+        if metadata_str:
+            panel_content += f"\n[dim]{metadata_str}[/dim]"
+        panel_content += f"\n\n{content_preview}"
+
+        panel = Panel(
+            panel_content,
+            title=f"Top Result ({top.relevance_score:.3f} relevance)",
+            border_style="green"
+        )
+        console.print()
+        console.print(panel)
+
+
+def _display_semantic_results_json(results):
+    """Display semantic search results in JSON format."""
+    import json
+    from turbo.core.schemas.graph import GraphSearchResponse
+
+    if not isinstance(results, GraphSearchResponse):
+        console.print("[red]Invalid search results[/red]")
+        return
+
+    output = {
+        "query": results.query,
+        "total_results": results.total_results,
+        "execution_time_ms": results.execution_time_ms,
+        "results": []
+    }
+
+    for result in results.results:
+        output["results"].append({
+            "entity_id": str(result.entity_id),
+            "entity_type": result.entity_type,
+            "relevance_score": result.relevance_score,
+            "content": result.content,
+            "metadata": result.metadata,
+            "created_at": result.created_at.isoformat() if result.created_at else None,
+        })
+
+    console.print(json.dumps(output, indent=2))

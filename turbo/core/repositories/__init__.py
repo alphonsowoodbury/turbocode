@@ -2,14 +2,20 @@
 
 from turbo.core.repositories.base import BaseRepository
 from turbo.core.repositories.document import DocumentRepository
+from turbo.core.repositories.initiative import InitiativeRepository
 from turbo.core.repositories.issue import IssueRepository
+from turbo.core.repositories.issue_dependency import IssueDependencyRepository
+from turbo.core.repositories.milestone import MilestoneRepository
 from turbo.core.repositories.project import ProjectRepository
 from turbo.core.repositories.tag import TagRepository
 
 __all__ = [
     "BaseRepository",
     "DocumentRepository",
+    "InitiativeRepository",
     "IssueRepository",
+    "IssueDependencyRepository",
+    "MilestoneRepository",
     "ProjectRepository",
     "TagRepository",
 ]

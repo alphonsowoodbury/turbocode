@@ -65,13 +65,17 @@ def cli(ctx, verbose, quiet, debug, version):
 # Add all command groups (import locally to avoid circular imports)
 def _register_commands():
     """Register all CLI commands."""
+    from turbo.cli.commands.agents import agents_group
     from turbo.cli.commands.completion import completion_command
     from turbo.cli.commands.config import config_group
+    from turbo.cli.commands.db import db
     from turbo.cli.commands.documents import documents_group
     from turbo.cli.commands.export import export_command
     from turbo.cli.commands.import_ import import_command
     from turbo.cli.commands.init import init_command
+    from turbo.cli.commands.initiatives import initiatives_group
     from turbo.cli.commands.issues import issues_group
+    from turbo.cli.commands.mcp import mcp_group
     from turbo.cli.commands.projects import projects_group
     from turbo.cli.commands.search import search_command
     from turbo.cli.commands.status import status_command
@@ -79,10 +83,14 @@ def _register_commands():
 
     cli.add_command(projects_group, name="projects")
     cli.add_command(issues_group, name="issues")
+    cli.add_command(initiatives_group, name="initiatives")
     cli.add_command(documents_group, name="documents")
     cli.add_command(tags_group, name="tags")
+    cli.add_command(agents_group, name="agents")
     cli.add_command(init_command, name="init")
     cli.add_command(config_group, name="config")
+    cli.add_command(db, name="db")
+    cli.add_command(mcp_group, name="mcp")
     cli.add_command(status_command, name="status")
     cli.add_command(search_command, name="search")
     cli.add_command(export_command, name="export")

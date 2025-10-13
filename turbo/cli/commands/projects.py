@@ -4,6 +4,8 @@
 import click
 from rich import box
 from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.table import Table
 
 from turbo.cli.utils import create_project_service, handle_exceptions, run_async
@@ -354,7 +356,11 @@ def _display_project_summary(project):
     console.print(f"  Status: [cyan]{project.status}[/cyan]")
     console.print(f"  Priority: [yellow]{project.priority}[/yellow]")
     console.print(f"  Completion: [green]{project.completion_percentage:.1f}%[/green]")
-    console.print(f"  Description: {project.description}")
+    console.print("\n[bold]Description:[/bold]")
+
+    # Render description as markdown
+    markdown = Markdown(project.description)
+    console.print(Panel(markdown, border_style="dim", padding=(1, 2)))
 
 
 def _display_project_detailed(project):
@@ -365,7 +371,6 @@ def _display_project_detailed(project):
 
     table.add_row("ID", str(project.id))
     table.add_row("Name", project.name)
-    table.add_row("Description", project.description)
     table.add_row("Status", project.status)
     table.add_row("Priority", project.priority)
     table.add_row("Completion", f"{project.completion_percentage:.1f}%")
@@ -386,3 +391,8 @@ def _display_project_detailed(project):
     table.add_row("Updated", updated)
 
     console.print(table)
+    console.print("\n[bold]Description:[/bold]")
+
+    # Render description as markdown
+    markdown = Markdown(project.description)
+    console.print(Panel(markdown, border_style="dim", padding=(1, 2)))

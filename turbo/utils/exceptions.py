@@ -56,6 +56,22 @@ class TagNotFoundError(ResourceNotFoundError):
         self.tag_id = tag_id
 
 
+class MilestoneNotFoundError(ResourceNotFoundError):
+    """Raised when a milestone cannot be found."""
+
+    def __init__(self, milestone_id: UUID) -> None:
+        super().__init__("Milestone", milestone_id, "MILESTONE_NOT_FOUND")
+        self.milestone_id = milestone_id
+
+
+class InitiativeNotFoundError(ResourceNotFoundError):
+    """Raised when an initiative cannot be found."""
+
+    def __init__(self, initiative_id: UUID) -> None:
+        super().__init__("Initiative", initiative_id, "INITIATIVE_NOT_FOUND")
+        self.initiative_id = initiative_id
+
+
 class DuplicateResourceError(TurboBaseException):
     """Raised when attempting to create a resource that already exists."""
 

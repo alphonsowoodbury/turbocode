@@ -4,6 +4,8 @@
 import click
 from rich import box
 from rich.console import Console
+from rich.markdown import Markdown
+from rich.panel import Panel
 from rich.table import Table
 
 from turbo.cli.utils import (
@@ -24,8 +26,8 @@ console = Console()
 
 # Valid choices for CLI options
 PRIORITY_CHOICES = ["low", "medium", "high", "critical"]
-STATUS_CHOICES = ["open", "in_progress", "resolved", "closed"]
-TYPE_CHOICES = ["bug", "feature", "enhancement", "task"]
+STATUS_CHOICES = ["open", "in_progress", "review", "testing", "closed"]
+TYPE_CHOICES = ["bug", "feature", "enhancement", "task", "documentation"]
 FORMAT_CHOICES = ["table", "json", "csv"]
 
 
@@ -467,7 +469,11 @@ def _display_issue_summary(issue):
     console.print(f"  Type: [magenta]{issue.type}[/magenta]")
     console.print(f"  Assignee: [green]{issue.assignee or 'Unassigned'}[/green]")
     console.print(f"  Project: {issue.project_id}")
-    console.print(f"  Description: {issue.description}")
+    console.print("\n[bold]Description:[/bold]")
+
+    # Render description as markdown
+    markdown = Markdown(issue.description)
+    console.print(Panel(markdown, border_style="dim", padding=(1, 2)))
 
 
 def _display_issue_detailed(issue):
@@ -478,7 +484,6 @@ def _display_issue_detailed(issue):
 
     table.add_row("ID", str(issue.id))
     table.add_row("Title", issue.title)
-    table.add_row("Description", issue.description)
     table.add_row("Status", issue.status)
     table.add_row("Priority", issue.priority)
     table.add_row("Type", issue.type)
@@ -500,3 +505,8 @@ def _display_issue_detailed(issue):
     table.add_row("Updated", updated)
 
     console.print(table)
+    console.print("\n[bold]Description:[/bold]")
+
+    # Render description as markdown
+    markdown = Markdown(issue.description)
+    console.print(Panel(markdown, border_style="dim", padding=(1, 2)))

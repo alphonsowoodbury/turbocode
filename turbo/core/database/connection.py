@@ -84,7 +84,26 @@ async def init_database() -> None:
     engine = get_engine()
     async with engine.begin() as conn:
         # Import all models to ensure they're registered
-        from turbo.core.models import Document, Issue, Project, Tag  # noqa: F401
+        from turbo.core.models import (  # noqa: F401
+            Agent,
+            Blueprint,
+            Comment,
+            Document,
+            Favorite,
+            Form,
+            FormResponse,
+            FormResponseAudit,
+            Initiative,
+            Issue,
+            Literature,
+            Milestone,
+            PodcastShow,
+            PodcastEpisode,
+            Project,
+            SavedFilter,
+            Tag,
+            TerminalSession,
+        )
 
         # Create all tables
         await conn.run_sync(Base.metadata.create_all)

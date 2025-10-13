@@ -44,6 +44,49 @@ def show(format):
 
 
 @config_group.command()
+@click.option('--type', 'db_type',
+              type=click.Choice(['sqlite', 'postgres']),
+              prompt=True,
+              help='Database type to use')
+@handle_exceptions
+def database(db_type):
+    """Configure database connection (one-time setup)."""
+    import os
+    from pathlib import Path
+
+    try:
+        # Create .turbo directory if it doesn't exist
+        turbo_dir = Path.home() / ".turbo"
+        turbo_dir.mkdir(exist_ok=True)
+
+        config_file = turbo_dir / "database.env"
+
+        if db_type == 'sqlite':
+            database_url = "sqlite+aiosqlite:///./turbo.db"
+            console.print("[green]✓[/green] Configured to use SQLite database")
+            console.print("  Location: ./turbo.db")
+        elif db_type == 'postgres':
+            database_url = "postgresql+asyncpg://turbo:turbo_password@localhost:5432/turbo"
+            console.print("[green]✓[/green] Configured to use PostgreSQL database")
+            console.print("  Location: localhost:5432/turbo")
+            console.print("  [dim]Make sure Docker containers are running: docker-compose up -d[/dim]")
+
+        # Write to config file
+        with open(config_file, 'w') as f:
+            f.write(f"DATABASE_URL={database_url}\n")
+
+        console.print(f"[blue]Configuration saved to:[/blue] {config_file}")
+        console.print("[yellow]Restart your terminal or run:[/yellow] source ~/.zshrc")
+
+        # Also set in current session
+        os.environ['DATABASE_URL'] = database_url
+        console.print("[green]Database configuration active for this session![/green]")
+
+    except Exception as e:
+        console.print(f"[red]Failed to configure database: {e}[/red]")
+
+
+@config_group.command()
 @click.argument("key")
 @click.argument("value")
 @handle_exceptions

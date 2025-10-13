@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, Column, Float, String
 from sqlalchemy.orm import relationship
 
 from turbo.core.database.base import Base
-from turbo.core.models.associations import project_tags
+from turbo.core.models.associations import project_blueprints, project_tags
 
 
 class Project(Base):
@@ -37,6 +37,31 @@ class Project(Base):
 
     tags = relationship(
         "Tag", secondary=project_tags, back_populates="projects", lazy="select"
+    )
+
+    blueprints = relationship(
+        "Blueprint", secondary=project_blueprints, back_populates="projects", lazy="select"
+    )
+
+    milestones = relationship(
+        "Milestone",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+
+    initiatives = relationship(
+        "Initiative",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+
+    terminal_sessions = relationship(
+        "TerminalSession",
+        back_populates="project",
+        cascade="all, delete-orphan",
+        lazy="select",
     )
 
     def __repr__(self) -> str:

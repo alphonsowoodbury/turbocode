@@ -9,6 +9,8 @@ from rich.console import Console
 from turbo.core.repositories import (
     DocumentRepository,
     IssueRepository,
+    IssueDependencyRepository,
+    MilestoneRepository,
     ProjectRepository,
     TagRepository,
 )
@@ -66,7 +68,9 @@ def create_issue_service(session) -> IssueService:
     """Create issue service with repositories."""
     issue_repo = IssueRepository(session)
     project_repo = ProjectRepository(session)
-    return IssueService(issue_repo, project_repo)
+    milestone_repo = MilestoneRepository(session)
+    dependency_repo = IssueDependencyRepository(session)
+    return IssueService(issue_repo, project_repo, milestone_repo, dependency_repo)
 
 
 def create_document_service(session) -> DocumentService:

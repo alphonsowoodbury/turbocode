@@ -6,6 +6,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from turbo.core.database.base import Base
+from turbo.core.models.associations import initiative_documents, milestone_documents
 
 
 class Document(Base):
@@ -33,6 +34,14 @@ class Document(Base):
 
     # Relationships
     project = relationship("Project", back_populates="documents")
+
+    milestones = relationship(
+        "Milestone", secondary=milestone_documents, back_populates="documents", lazy="select"
+    )
+
+    initiatives = relationship(
+        "Initiative", secondary=initiative_documents, back_populates="documents", lazy="select"
+    )
 
     def __repr__(self) -> str:
         """String representation of the document."""

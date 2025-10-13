@@ -9,8 +9,7 @@ from rich import box
 from rich.console import Console
 from rich.table import Table
 
-from turbo.api.dependencies import get_document_service, get_project_service
-from turbo.cli.utils import handle_exceptions, run_async
+from turbo.cli.utils import create_document_service, create_project_service, handle_exceptions, run_async
 from turbo.core.database import get_db_session
 from turbo.core.schemas import DocumentCreate, DocumentUpdate
 from turbo.utils.exceptions import (
@@ -57,11 +56,11 @@ def create(title, content, content_file, project_id, doc_type, path):
 
     async def _create():
         async for session in get_db_session():
-            document_service = get_document_service(session)
+            document_service = create_document_service(session)
 
             # Verify project exists if provided
             if project_id:
-                project_service = get_project_service(session)
+                project_service = create_project_service(session)
                 try:
                     await project_service.get_project_by_id(project_id)
                 except ProjectNotFoundError:
@@ -88,7 +87,7 @@ def create(title, content, content_file, project_id, doc_type, path):
             console.print("[green]✓[/green] Document created successfully!")
             console.print(f"  ID: {document.id}")
             console.print(f"  Title: {document.title}")
-            console.print(f"  Type: {document.document_type}")
+            console.print(f"  Type: {document.type}")
             if document.project_id:
                 console.print(f"  Project: {document.project_id}")
 
@@ -116,7 +115,7 @@ def list(project_id, doc_type, format, limit, offset):
 
     async def _list():
         async for session in get_db_session():
-            service = get_document_service(session)
+            service = create_document_service(session)
 
             if project_id:
                 documents = await service.get_documents_by_project(project_id)
@@ -155,7 +154,7 @@ def get(document_id, detailed, content):
 
     async def _get():
         async for session in get_db_session():
-            service = get_document_service(session)
+            service = create_document_service(session)
 
             try:
                 document = await service.get_document_by_id(document_id)
@@ -197,7 +196,7 @@ def update(document_id, title, content, content_file, doc_type, path):
 
     async def _update():
         async for session in get_db_session():
-            service = get_document_service(session)
+            service = create_document_service(session)
 
             # Get content from file if provided
             if content_file:
@@ -247,7 +246,7 @@ def delete(document_id, confirm):
 
     async def _delete():
         async for session in get_db_session():
-            service = get_document_service(session)
+            service = create_document_service(session)
 
             try:
                 await service.delete_document(document_id)
@@ -270,7 +269,7 @@ def search(query, format):
 
     async def _search():
         async for session in get_db_session():
-            service = get_document_service(session)
+            service = create_document_service(session)
 
             documents = await service.search_documents(query)
 
@@ -308,7 +307,7 @@ def export(document_id, format, output):
 
     async def _export():
         async for session in get_db_session():
-            service = get_document_service(session)
+            service = create_document_service(session)
 
             try:
                 document = await service.get_document_by_id(document_id)
@@ -403,7 +402,7 @@ def edit(document_id, editor):
 
     async def _edit():
         async for session in get_db_session():
-            service = get_document_service(session)
+            service = create_document_service(session)
 
             try:
                 document = await service.get_document_by_id(document_id)
@@ -476,7 +475,7 @@ def _display_documents_table(documents):
         table.add_row(
             str(document.id)[:8] + "...",
             document.title[:40] + "..." if len(document.title) > 40 else document.title,
-            document.document_type,
+            document.type,
             project_str,
             size_str,
             created,
@@ -498,7 +497,7 @@ def _display_documents_csv(documents):
         content_size = len(document.content or "")
         project_id = document.project_id or "None"
         console.print(
-            f"{document.id},{title},{document.document_type},{project_id},{content_size},{created}"
+            f"{document.id},{title},{document.type},{project_id},{content_size},{created}"
         )
 
 
@@ -506,7 +505,7 @@ def _display_document_summary(document):
     """Display document summary."""
     console.print(f"[bold]{document.title}[/bold]")
     console.print(f"  ID: {document.id}")
-    console.print(f"  Type: [cyan]{document.document_type}[/cyan]")
+    console.print(f"  Type: [cyan]{document.type}[/cyan]")
     if document.project_id:
         console.print(f"  Project: [yellow]{document.project_id}[/yellow]")
     if document.file_path:
@@ -529,7 +528,7 @@ def _display_document_detailed(document):
 
     table.add_row("ID", str(document.id))
     table.add_row("Title", document.title)
-    table.add_row("Type", document.document_type)
+    table.add_row("Type", document.type)
     table.add_row(
         "Project ID", str(document.project_id) if document.project_id else "None"
     )

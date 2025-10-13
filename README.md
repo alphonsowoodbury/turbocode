@@ -1,4 +1,4 @@
-# Turbo Code
+# Turbo Code by Knol
 `AI-Powered Project Management Platform`
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
@@ -20,7 +20,7 @@ Turbo Code is a modern, AI-powered local project management and development plat
 ### User Interfaces
 - **CLI Interface**: Beautiful command-line interface with Rich formatting
 - **REST API**: Complete FastAPI-based REST API for programmatic access
-- **Web Interface**: Streamlit-based web UI for visual interaction (coming soon)
+- **Web Interface**: Streamlit-based web UI for visual interaction
 
 ### Architecture
 - **Clean Architecture**: Layered design with clear separation of concerns
@@ -44,6 +44,16 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -e .
+```
+
+### Database Configuration
+
+```bash
+# Configure database (one-time setup)
+turbo config database  # Interactive prompt
+# or
+turbo config database --type sqlite    # Use local SQLite
+turbo config database --type postgres  # Use PostgreSQL (requires Docker)
 ```
 
 ### Initialize Workspace
@@ -132,11 +142,20 @@ turbo tags colors         # Show available colors
 turbo tags related        # Show related items
 ```
 
+#### Configuration Commands
+```bash
+turbo config show        # Show current configuration
+turbo config database    # Configure database connection
+turbo config set         # Set configuration value
+turbo config get         # Get configuration value
+turbo config validate    # Validate configuration
+turbo config path        # Show config file paths
+```
+
 #### Global Commands
 ```bash
 turbo init               # Initialize workspace
 turbo status             # Show workspace status
-turbo config             # Manage configuration
 turbo search <query>     # Global search
 turbo export             # Export workspace data
 turbo import             # Import workspace data
@@ -171,16 +190,63 @@ turbo issues list --priority high
 turbo projects list --limit 10 --offset 20
 ```
 
+## Docker Deployment
+
+### Quick Start with Docker
+
+```bash
+# Start the complete stack (API + Database + Redis)
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the stack
+docker-compose down
+```
+
+The API will be available at `http://localhost:8001` with documentation at `http://localhost:8001/docs`.
+The web interface will be available at `http://localhost:8501`.
+
+### Service Overview
+
+- **Web Interface**: `http://localhost:8501` (Streamlit application)
+- **API Server**: `http://localhost:8001` (FastAPI application)
+- **PostgreSQL**: `localhost:5432` (Database)
+- **Redis**: `localhost:6379` (Caching - future use)
+- **Test Database**: `localhost:5433` (For testing - start with `--profile testing`)
+
+### Development Options
+
+1. **Full Docker Stack**: Everything in containers
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Hybrid Development**: CLI on host, API in Docker
+   ```bash
+   # Start database and API in Docker
+   docker-compose up -d
+   # Configure CLI to use Docker database
+   turbo config database --type postgres
+   ```
+
+3. **Local Development**: Everything on host
+   ```bash
+   turbo config database --type sqlite
+   uvicorn turbo.main:app --reload
+   ```
+
 ## API Usage
 
-Start the API server:
+Start the API server locally:
 
 ```bash
 # Development server
-uvicorn turbo.api.main:app --reload
+uvicorn turbo.main:app --reload
 
 # Production server
-uvicorn turbo.api.main:app --host 0.0.0.0 --port 8000
+uvicorn turbo.main:app --host 0.0.0.0 --port 8000
 ```
 
 The API will be available at `http://localhost:8000` with automatic documentation at `http://localhost:8000/docs`.
@@ -199,6 +265,49 @@ curl "http://localhost:8000/api/v1/projects/"
 # Get project by ID
 curl "http://localhost:8000/api/v1/projects/{project_id}"
 ```
+
+## Web Interface
+
+The Streamlit web interface provides a visual, interactive way to manage your projects and issues.
+
+### Local Development
+
+```bash
+# Start the API server first
+uvicorn turbo.main:app --reload
+
+# Then start Streamlit (in another terminal)
+python scripts/run_streamlit.py
+# or directly:
+streamlit run streamlit_app.py
+```
+
+### Docker Development
+
+```bash
+# Start everything with Docker Compose
+docker-compose up -d
+
+# Web interface will be available at http://localhost:8501
+# API documentation at http://localhost:8001/docs
+```
+
+### Features
+
+- **Dashboard**: Overview of projects, issues, and key metrics
+- **Project Management**: Create, view, and manage projects with visual progress tracking
+- **Issue Tracking**: Create and manage issues with filtering and search
+- **Analytics**: Visual charts and reports on project progress and issue distribution
+- **Real-time Updates**: Live connection to FastAPI backend with caching for performance
+
+### Navigation
+
+The web interface includes:
+- **Sidebar Navigation**: Quick access to all major sections
+- **API Status Indicator**: Real-time connection status to the backend
+- **Quick Stats**: Summary metrics in the sidebar
+- **Search and Filtering**: Advanced filtering options for projects and issues
+- **Responsive Design**: Works on desktop and mobile devices
 
 ## Development
 
@@ -251,12 +360,22 @@ turbo/
 
 ### Database Schema
 
-The application uses SQLAlchemy models with the following main entities:
+The application uses SQLAlchemy 2.0 with async support and the following main entities:
 
 - **Project**: Main project entity with status, priority, completion tracking
 - **Issue**: Issue tracking with assignments, priorities, and workflows
 - **Document**: Document management with content, types, and versioning
 - **Tag**: Categorization system with colors and relationships
+
+#### Database Initialization
+
+```bash
+# For Docker setup (automatic)
+docker-compose up -d
+
+# For local setup
+python -c "import asyncio; from turbo.core.database.connection import init_database; asyncio.run(init_database())"
+```
 
 ### Testing
 
@@ -274,30 +393,76 @@ pytest tests/unit/cli/      # CLI tests
 # Run tests with specific markers
 pytest -m "not slow"        # Skip slow tests
 pytest -m integration       # Only integration tests
+
+# Run tests with coverage
+pytest --cov=turbo --cov-report=html
+
+# Current test status: 171 passed, 170 failed, 11 errors (352 total)
+# Core functionality working, advanced features partially implemented
 ```
 
 ## Configuration
 
+### Database Configuration
+
+Turbo Code supports both SQLite (local) and PostgreSQL (production) databases. Use the configuration command for easy setup:
+
+```bash
+# Interactive configuration
+turbo config database
+# Choose: sqlite or postgres
+
+# Direct configuration
+turbo config database --type sqlite     # Local SQLite database
+turbo config database --type postgres   # PostgreSQL (requires Docker)
+```
+
+This creates a configuration file at `~/.turbo/database.env` and sets the appropriate `DATABASE_URL` for your session.
+
+### Configuration Management
+
 Configuration can be managed through:
 
-1. **Environment Variables**: `TURBO_DATABASE_URL`, `TURBO_DEBUG`, etc.
-2. **Configuration Files**: `.turbo/config.toml` in workspace
-3. **CLI Commands**: `turbo config set/get/validate`
+1. **CLI Commands**: `turbo config database`, `turbo config show`, etc.
+2. **Environment Variables**: `DATABASE_URL`, `TURBO_DEBUG`, etc.
+3. **Configuration Files**: `.turbo/config.toml` in workspace
 
-### Example Configuration
+### View Current Configuration
 
-```toml
-[database]
-url = "sqlite:///turbo.db"
-echo = false
+```bash
+# Show all configuration
+turbo config show
 
-[api]
-host = "localhost"
-port = 8000
+# Show in JSON format
+turbo config show --format json
 
-[environment]
-debug = false
-log_level = "INFO"
+# Get specific value
+turbo config get database.url
+
+# Validate configuration
+turbo config validate
+```
+
+### Configuration Sources (in order of preference)
+
+1. Environment variables: `DATABASE_URL`, `TURBO_ENVIRONMENT`, etc.
+2. User config: `~/.turbo/database.env`
+3. Project config: `.turbo/config.toml`
+4. Default values
+
+### Example Environment Variables
+
+```bash
+# Database
+DATABASE_URL=postgresql+asyncpg://turbo:turbo_password@localhost:5432/turbo
+
+# API Server
+API_HOST=0.0.0.0
+API_PORT=8000
+
+# Environment
+TURBO_ENVIRONMENT=production
+TURBO_DEBUG=false
 ```
 
 ## Contributing

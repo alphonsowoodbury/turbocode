@@ -41,6 +41,8 @@ dependencies = [
 
     # Web UI
     "streamlit>=1.28.0",
+    "pandas>=2.0.0",
+    "plotly>=5.17.0",
     "jinja2>=3.1.0",
 
     # CLI
@@ -51,6 +53,7 @@ dependencies = [
     # Utilities
     "python-multipart>=0.0.6",
     "httpx>=0.25.0",
+    "aiohttp>=3.9.0",
     "aiofiles>=23.2.0",
     "python-dateutil>=2.8.0",
     "toml>=0.10.0",
@@ -62,9 +65,29 @@ dependencies = [
     "markdown>=3.5.0",
     "PyYAML>=6.0",
 
+    # Content Extraction (Literature)
+    "feedparser>=6.0.0",
+    "beautifulsoup4>=4.12.0",
+    "readability-lxml>=0.8.0",
+
+    # Audio Transcription (Local)
+    "faster-whisper>=1.0.0",
+    "ffmpeg-python>=0.2.0",
+    "pyannote.audio>=3.1.0",  # Speaker diarization
+    "torch>=2.0.0",  # Required by pyannote
+    "torchaudio>=2.0.0",  # Audio processing for torch
+
     # Security
     "passlib[bcrypt]>=1.7.0",
     "python-jose[cryptography]>=3.3.0",
+
+    # Terminal
+    "ptyprocess>=0.7.0",
+    "websockets>=12.0",
+
+    # Knowledge Graph
+    "neo4j>=5.14.0",
+    "sentence-transformers>=2.2.0",
 ]
 
 [project.optional-dependencies]
@@ -101,9 +124,13 @@ test = [
     "httpx>=0.25.0",
 ]
 docs = [
-    "mkdocs>=1.5.0",
-    "mkdocs-material>=9.4.0",
-    "mkdocstrings[python]>=0.23.0",
+    "mkdocs>=1.6.0",
+    "mkdocs-material>=9.6.0",
+    "pymdown-extensions>=10.16.0",
+]
+mcp = [
+    # Model Context Protocol for Claude Code integration
+    "mcp>=1.0.0",
 ]
 
 [project.urls]

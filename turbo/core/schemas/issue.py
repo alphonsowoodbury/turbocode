@@ -12,13 +12,17 @@ class IssueBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=1)
     type: str = Field(
-        default="task", pattern="^(feature|bug|task|enhancement|documentation)$"
+        default="task", pattern="^(feature|bug|task|enhancement|documentation|discovery)$"
     )
     status: str = Field(
         default="open", pattern="^(open|in_progress|review|testing|closed)$"
     )
+    discovery_status: str | None = Field(
+        default=None, pattern="^(proposed|researching|findings_ready|approved|parked|declined)$"
+    )
     priority: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
     assignee: EmailStr | None = None
+    due_date: datetime | None = None
 
     @field_validator("title")
     @classmethod
@@ -40,7 +44,8 @@ class IssueBase(BaseModel):
 class IssueCreate(IssueBase):
     """Schema for creating new issues."""
 
-    project_id: UUID
+    project_id: UUID | None = None  # Optional for discovery issues
+    milestone_ids: list[UUID] | None = Field(default=None)
 
 
 class IssueUpdate(BaseModel):
@@ -49,13 +54,18 @@ class IssueUpdate(BaseModel):
     title: str | None = Field(None, min_length=1, max_length=200)
     description: str | None = Field(None, min_length=1)
     type: str | None = Field(
-        None, pattern="^(feature|bug|task|enhancement|documentation)$"
+        None, pattern="^(feature|bug|task|enhancement|documentation|discovery)$"
     )
     status: str | None = Field(
         None, pattern="^(open|in_progress|review|testing|closed)$"
     )
+    discovery_status: str | None = Field(
+        None, pattern="^(proposed|researching|findings_ready|approved|parked|declined)$"
+    )
     priority: str | None = Field(None, pattern="^(low|medium|high|critical)$")
     assignee: EmailStr | None = None
+    due_date: datetime | None = None
+    milestone_ids: list[UUID] | None = None
 
     @field_validator("title")
     @classmethod
@@ -78,11 +88,22 @@ class IssueResponse(IssueBase):
     """Schema for issue API responses."""
 
     id: UUID
-    project_id: UUID
+    project_id: UUID | None  # Optional for discovery issues
     created_at: datetime
     updated_at: datetime
+    blocking: list[UUID] = []  # Issues that block this one
+    blocked_by: list[UUID] = []  # Issues that this one blocks
 
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("discovery_status", mode="before")
+    @classmethod
+    def set_discovery_status_default(cls, v: str | None, info) -> str | None:
+        """Set default discovery_status for discovery issues."""
+        # If this is a discovery issue and discovery_status is None, default to "proposed"
+        if info.data.get("type") == "discovery" and v is None:
+            return "proposed"
+        return v
 
 
 class IssueSummary(BaseModel):

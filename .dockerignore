@@ -57,9 +57,10 @@ htmlcov/
 .ruff_cache/
 
 # Documentation
-docs/
 *.md
 !README.md
+!docs/
+!mkdocs.yml
 
 # Testing
 tests/

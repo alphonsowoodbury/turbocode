@@ -11,7 +11,9 @@ from turbo.cli.utils import handle_exceptions, run_async
 from turbo.core.database import get_db_session
 from turbo.core.repositories import (
     DocumentRepository,
+    IssueDependencyRepository,
     IssueRepository,
+    MilestoneRepository,
     ProjectRepository,
     TagRepository,
 )
@@ -21,6 +23,8 @@ from turbo.core.services import (
     ProjectService,
     TagService,
 )
+from turbo.core.services.graph import GraphService
+from turbo.utils.config import get_settings
 
 console = Console()
 
@@ -31,9 +35,11 @@ def _create_services(session):
     issue_repo = IssueRepository(session)
     document_repo = DocumentRepository(session)
     tag_repo = TagRepository(session)
+    milestone_repo = MilestoneRepository(session)
+    dependency_repo = IssueDependencyRepository(session)
 
     project_service = ProjectService(project_repo, issue_repo, document_repo)
-    issue_service = IssueService(issue_repo, project_repo)
+    issue_service = IssueService(issue_repo, project_repo, milestone_repo, dependency_repo)
     document_service = DocumentService(document_repo, project_repo)
     tag_service = TagService(tag_repo)
 
@@ -134,6 +140,38 @@ async def _show_overview(
 
             console.print(issue_table)
 
+        # Knowledge Graph Statistics (if enabled and detailed mode)
+        if detailed:
+            settings = get_settings()
+            if settings.graph.enabled:
+                console.print("\n[bold]Knowledge Graph:[/bold]")
+                graph_service = GraphService()
+                try:
+                    graph_health = await graph_service.health_check()
+                    if graph_health["status"] == "healthy":
+                        stats = await graph_service.get_statistics()
+
+                        graph_table = Table(box=box.SIMPLE)
+                        graph_table.add_column("Metric", style="cyan")
+                        graph_table.add_column("Value", style="green")
+
+                        graph_table.add_row("Total Nodes", str(stats.total_nodes))
+                        graph_table.add_row("Total Edges", str(stats.total_edges))
+
+                        if stats.entities_by_type:
+                            graph_table.add_row("", "")  # Separator
+                            graph_table.add_row("[dim]Indexed Entities[/dim]", "")
+                            for entity_type, count in stats.entities_by_type.items():
+                                graph_table.add_row(f"  {entity_type.title()}", str(count))
+
+                        console.print(graph_table)
+                    else:
+                        console.print("  [yellow]Knowledge graph unavailable[/yellow]")
+                except Exception as e:
+                    console.print(f"  [dim]Knowledge graph statistics unavailable: {e}[/dim]")
+                finally:
+                    await graph_service.close()
+
     except Exception as e:
         console.print(f"[red]Failed to get workspace statistics: {e}[/red]")
 
@@ -176,6 +214,25 @@ async def _show_health_status(session):
         else "[yellow]! Not initialized[/yellow]"
     )
     health_table.add_row("Workspace", workspace_status)
+
+    # Knowledge Graph (if enabled)
+    settings = get_settings()
+    if settings.graph.enabled:
+        graph_service = GraphService()
+        try:
+            graph_health = await graph_service.health_check()
+            if graph_health["status"] == "healthy":
+                graph_status = "[green]✓ Connected[/green]"
+            else:
+                graph_status = "[yellow]! Unavailable[/yellow]"
+        except Exception:
+            graph_status = "[red]✗ Connection failed[/red]"
+        finally:
+            await graph_service.close()
+
+        health_table.add_row("Knowledge Graph", graph_status)
+    else:
+        health_table.add_row("Knowledge Graph", "[dim]Disabled[/dim]")
 
     console.print(health_table)
 

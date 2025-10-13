@@ -1,6 +1,6 @@
 """Base model functionality."""
 
-from turbo.core.database.base import BaseModel
+from turbo.core.database.base import Base, BaseModel
 
-# Re-export BaseModel for convenience
-__all__ = ["BaseModel"]
+# Re-export for convenience
+__all__ = ["Base", "BaseModel"]

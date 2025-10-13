@@ -14,7 +14,7 @@ class DatabaseSettings(BaseSettings):
     pool_size: int = 5
     max_overflow: int = 10
 
-    model_config = {"env_prefix": "DATABASE_", "env_file": ".env"}
+    model_config = {"env_prefix": "DATABASE_", "env_file": ".env", "extra": "ignore"}
 
 
 class APISettings(BaseSettings):
@@ -25,7 +25,7 @@ class APISettings(BaseSettings):
     workers: int = 1
     reload: bool = False
 
-    model_config = {"env_prefix": "API_", "env_file": ".env"}
+    model_config = {"env_prefix": "API_", "env_file": ".env", "extra": "ignore"}
 
 
 class WebSettings(BaseSettings):
@@ -35,7 +35,7 @@ class WebSettings(BaseSettings):
     port: int = 8501
     enable_ui: bool = True
 
-    model_config = {"env_prefix": "WEB_", "env_file": ".env"}
+    model_config = {"env_prefix": "WEB_", "env_file": ".env", "extra": "ignore"}
 
 
 class ClaudeSettings(BaseSettings):
@@ -46,14 +46,19 @@ class ClaudeSettings(BaseSettings):
     templates_directory: str = ".turbo/templates"
     responses_directory: str = ".turbo/responses"
 
-    model_config = {"env_prefix": "CLAUDE_", "env_file": ".env"}
+    model_config = {"env_prefix": "CLAUDE_", "env_file": ".env", "extra": "ignore"}
 
 
 class SecuritySettings(BaseSettings):
     """Security configuration settings."""
 
     secret_key: str = "dev-secret-key-change-in-production"  # noqa: S105
-    cors_origins: list[str] = ["http://localhost:8501", "http://127.0.0.1:8501"]
+    cors_origins: list[str] = [
+        "http://localhost:3001",
+        "http://127.0.0.1:3001",
+        "http://localhost:8501",
+        "http://127.0.0.1:8501",
+    ]
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -63,7 +68,7 @@ class SecuritySettings(BaseSettings):
             return [origin.strip() for origin in v.split(",")]
         return v
 
-    model_config = {"env_prefix": "SECURITY_", "env_file": ".env"}
+    model_config = {"env_prefix": "SECURITY_", "env_file": ".env", "extra": "ignore"}
 
 
 class FeatureSettings(BaseSettings):
@@ -81,7 +86,20 @@ class FeatureSettings(BaseSettings):
             return [fmt.strip() for fmt in v.split(",")]
         return v
 
-    model_config = {"env_prefix": "FEATURE_", "env_file": ".env"}
+    model_config = {"env_prefix": "FEATURE_", "env_file": ".env", "extra": "ignore"}
+
+
+class GraphSettings(BaseSettings):
+    """Knowledge Graph (Neo4j + Local Embeddings) configuration settings."""
+
+    uri: str = "bolt://localhost:7687"
+    user: str = "neo4j"
+    password: str = "turbo_graph_password"  # noqa: S105
+    database: str = "neo4j"
+    embedding_model: str = "all-MiniLM-L6-v2"  # Fast, high-quality embeddings
+    enabled: bool = True
+
+    model_config = {"env_prefix": "NEO4J_", "env_file": ".env", "extra": "ignore"}
 
 
 class Settings(BaseSettings):
@@ -99,6 +117,7 @@ class Settings(BaseSettings):
     claude: ClaudeSettings = ClaudeSettings()
     security: SecuritySettings = SecuritySettings()
     features: FeatureSettings = FeatureSettings()
+    graph: GraphSettings = GraphSettings()
 
     @field_validator("log_level")
     @classmethod
@@ -124,6 +143,7 @@ class Settings(BaseSettings):
         "env_file": ".env",
         "env_nested_delimiter": "__",
         "case_sensitive": False,
+        "extra": "ignore",
     }
 
     def is_development(self) -> bool:

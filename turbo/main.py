@@ -1,7 +1,11 @@
 """Main application entry point for Turbo."""
 
+import os
+from pathlib import Path
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from turbo.utils.config import get_settings
 
@@ -15,6 +19,8 @@ def create_app() -> FastAPI:
         description="AI-powered local project management and development platform",
         version="1.0.0",
         debug=settings.debug,
+        docs_url="/api/docs",
+        redoc_url="/api/redoc",
     )
 
     # Add CORS middleware
@@ -40,6 +46,21 @@ def create_app() -> FastAPI:
     async def health_check():
         """Health check endpoint."""
         return {"status": "healthy"}
+
+    @app.on_event("startup")
+    async def startup_event():
+        """Initialize database on startup."""
+        from turbo.core.database import init_database
+        await init_database()
+
+    # Mount documentation if site directory exists
+    site_dir = Path("site")
+    if site_dir.exists():
+        app.mount(
+            "/docs",
+            StaticFiles(directory=str(site_dir), html=True),
+            name="documentation"
+        )
 
     return app
 

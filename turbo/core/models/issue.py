@@ -1,12 +1,15 @@
 """Issue model definition."""
 
 
-from sqlalchemy import Column, ForeignKey, String
+from datetime import datetime
+
+from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
+from typing import Optional
 
 from turbo.core.database.base import Base
-from turbo.core.models.associations import issue_tags
+from turbo.core.models.associations import initiative_issues, issue_tags, milestone_issues
 
 
 class Issue(Base):
@@ -19,16 +22,18 @@ class Issue(Base):
     description = Column(String, nullable=False)
     type = Column(String(20), nullable=False, default="task")
     status = Column(String(20), nullable=False, default="open", index=True)
+    discovery_status = Column(String(20), nullable=True, index=True)  # For discovery issues
     priority = Column(String(10), default="medium")
 
     # Optional fields
     assignee = Column(String(255), nullable=True)  # Email address
+    due_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     # Foreign keys
     project_id = Column(
         UUID(as_uuid=True),
         ForeignKey("projects.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,  # Optional for discovery issues
         index=True,
     )
 
@@ -37,6 +42,25 @@ class Issue(Base):
 
     tags = relationship(
         "Tag", secondary=issue_tags, back_populates="issues", lazy="select"
+    )
+
+    comments = relationship(
+        "Comment", back_populates="issue", cascade="all, delete-orphan", lazy="select"
+    )
+
+    milestones = relationship(
+        "Milestone", secondary=milestone_issues, back_populates="issues", lazy="select"
+    )
+
+    initiatives = relationship(
+        "Initiative", secondary=initiative_issues, back_populates="issues", lazy="select"
+    )
+
+    terminal_sessions = relationship(
+        "TerminalSession",
+        back_populates="issue",
+        cascade="all, delete-orphan",
+        lazy="select",
     )
 
     def __repr__(self) -> str:
