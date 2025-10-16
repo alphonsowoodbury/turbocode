@@ -43,6 +43,7 @@ services:
       - CLAUDE_AUTO_RESPOND=true
       - TURBO_API_URL=http://localhost:8000/api/v1
       - CLAUDE_WEBHOOK_URL=http://host.docker.internal:9000/webhook/comment
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
     ports:
       - "8001:8000"
     depends_on:
@@ -133,6 +134,26 @@ services:
       start_period: 30s
     restart: unless-stopped
 
+  # Ollama LLM Service
+  ollama:
+    image: ollama/ollama:latest
+    container_name: turbo-ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - turbo-network
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
   # Development database for testing
   postgres-test:
     image: postgres:15-alpine
@@ -150,6 +171,26 @@ services:
       - testing
     tmpfs:
       - /var/lib/postgresql/data
+
+  # pgAdmin - PostgreSQL Database UI
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: turbo-pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@admin.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_CONFIG_SERVER_MODE=False
+      - PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED=False
+    ports:
+      - "5050:80"
+    networks:
+      - turbo-network
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
 networks:
   turbo-network:
@@ -173,3 +214,7 @@ volumes:
     name: turbo-api-data
   api_logs:
     name: turbo-api-logs
+  ollama_data:
+    name: turbo-ollama-data
+  pgadmin_data:
+    name: turbo-pgadmin-data

@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDocuments } from "@/hooks/use-documents";
+import { useWorkspace, getWorkspaceParams } from "@/hooks/use-workspace";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { TableOfContents } from "@/components/ui/table-of-contents";
 import { FileText, Calendar, FolderOpen, PanelLeftClose, PanelRightClose } from "lucide-react";
@@ -30,26 +31,21 @@ export default function DocumentsPage() {
   const [showDocList, setShowDocList] = useState(true);
   const [showTOC, setShowTOC] = useState(true);
 
-  const { data: documents, isLoading } = useQuery<Document[]>({
-    queryKey: ["documents"],
-    queryFn: async () => {
-      const response = await fetch("http://localhost:8001/api/v1/documents/");
-      if (!response.ok) throw new Error("Failed to fetch documents");
-      return response.json();
-    },
-  });
+  const { workspace, workCompany } = useWorkspace();
+  const workspaceParams = getWorkspaceParams(workspace, workCompany);
+
+  const { data: documents, isLoading } = useDocuments(workspaceParams);
 
   return (
-    <div className="flex h-full flex-col">
-      <Header
-        title="Documents"
-        createLabel="New Document"
-        onCreateClick={() => {
-          console.log("Create document clicked");
-        }}
-      />
-
-      <div className="flex-1 flex gap-4 p-6 overflow-hidden">
+    <PageLayout
+      title="Documents"
+      isLoading={isLoading}
+      createLabel="New Document"
+      onCreateClick={() => {
+        console.log("Create document clicked");
+      }}
+    >
+      <div className="flex gap-4 p-6 overflow-hidden">
         {/* Documents List */}
         {showDocList && (
           <Card className={cn(
@@ -197,6 +193,6 @@ export default function DocumentsPage() {
           </Card>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { commentsApi } from "@/lib/api/comments";
-import type { CommentCreate, CommentUpdate } from "@/lib/types";
+import type { CommentCreate, CommentUpdate, EntityType } from "@/lib/types";
 
-export function useComments(issueId: string | null) {
+export function useComments(entityType: EntityType | null, entityId: string | null) {
   return useQuery({
-    queryKey: ["comments", issueId],
-    queryFn: () => commentsApi.listByIssue(issueId!),
-    enabled: !!issueId,
+    queryKey: ["comments", entityType, entityId],
+    queryFn: () => commentsApi.listByEntity(entityType!, entityId!),
+    enabled: !!entityType && !!entityId,
+    refetchOnWindowFocus: true, // Refetch when returning to tab
   });
 }
 
@@ -24,7 +25,7 @@ export function useCreateComment() {
   return useMutation({
     mutationFn: (comment: CommentCreate) => commentsApi.create(comment),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["comments", data.issue_id] });
+      queryClient.invalidateQueries({ queryKey: ["comments", data.entity_type, data.entity_id] });
     },
   });
 }
@@ -36,7 +37,7 @@ export function useUpdateComment() {
     mutationFn: ({ id, data }: { id: string; data: CommentUpdate }) =>
       commentsApi.update(id, data),
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["comments", data.issue_id] });
+      queryClient.invalidateQueries({ queryKey: ["comments", data.entity_type, data.entity_id] });
       queryClient.invalidateQueries({ queryKey: ["comments", data.id] });
     },
   });
@@ -46,10 +47,10 @@ export function useDeleteComment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, issueId }: { id: string; issueId: string }) =>
+    mutationFn: ({ id, entityType, entityId }: { id: string; entityType: EntityType; entityId: string }) =>
       commentsApi.delete(id),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["comments", variables.issueId] });
+      queryClient.invalidateQueries({ queryKey: ["comments", variables.entityType, variables.entityId] });
     },
   });
 }

@@ -73,13 +73,23 @@ async def get_initiative_issues(
 async def get_initiatives(
     project_id: UUID | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
+    workspace: str | None = Query(None, pattern="^(all|personal|freelance|work)$"),
+    work_company: str | None = Query(None),
     limit: int | None = Query(None, ge=1, le=100),
     offset: int | None = Query(None, ge=0),
     initiative_service: InitiativeService = Depends(get_initiative_service),
 ) -> list[InitiativeResponse]:
-    """Get all initiatives with optional filtering."""
+    """Get all initiatives with optional filtering by project, status, or workspace."""
     try:
-        if project_id:
+        # Workspace filtering takes precedence
+        if workspace and workspace != "all":
+            return await initiative_service.get_initiatives_by_workspace(
+                workspace=workspace,
+                work_company=work_company,
+                limit=limit,
+                offset=offset,
+            )
+        elif project_id:
             return await initiative_service.get_initiatives_by_project(project_id)
         elif status_filter:
             return await initiative_service.get_initiatives_by_status(status_filter)

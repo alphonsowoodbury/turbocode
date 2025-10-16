@@ -72,6 +72,30 @@ class InitiativeNotFoundError(ResourceNotFoundError):
         self.initiative_id = initiative_id
 
 
+class MentorNotFoundError(ResourceNotFoundError):
+    """Raised when a mentor cannot be found."""
+
+    def __init__(self, mentor_id: UUID) -> None:
+        super().__init__("Mentor", mentor_id, "MENTOR_NOT_FOUND")
+        self.mentor_id = mentor_id
+
+
+class ResumeNotFoundError(ResourceNotFoundError):
+    """Raised when a resume cannot be found."""
+
+    def __init__(self, resume_id: UUID) -> None:
+        super().__init__("Resume", resume_id, "RESUME_NOT_FOUND")
+        self.resume_id = resume_id
+
+
+class ResumeSectionNotFoundError(ResourceNotFoundError):
+    """Raised when a resume section cannot be found."""
+
+    def __init__(self, section_id: UUID) -> None:
+        super().__init__("Resume Section", section_id, "RESUME_SECTION_NOT_FOUND")
+        self.section_id = section_id
+
+
 class DuplicateResourceError(TurboBaseException):
     """Raised when attempting to create a resource that already exists."""
 

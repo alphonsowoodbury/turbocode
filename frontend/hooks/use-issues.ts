@@ -9,6 +9,8 @@ export function useIssues(params?: {
   status?: string;
   priority?: string;
   type?: string;
+  workspace?: string;
+  work_company?: string;
 }) {
   return useQuery({
     queryKey: ["issues", params],

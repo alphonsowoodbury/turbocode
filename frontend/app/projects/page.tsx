@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { ProjectList } from "@/components/projects/project-list";
 import { CreateProjectDialog } from "@/components/projects/create-project-dialog";
 
@@ -9,13 +9,11 @@ export default function ProjectsPage() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   return (
-    <div className="flex h-full flex-col">
-      <Header
-        title="Projects"
-        createLabel="New Project"
-        onCreateClick={() => setCreateDialogOpen(true)}
-      />
-
+    <PageLayout
+      title="Projects"
+      createLabel="New Project"
+      onCreateClick={() => setCreateDialogOpen(true)}
+    >
       <div className="flex-1 p-6">
         <ProjectList />
       </div>
@@ -24,6 +22,6 @@ export default function ProjectsPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />
-    </div>
+    </PageLayout>
   );
 }

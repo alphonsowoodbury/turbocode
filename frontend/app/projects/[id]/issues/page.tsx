@@ -3,14 +3,14 @@
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useProject } from "@/hooks/use-projects";
 import { useIssues } from "@/hooks/use-issues";
 import { CreateIssueDialog } from "@/components/issues/create-issue-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, Trash2, Plus, Filter, X } from "lucide-react";
+import { Save, Trash2, Plus, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { IssueFiltersComponent, type IssueFilters as IssueFiltersType } from "@/components/projects/issue-filters";
@@ -158,37 +158,16 @@ export default function ProjectIssuesPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error || !project) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Project Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            Project not found or failed to load
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <Header
-        title="Issues"
-        breadcrumbs={[
-          { label: project.name, href: `/projects/${projectId}` },
-        ]}
-      />
-
-      <div className="flex-1 space-y-6 p-6">
+    <PageLayout
+      title="Issues"
+      isLoading={isLoading}
+      error={error || (!project ? new Error("Project not found") : null)}
+      breadcrumbs={[
+        { label: project?.name || "Project", href: `/projects/${projectId}` },
+      ]}
+    >
+      <div className="space-y-6 p-6">
 
         {/* Issues Card */}
         <Card>
@@ -388,6 +367,6 @@ export default function ProjectIssuesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }

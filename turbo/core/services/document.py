@@ -10,6 +10,7 @@ from turbo.core.schemas.document import (
     DocumentResponse,
     DocumentUpdate,
 )
+from turbo.core.utils import strip_emojis
 from turbo.utils.exceptions import DocumentNotFoundError, ProjectNotFoundError
 
 
@@ -26,6 +27,10 @@ class DocumentService:
 
     async def create_document(self, document_data: DocumentCreate) -> DocumentResponse:
         """Create a new document."""
+        # Strip emojis from title only (preserve formatting in content)
+        if document_data.title:
+            document_data.title = strip_emojis(document_data.title)
+
         # Verify project exists
         project = await self._project_repository.get_by_id(document_data.project_id)
         if not project:
@@ -52,6 +57,10 @@ class DocumentService:
         self, document_id: UUID, update_data: DocumentUpdate
     ) -> DocumentResponse:
         """Update a document."""
+        # Strip emojis from title only (preserve formatting in content)
+        if update_data.title:
+            update_data.title = strip_emojis(update_data.title)
+
         document = await self._document_repository.update(document_id, update_data)
         if not document:
             raise DocumentNotFoundError(document_id)
@@ -84,6 +93,27 @@ class DocumentService:
     async def get_documents_by_author(self, author: str) -> list[DocumentResponse]:
         """Get documents by author."""
         documents = await self._document_repository.get_by_author(author)
+        return [DocumentResponse.model_validate(document) for document in documents]
+
+    async def get_documents_by_format(self, document_format: str) -> list[DocumentResponse]:
+        """Get documents by format."""
+        documents = await self._document_repository.get_by_format(document_format)
+        return [DocumentResponse.model_validate(document) for document in documents]
+
+    async def get_documents_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[DocumentResponse]:
+        """Get documents filtered by workspace."""
+        documents = await self._document_repository.get_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
         return [DocumentResponse.model_validate(document) for document in documents]
 
     async def search_documents(self, search_term: str) -> list[DocumentResponse]:

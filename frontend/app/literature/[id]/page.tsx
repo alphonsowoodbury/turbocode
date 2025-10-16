@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import {
   useLiteratureItem,
   useDeleteLiterature,
@@ -10,19 +10,17 @@ import {
   useToggleLiteratureFavorite,
   useMarkLiteratureRead,
 } from "@/hooks/use-literature";
+import { EntityCommentsSection } from "@/components/shared/entity-comments-section";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
-  Loader2,
-  Pencil,
   Star,
   BookOpen,
   ExternalLink,
   Trash2,
-  CheckCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -84,37 +82,30 @@ export default function LiteratureDetailPage() {
     }
   };
 
-  if (isLoading) {
+  // Early return if no item data
+  if (!item) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error || !item) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Item Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Literature item not found or failed to load</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.push("/literature")}>
-              Back to Literature
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageLayout
+        title="Item Not Found"
+        isLoading={isLoading}
+        error={error || new Error("Literature item not found or failed to load")}
+      >
+        <div />
+      </PageLayout>
     );
   }
 
   const tags = item.tags?.split(",").map((t) => t.trim()).filter(Boolean) || [];
 
   return (
-    <div className="flex h-full flex-col">
-      <Header title={item.title} />
-
-      <div className="flex-1 space-y-4 p-6">
+    <PageLayout
+      title={item.title}
+      isLoading={isLoading}
+      error={error}
+    >
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto space-y-4 p-6 pb-0">
         {/* Item Metadata */}
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -245,7 +236,18 @@ export default function LiteratureDetailPage() {
             </CardContent>
           </Card>
         )}
+        </div>
+
+        {/* Collapsible & Resizable Comments Section */}
+        <EntityCommentsSection
+          entityType="document"
+          entityId={literatureId}
+          defaultHeight={400}
+          minHeight={200}
+          maxHeight={700}
+          title="Comments"
+        />
       </div>
-    </div>
+    </PageLayout>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter, Briefcase } from "lucide-react";
@@ -23,10 +23,8 @@ export default function JobsPage() {
   const jobs: any[] = [];
 
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Jobs" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Jobs">
+      <div className="p-6">
         {/* Controls Bar */}
         <div className="mb-4 flex items-center justify-between">
           <Button onClick={() => setCreateDialogOpen(true)}>
@@ -98,6 +96,6 @@ export default function JobsPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

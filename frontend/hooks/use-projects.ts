@@ -7,6 +7,8 @@ export function useProjects(params?: {
   limit?: number;
   status?: string;
   priority?: string;
+  workspace?: string;
+  work_company?: string;
 }) {
   return useQuery({
     queryKey: ["projects", params],

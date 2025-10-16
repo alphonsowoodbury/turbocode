@@ -62,12 +62,22 @@ async def get_issues(
     status_filter: str | None = Query(None, alias="status"),
     assignee: str | None = Query(None),
     project_id: UUID | None = Query(None),
+    workspace: str | None = Query(None, pattern="^(all|personal|freelance|work)$"),
+    work_company: str | None = Query(None),
     limit: int | None = Query(None, ge=1, le=100),
     offset: int | None = Query(None, ge=0),
     issue_service: IssueService = Depends(get_issue_service),
 ) -> list[IssueResponse]:
-    """Get all issues with optional filtering."""
-    if status_filter:
+    """Get all issues with optional filtering by status, assignee, project, and workspace."""
+    # Workspace filtering takes precedence
+    if workspace and workspace != "all":
+        return await issue_service.get_issues_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
+    elif status_filter:
         return await issue_service.get_issues_by_status(status_filter)
     elif assignee:
         return await issue_service.get_issues_by_assignee(assignee)

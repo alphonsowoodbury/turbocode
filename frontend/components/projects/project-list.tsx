@@ -2,13 +2,23 @@
 
 import { useState } from "react";
 import { useProjects } from "@/hooks/use-projects";
+import { useWorkspace, getWorkspaceParams } from "@/hooks/use-workspace";
 import { ProjectCard } from "./project-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
 
 export function ProjectList() {
   const [status, setStatus] = useState<string | undefined>(undefined);
-  const { data: projects, isLoading, error } = useProjects({ status });
+  const { workspace, workCompany } = useWorkspace();
+
+  // Build query params with workspace filtering
+  const workspaceParams = getWorkspaceParams(workspace, workCompany);
+  const queryParams = {
+    status,
+    ...workspaceParams
+  };
+
+  const { data: projects, isLoading, error } = useProjects(queryParams);
 
   if (isLoading) {
     return (

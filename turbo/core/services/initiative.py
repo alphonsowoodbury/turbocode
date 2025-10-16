@@ -16,6 +16,7 @@ from turbo.core.schemas.initiative import (
     InitiativeUpdate,
 )
 from turbo.core.schemas.issue import IssueResponse
+from turbo.core.utils import strip_emojis
 from turbo.utils.exceptions import (
     InitiativeNotFoundError,
     ProjectNotFoundError,
@@ -41,6 +42,12 @@ class InitiativeService:
 
     async def create_initiative(self, initiative_data: InitiativeCreate) -> InitiativeResponse:
         """Create a new initiative."""
+        # Strip emojis from text fields
+        if initiative_data.name:
+            initiative_data.name = strip_emojis(initiative_data.name)
+        if initiative_data.description:
+            initiative_data.description = strip_emojis(initiative_data.description)
+
         # Verify project exists if provided (optional for initiatives)
         if initiative_data.project_id:
             project = await self._project_repository.get_by_id(initiative_data.project_id)
@@ -140,6 +147,12 @@ class InitiativeService:
         self, initiative_id: UUID, update_data: InitiativeUpdate
     ) -> InitiativeResponse:
         """Update an initiative."""
+        # Strip emojis from text fields
+        if update_data.name:
+            update_data.name = strip_emojis(update_data.name)
+        if update_data.description:
+            update_data.description = strip_emojis(update_data.description)
+
         initiative = await self._initiative_repository.get_by_id(initiative_id)
         if not initiative:
             raise InitiativeNotFoundError(initiative_id)
@@ -189,6 +202,22 @@ class InitiativeService:
     async def get_initiatives_by_status(self, status: str) -> list[InitiativeResponse]:
         """Get initiatives by status."""
         initiatives = await self._initiative_repository.get_by_status(status)
+        return [self._to_response(i) for i in initiatives]
+
+    async def get_initiatives_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[InitiativeResponse]:
+        """Get initiatives filtered by workspace."""
+        initiatives = await self._initiative_repository.get_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
         return [self._to_response(i) for i in initiatives]
 
     async def get_initiative_issues(self, initiative_id: UUID) -> list[IssueResponse]:

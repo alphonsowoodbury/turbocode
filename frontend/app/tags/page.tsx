@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TagBadge } from "@/components/tags";
-import { Loader2, Plus, Filter, X, Tags as TagsIcon } from "lucide-react";
+import { Plus, Filter, X, Tags as TagsIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -244,41 +244,9 @@ export default function TagsPage() {
     setMinUsageCount("all");
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Tags" />
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Tags" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Failed to load tags</p>
-            <p className="mt-1 text-xs text-destructive">
-              {error instanceof Error ? error.message : "Unknown error"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <Header title="Tags" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Tags" isLoading={isLoading} error={error}>
+      <div className="p-6">
         {/* Controls Bar */}
         <div className="mb-4 flex items-center justify-between">
           {/* Create Button */}
@@ -512,6 +480,6 @@ export default function TagsPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       /> */}
-    </div>
+    </PageLayout>
   );
 }

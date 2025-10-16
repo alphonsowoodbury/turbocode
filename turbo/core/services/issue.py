@@ -14,6 +14,7 @@ from turbo.core.schemas.issue import (
 )
 from turbo.core.schemas.graph import GraphNodeCreate
 from turbo.core.services.graph import GraphService
+from turbo.core.utils import strip_emojis
 from turbo.utils.config import get_settings
 from turbo.utils.exceptions import IssueNotFoundError, ProjectNotFoundError
 
@@ -104,6 +105,12 @@ class IssueService:
 
     async def create_issue(self, issue_data: IssueCreate) -> IssueResponse:
         """Create a new issue."""
+        # Strip emojis from text fields
+        if issue_data.title:
+            issue_data.title = strip_emojis(issue_data.title)
+        if issue_data.description:
+            issue_data.description = strip_emojis(issue_data.description)
+
         # Validate project_id requirements
         if issue_data.type == "discovery":
             # Discovery issues can exist without a project
@@ -169,10 +176,32 @@ class IssueService:
         issues = await self._issue_repository.get_all(limit=limit, offset=offset)
         return [IssueResponse.model_validate(issue) for issue in issues]
 
+    async def get_issues_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[IssueResponse]:
+        """Get issues filtered by workspace."""
+        issues = await self._issue_repository.get_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
+        return [IssueResponse.model_validate(issue) for issue in issues]
+
     async def update_issue(
         self, issue_id: UUID, update_data: IssueUpdate
     ) -> IssueResponse:
         """Update an issue."""
+        # Strip emojis from text fields
+        if update_data.title:
+            update_data.title = strip_emojis(update_data.title)
+        if update_data.description:
+            update_data.description = strip_emojis(update_data.description)
+
         issue = await self._issue_repository.get_by_id(issue_id)
         if not issue:
             raise IssueNotFoundError(issue_id)

@@ -1,15 +1,13 @@
 "use client";
 
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings } from "lucide-react";
 
 export default function SettingsPage() {
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Settings" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Settings">
+      <div className="p-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -25,6 +23,6 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }

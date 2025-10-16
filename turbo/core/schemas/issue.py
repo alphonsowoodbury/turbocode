@@ -23,6 +23,7 @@ class IssueBase(BaseModel):
     priority: str = Field(default="medium", pattern="^(low|medium|high|critical)$")
     assignee: EmailStr | None = None
     due_date: datetime | None = None
+    created_by: str | None = None  # User email or "AI: model_name"
 
     @field_validator("title")
     @classmethod
@@ -65,6 +66,7 @@ class IssueUpdate(BaseModel):
     priority: str | None = Field(None, pattern="^(low|medium|high|critical)$")
     assignee: EmailStr | None = None
     due_date: datetime | None = None
+    created_by: str | None = None
     milestone_ids: list[UUID] | None = None
 
     @field_validator("title")

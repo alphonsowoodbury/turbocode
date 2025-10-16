@@ -22,9 +22,10 @@ coverage.xml
 .venv/
 .virtualenv/
 
-# Node
+# Node & Frontend (excluded from API build)
 node_modules
 npm-debug.log
+frontend/
 
 # OS
 .DS_Store
@@ -55,6 +56,9 @@ htmlcov/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+migrations/
+docs/
+create_ritmo_structure.py
 
 # Documentation
 *.md

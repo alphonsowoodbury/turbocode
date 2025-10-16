@@ -96,3 +96,52 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
         stmt = select(self._model).where(self._model.priority.in_(["high", "critical"]))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[Project]:
+        """Get projects by workspace, optionally filtered by company for work workspace."""
+        stmt = select(self._model).where(self._model.workspace == workspace)
+
+        # For work workspace, optionally filter by company
+        if workspace == "work" and work_company:
+            stmt = stmt.where(self._model.work_company == work_company)
+
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_all_filtered(
+        self,
+        workspace: str | None = None,
+        work_company: str | None = None,
+        status: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[Project]:
+        """Get all projects with optional workspace and status filtering."""
+        stmt = select(self._model)
+
+        if workspace:
+            stmt = stmt.where(self._model.workspace == workspace)
+            if workspace == "work" and work_company:
+                stmt = stmt.where(self._model.work_company == work_company)
+
+        if status:
+            stmt = stmt.where(self._model.status == status)
+
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())

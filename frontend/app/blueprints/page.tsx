@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useBlueprints, useDeleteBlueprint } from "@/hooks/use-blueprints";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -66,15 +66,18 @@ export default function BlueprintsPage() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Blueprints">
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Blueprint
-        </Button>
-      </Header>
-
-      <div className="flex-1 space-y-6 p-6">
+    <PageLayout
+      title="Blueprints"
+      isLoading={isLoading}
+    >
+      <div className="space-y-6 p-6">
+        {/* Header Button */}
+        <div className="flex justify-end">
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Blueprint
+          </Button>
+        </div>
         {/* Filters */}
         <div className="flex gap-4">
           <Select
@@ -114,11 +117,7 @@ export default function BlueprintsPage() {
         </div>
 
         {/* Blueprint Grid */}
-        {isLoading ? (
-          <div className="flex h-64 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : blueprints && blueprints.length > 0 ? (
+        {blueprints && blueprints.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {blueprints.map((blueprint) => (
               <Link key={blueprint.id} href={`/blueprints/${blueprint.id}`}>
@@ -194,6 +193,6 @@ export default function BlueprintsPage() {
       </div>
 
       <CreateBlueprintDialog open={createDialogOpen} onOpenChange={setCreateDialogOpen} />
-    </div>
+    </PageLayout>
   );
 }

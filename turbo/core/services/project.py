@@ -12,6 +12,7 @@ from turbo.core.schemas.project import (
     ProjectUpdate,
     ProjectWithStats,
 )
+from turbo.core.utils import strip_emojis
 from turbo.utils.exceptions import ProjectNotFoundError
 
 
@@ -30,6 +31,12 @@ class ProjectService:
 
     async def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """Create a new project."""
+        # Strip emojis from text fields
+        if project_data.name:
+            project_data.name = strip_emojis(project_data.name)
+        if project_data.description:
+            project_data.description = strip_emojis(project_data.description)
+
         project = await self._project_repository.create(project_data)
         return ProjectResponse.model_validate(project)
 
@@ -51,6 +58,12 @@ class ProjectService:
         self, project_id: UUID, update_data: ProjectUpdate
     ) -> ProjectResponse:
         """Update a project."""
+        # Strip emojis from text fields
+        if update_data.name:
+            update_data.name = strip_emojis(update_data.name)
+        if update_data.description:
+            update_data.description = strip_emojis(update_data.description)
+
         project = await self._project_repository.update(project_id, update_data)
         if not project:
             raise ProjectNotFoundError(project_id)
@@ -158,3 +171,19 @@ class ProjectService:
         """Update project completion percentage."""
         update_data = ProjectUpdate(completion_percentage=completion_percentage)
         return await self.update_project(project_id, update_data)
+
+    async def get_projects_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[ProjectResponse]:
+        """Get projects filtered by workspace."""
+        projects = await self._project_repository.get_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
+        return [ProjectResponse.model_validate(project) for project in projects]

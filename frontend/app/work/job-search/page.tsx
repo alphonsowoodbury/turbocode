@@ -1,16 +1,14 @@
 "use client";
 
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 
 export default function JobSearchPage() {
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Job Search" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Job Search">
+      <div className="p-6">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-4 mb-6">
           <Card>
@@ -171,6 +169,6 @@ export default function JobSearchPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

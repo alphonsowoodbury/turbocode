@@ -3,16 +3,19 @@
 import { useState, useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useProject } from "@/hooks/use-projects";
 import { useIssues } from "@/hooks/use-issues";
 import { useMilestones } from "@/hooks/use-milestones";
+import { useInitiatives } from "@/hooks/use-initiatives";
 import { CreateIssueDialog } from "@/components/issues/create-issue-dialog";
 import { CreateMilestoneDialog } from "@/components/milestones/create-milestone-dialog";
+import { EntityCommentsSection } from "@/components/shared/entity-comments-section";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Save, Trash2, Plus, Filter, ExternalLink, Calendar } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Save, Trash2, Plus, Filter, ExternalLink, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 import { IssueFiltersComponent, type IssueFilters as IssueFiltersType } from "@/components/projects/issue-filters";
@@ -58,6 +61,14 @@ const milestoneStatusColors = {
   cancelled: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
 };
 
+const initiativeStatusColors = {
+  planning: "bg-gray-500/10 text-gray-500 hover:bg-gray-500/20",
+  in_progress: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
+  on_hold: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+  completed: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+  cancelled: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
+};
+
 export default function ProjectDetailPage() {
   const params = useParams();
   const projectId = params.id as string;
@@ -72,6 +83,7 @@ export default function ProjectDetailPage() {
   const { data: project, isLoading, error } = useProject(projectId);
   const { data: issues } = useIssues({ project_id: projectId });
   const { data: milestones } = useMilestones({ project_id: projectId });
+  const { data: initiatives } = useInitiatives({ project_id: projectId });
   const { data: savedFilters } = useSavedFilters(projectId);
   const createFilter = useCreateSavedFilter();
   const deleteFilter = useDeleteSavedFilter();
@@ -122,33 +134,29 @@ export default function ProjectDetailPage() {
     }
   };
 
-  if (isLoading) {
+  // Early return if no project data
+  if (!project) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error || !project) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Project Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            Project not found or failed to load
-          </p>
-        </div>
-      </div>
+      <PageLayout
+        title="Project Not Found"
+        isLoading={isLoading}
+        error={error || new Error("Project not found")}
+      >
+        <div />
+      </PageLayout>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <Header title={project.name} />
-
-      <div className="flex-1 space-y-6 p-6">
-        {/* Project Info */}
+    <PageLayout
+      title={project.name}
+      isLoading={isLoading}
+      error={error}
+    >
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto space-y-6 p-6 pb-0">
+        {/* Project Info with Tabs */}
         <Card>
           <CardHeader>
             <div className="flex items-start justify-between">
@@ -176,26 +184,9 @@ export default function ProjectDetailPage() {
                 </Badge>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Progress */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium">
-                  {project.completion_percentage}%
-                </span>
-              </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                <div
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${project.completion_percentage}%` }}
-                />
-              </div>
-            </div>
 
             {/* Metadata */}
-            <div className="grid gap-4 text-sm md:grid-cols-2">
+            <div className="grid gap-4 text-sm md:grid-cols-2 mt-4">
               <div>
                 <span className="text-muted-foreground">Created: </span>
                 <span>
@@ -209,6 +200,62 @@ export default function ProjectDetailPage() {
                 </span>
               </div>
             </div>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="strategy" className="w-full">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="strategy">Strategy</TabsTrigger>
+                <TabsTrigger value="stack">Tech Stack</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="blueprints">Blueprints</TabsTrigger>
+                <TabsTrigger value="marketing">Marketing</TabsTrigger>
+                <TabsTrigger value="activity">Activity</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="strategy" className="space-y-6 mt-6">
+                <div className="text-center py-12">
+                  <p className="text-sm text-muted-foreground">
+                    Strategy content coming soon...
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="stack" className="space-y-6 mt-6">
+                <div className="text-center py-12">
+                  <p className="text-sm text-muted-foreground">
+                    Tech Stack content coming soon...
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="documents" className="space-y-6 mt-6">
+                <div className="text-center py-12">
+                  <p className="text-sm text-muted-foreground">
+                    Documents content coming soon...
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="blueprints" className="space-y-6 mt-6">
+                <div className="text-center py-12">
+                  <p className="text-sm text-muted-foreground">
+                    Blueprints content coming soon...
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="marketing" className="space-y-6 mt-6">
+                <div className="text-center py-12">
+                  <p className="text-sm text-muted-foreground">
+                    Marketing content coming soon...
+                  </p>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="activity" className="space-y-6 mt-6">
+                <ActivityFeed projectId={projectId} />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
@@ -221,7 +268,7 @@ export default function ProjectDetailPage() {
                 <Badge variant="secondary" className="h-5 px-2 text-xs">
                   {milestones?.length || 0}
                 </Badge>
-                <Link href="/milestones">
+                <Link href={`/milestones?project_id=${projectId}`}>
                   <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                     <ExternalLink className="h-3 w-3" />
                   </Button>
@@ -240,7 +287,7 @@ export default function ProjectDetailPage() {
           <CardContent>
             {milestones && milestones.length > 0 ? (
               <div className="space-y-2">
-                {milestones.map((milestone) => (
+                {milestones.slice(0, 5).map((milestone) => (
                   <Link key={milestone.id} href={`/milestones/${milestone.id}`}>
                     <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors">
                       <div className="flex-1">
@@ -281,10 +328,65 @@ export default function ProjectDetailPage() {
           </CardContent>
         </Card>
 
-        {/* Issues and Activity Grid */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Filtered Issues */}
-          <Card>
+        {/* Initiatives */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CardTitle>Initiatives</CardTitle>
+                <Badge variant="secondary" className="h-5 px-2 text-xs">
+                  {initiatives?.length || 0}
+                </Badge>
+                <Link href={`/initiatives?project_id=${projectId}`}>
+                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {initiatives && initiatives.length > 0 ? (
+              <div className="space-y-2">
+                {initiatives.slice(0, 5).map((initiative) => (
+                  <Link key={initiative.id} href={`/initiatives/${initiative.id}`}>
+                    <div className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50 cursor-pointer transition-colors">
+                      <div className="flex-1">
+                        <p className="font-medium">{initiative.name}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1 mt-1">
+                          {initiative.description}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {initiative.issue_count > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              {initiative.issue_count} {initiative.issue_count === 1 ? "issue" : "issues"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className={cn(
+                          "text-xs capitalize",
+                          initiativeStatusColors[initiative.status]
+                        )}
+                      >
+                        {initiative.status.replace("_", " ")}
+                      </Badge>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No initiatives yet. Create one to organize work by feature or technology.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Issues */}
+        <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -392,15 +494,6 @@ export default function ProjectDetailPage() {
                       </Link>
                     ))}
                   </div>
-                  {filteredIssues.length > 10 && (
-                    <div className="flex justify-center mt-4">
-                      <Link href={`/projects/${projectId}/issues`}>
-                        <Button variant="outline" size="icon" className="h-8 w-8">
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      </Link>
-                    </div>
-                  )}
                 </>
               ) : (
                 <p className="text-sm text-muted-foreground">
@@ -410,18 +503,18 @@ export default function ProjectDetailPage() {
                 </p>
               )}
             </CardContent>
-          </Card>
-
-          {/* Activity Feed */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ActivityFeed projectId={projectId} />
-            </CardContent>
-          </Card>
+        </Card>
         </div>
+
+        {/* Collapsible & Resizable Comments Section */}
+        <EntityCommentsSection
+          entityType="project"
+          entityId={projectId}
+          defaultHeight={500}
+          minHeight={200}
+          maxHeight={800}
+          title="Comments"
+        />
       </div>
 
       <CreateIssueDialog
@@ -476,6 +569,6 @@ export default function ProjectDetailPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </PageLayout>
   );
 }

@@ -9,6 +9,8 @@ from turbo.core.database.connection import get_db_session
 from turbo.core.models import Comment
 from turbo.core.schemas.comment import CommentCreate, CommentResponse, CommentUpdate
 from turbo.core.services import get_webhook_service
+from turbo.core.services.websocket_manager import manager
+from turbo.core.utils.comment_parser import should_trigger_ai_response
 from sqlalchemy import select
 
 router = APIRouter()
@@ -20,12 +22,13 @@ async def create_comment(
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db_session),
 ) -> CommentResponse:
-    """Create a new comment on an issue.
+    """Create a new comment on any entity (issue, project, milestone, etc.).
 
-    If the comment is from a user, triggers a background task to have Claude respond.
+    If the comment is from a user on an issue, triggers a background task to have Claude respond.
     """
     comment = Comment(
-        issue_id=comment_data.issue_id,
+        entity_type=comment_data.entity_type,
+        entity_id=comment_data.entity_id,
         content=comment_data.content,
         author_name=comment_data.author_name,
         author_type=comment_data.author_type,
@@ -34,31 +37,51 @@ async def create_comment(
     await db.commit()
     await db.refresh(comment)
 
-    # Trigger Claude response for user comments only (avoid infinite loops)
-    if comment.author_type == "user":
+    # Broadcast to WebSocket clients
+    comment_response = CommentResponse.model_validate(comment)
+    await manager.send_comment_created(
+        comment.entity_type,
+        str(comment.entity_id),
+        comment_response.model_dump(mode='json')
+    )
+
+    # Trigger Claude response when user @mentions AI (avoid infinite loops)
+    if comment.author_type == "user" and should_trigger_ai_response(comment.content):
         webhook_service = get_webhook_service()
         background_tasks.add_task(
-            webhook_service.trigger_claude_response, comment.issue_id
+            webhook_service.trigger_entity_response,
+            comment.entity_type,
+            comment.entity_id
         )
 
-    return CommentResponse.model_validate(comment)
+    return comment_response
 
 
-@router.get("/issue/{issue_id}", response_model=list[CommentResponse])
-async def get_issue_comments(
-    issue_id: UUID, db: AsyncSession = Depends(get_db_session)
+@router.get("/entity/{entity_type}/{entity_id}", response_model=list[CommentResponse])
+async def get_entity_comments(
+    entity_type: str,
+    entity_id: UUID,
+    db: AsyncSession = Depends(get_db_session)
 ) -> list[CommentResponse]:
-    """Get all comments for an issue."""
+    """Get all comments for an entity (issue, project, milestone, etc.)."""
+    # Validate entity type
+    valid_types = ["issue", "project", "milestone", "initiative", "document", "literature", "blueprint"]
+    if entity_type not in valid_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid entity type. Must be one of: {', '.join(valid_types)}"
+        )
+
     result = await db.execute(
         select(Comment)
-        .where(Comment.issue_id == issue_id)
+        .where(Comment.entity_type == entity_type, Comment.entity_id == entity_id)
         .order_by(Comment.created_at.asc())
     )
     comments = result.scalars().all()
     return [CommentResponse.model_validate(comment) for comment in comments]
 
 
-@router.get("/{comment_id}", response_model=CommentResponse)
+@router.get("/id/{comment_id}", response_model=CommentResponse)
 async def get_comment(
     comment_id: UUID, db: AsyncSession = Depends(get_db_session)
 ) -> CommentResponse:
@@ -75,7 +98,7 @@ async def get_comment(
     return CommentResponse.model_validate(comment)
 
 
-@router.put("/{comment_id}", response_model=CommentResponse)
+@router.put("/id/{comment_id}", response_model=CommentResponse)
 async def update_comment(
     comment_id: UUID,
     comment_data: CommentUpdate,
@@ -96,10 +119,19 @@ async def update_comment(
 
     await db.commit()
     await db.refresh(comment)
-    return CommentResponse.model_validate(comment)
+
+    # Broadcast to WebSocket clients
+    comment_response = CommentResponse.model_validate(comment)
+    await manager.send_comment_updated(
+        comment.entity_type,
+        str(comment.entity_id),
+        comment_response.model_dump(mode='json')
+    )
+
+    return comment_response
 
 
-@router.delete("/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/id/{comment_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_comment(
     comment_id: UUID, db: AsyncSession = Depends(get_db_session)
 ) -> None:
@@ -113,5 +145,13 @@ async def delete_comment(
             detail=f"Comment with id {comment_id} not found",
         )
 
+    # Store entity info before deletion
+    entity_type = comment.entity_type
+    entity_id = str(comment.entity_id)
+    comment_id_str = str(comment.id)
+
     await db.delete(comment)
     await db.commit()
+
+    # Broadcast to WebSocket clients
+    await manager.send_comment_deleted(entity_type, entity_id, comment_id_str)

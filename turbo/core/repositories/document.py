@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from turbo.core.models.document import Document
+from turbo.core.models.project import Project
 from turbo.core.repositories.base import BaseRepository
 from turbo.core.schemas.document import DocumentCreate, DocumentUpdate
 
@@ -115,5 +116,31 @@ class DocumentRepository(BaseRepository[Document, DocumentCreate, DocumentUpdate
             stmt = stmt.where(self._model.project_id == project_id)
 
         stmt = stmt.limit(limit)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[Document]:
+        """Get documents by workspace (filtering by project's workspace)."""
+        stmt = (
+            select(self._model)
+            .join(Project, self._model.project_id == Project.id)
+            .where(Project.workspace == workspace)
+        )
+
+        # For work workspace, optionally filter by company
+        if workspace == "work" and work_company:
+            stmt = stmt.where(Project.work_company == work_company)
+
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

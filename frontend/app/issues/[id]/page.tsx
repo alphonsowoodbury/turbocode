@@ -3,14 +3,17 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useIssue, useDeleteIssue, useCloseIssue, useUpdateIssue } from "@/hooks/use-issues";
 import { useProject } from "@/hooks/use-projects";
-import { CommentList } from "@/components/issues/comment-list";
+import { EntityCommentsSection } from "@/components/shared/entity-comments-section";
 import { EditIssueDialog } from "@/components/issues/edit-issue-dialog";
-import { IssueDependencies } from "@/components/issues/issue-dependencies";
-import { IssueFormsSection } from "@/components/forms/issue-forms-section";
+import { IssueDependenciesTab } from "@/components/issues/tabs/issue-dependencies-tab";
+import { IssueFormsTab } from "@/components/issues/tabs/issue-forms-tab";
+import { IssueDocumentsTab } from "@/components/issues/tabs/issue-documents-tab";
+import { IssueAttachmentsTab } from "@/components/issues/tabs/issue-attachments-tab";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +25,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, Pencil, Star } from "lucide-react";
+import { Pencil, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -73,40 +76,31 @@ export default function IssueDetailPage() {
   const isFavorite = useIsFavorite("issue", issueId);
   const { toggle: toggleFavorite } = useToggleFavorite();
 
-  if (isLoading) {
+  // Early return if no issue data
+  if (!issue) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error || !issue) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Issue Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Issue not found or failed to load</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.push("/issues")}>
-              Back to Issues
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageLayout
+        title="Issue Not Found"
+        isLoading={isLoading}
+        error={error || new Error("Issue not found or failed to load")}
+      >
+        <div />
+      </PageLayout>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <Header
-        title={issue.title}
-        breadcrumbs={project ? [{ label: project.name, href: `/projects/${project.id}` }] : undefined}
-      />
-
-      <div className="flex-1 space-y-4 p-6">
-        {/* Issue Metadata */}
-        <div className="flex flex-wrap items-center gap-2">
+    <PageLayout
+      title={issue.title}
+      isLoading={isLoading}
+      error={error}
+      breadcrumbs={project ? [{ label: project.name, href: `/projects/${project.id}` }] : undefined}
+    >
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto space-y-4 p-6 pb-0">
+          {/* Issue Metadata */}
+          <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
@@ -231,25 +225,45 @@ export default function IssueDetailPage() {
 
         <Separator />
 
-        {/* Dependencies Section */}
-        <IssueDependencies
-          issueId={issue.id}
-          blocking={issue.blocking || []}
-          blockedBy={issue.blocked_by || []}
-        />
+        {/* Tabbed Content */}
+        <Tabs defaultValue="dependencies" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="dependencies">Dependencies</TabsTrigger>
+            <TabsTrigger value="forms">Forms</TabsTrigger>
+            <TabsTrigger value="documents">Documents</TabsTrigger>
+            <TabsTrigger value="attachments">Attachments</TabsTrigger>
+          </TabsList>
 
-        <Separator />
+          <TabsContent value="dependencies">
+            <IssueDependenciesTab
+              issueId={issue.id}
+              blocking={issue.blocking || []}
+              blockedBy={issue.blocked_by || []}
+            />
+          </TabsContent>
 
-        {/* Forms Section */}
-        <IssueFormsSection issueId={issueId} />
+          <TabsContent value="forms">
+            <IssueFormsTab issueId={issueId} />
+          </TabsContent>
 
-        <Separator />
+          <TabsContent value="documents">
+            <IssueDocumentsTab issueId={issueId} projectId={issue.project_id || ""} />
+          </TabsContent>
 
-        {/* Comments Section */}
-        <div>
-          <h2 className="text-lg font-semibold mb-4">Comments</h2>
-          <CommentList issueId={issueId} />
+          <TabsContent value="attachments">
+            <IssueAttachmentsTab issueId={issueId} />
+          </TabsContent>
+        </Tabs>
         </div>
+
+        {/* Collapsible & Resizable Comments Section */}
+        <EntityCommentsSection
+          entityType="issue"
+          entityId={issueId}
+          defaultHeight={500}
+          minHeight={200}
+          maxHeight={800}
+        />
       </div>
 
       {/* Edit Issue Dialog */}
@@ -260,6 +274,6 @@ export default function IssueDetailPage() {
           onOpenChange={setEditDialogOpen}
         />
       )}
-    </div>
+    </PageLayout>
   );
 }

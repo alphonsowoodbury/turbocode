@@ -87,12 +87,22 @@ async def get_documents(
     type_filter: str | None = Query(None, alias="type"),
     format_filter: str | None = Query(None, alias="format"),
     project_id: UUID | None = Query(None),
+    workspace: str | None = Query(None, pattern="^(all|personal|freelance|work)$"),
+    work_company: str | None = Query(None),
     limit: int | None = Query(None, ge=1, le=100),
     offset: int | None = Query(None, ge=0),
     document_service: DocumentService = Depends(get_document_service),
 ) -> list[DocumentResponse]:
-    """Get all documents with optional filtering."""
-    if type_filter:
+    """Get all documents with optional filtering by type, format, project, or workspace."""
+    # Workspace filtering takes precedence
+    if workspace and workspace != "all":
+        return await document_service.get_documents_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
+    elif type_filter:
         return await document_service.get_documents_by_type(type_filter)
     elif format_filter:
         return await document_service.get_documents_by_format(format_filter)

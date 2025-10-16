@@ -2,12 +2,12 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useLiterature } from "@/hooks/use-literature";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Filter, X, BookOpen, Star, ExternalLink } from "lucide-react";
+import { Plus, Filter, X, BookOpen, Star, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -118,38 +118,9 @@ export default function LiteraturePage() {
     setSelectedFavoriteStatus("all");
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Literature" />
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Literature" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Failed to load literature</p>
-            <p className="mt-1 text-xs text-destructive">
-              {error instanceof Error ? error.message : "Unknown error"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Literature" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Literature" isLoading={isLoading} error={error}>
+      <div className="p-6">
         {/* Controls Bar */}
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -357,6 +328,6 @@ export default function LiteraturePage() {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

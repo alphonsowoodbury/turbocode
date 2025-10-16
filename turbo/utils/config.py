@@ -102,6 +102,28 @@ class GraphSettings(BaseSettings):
     model_config = {"env_prefix": "NEO4J_", "env_file": ".env", "extra": "ignore"}
 
 
+class LLMSettings(BaseSettings):
+    """LLM (Ollama) configuration settings."""
+
+    base_url: str = "http://ollama:11434"
+    default_model: str = "qwen2.5:7b"
+    enabled: bool = True
+
+    model_config = {"env_prefix": "OLLAMA_", "env_file": ".env", "extra": "ignore"}
+
+
+class AnthropicSettings(BaseSettings):
+    """Anthropic Claude API configuration settings."""
+
+    api_key: str = ""
+    model: str = "claude-3-5-sonnet-20241022"
+    max_tokens: int = 4096
+    temperature: float = 0.0
+    enabled: bool = True
+
+    model_config = {"env_prefix": "ANTHROPIC_", "env_file": ".env", "extra": "ignore"}
+
+
 class Settings(BaseSettings):
     """Main application settings."""
 
@@ -118,6 +140,8 @@ class Settings(BaseSettings):
     security: SecuritySettings = SecuritySettings()
     features: FeatureSettings = FeatureSettings()
     graph: GraphSettings = GraphSettings()
+    llm: LLMSettings = LLMSettings()
+    anthropic: AnthropicSettings = AnthropicSettings()
 
     @field_validator("log_level")
     @classmethod

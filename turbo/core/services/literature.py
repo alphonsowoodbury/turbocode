@@ -6,6 +6,7 @@ from uuid import UUID
 from turbo.core.models.literature import Literature
 from turbo.core.repositories.literature import LiteratureRepository
 from turbo.core.schemas.literature import LiteratureCreate, LiteratureUpdate
+from turbo.core.utils import strip_emojis
 from turbo.utils.content_extractor import extract_article_content, fetch_rss_feed
 
 
@@ -18,6 +19,12 @@ class LiteratureService:
 
     async def create_literature(self, literature_data: LiteratureCreate) -> Literature:
         """Create new literature."""
+        # Strip emojis from text fields
+        if literature_data.title:
+            literature_data.title = strip_emojis(literature_data.title)
+        if literature_data.content:
+            literature_data.content = strip_emojis(literature_data.content)
+
         return await self.repository.create(literature_data)
 
     async def get_literature(self, literature_id: UUID) -> Optional[Literature]:
@@ -38,6 +45,12 @@ class LiteratureService:
         literature_data: LiteratureUpdate,
     ) -> Optional[Literature]:
         """Update literature."""
+        # Strip emojis from text fields
+        if literature_data.title:
+            literature_data.title = strip_emojis(literature_data.title)
+        if literature_data.content:
+            literature_data.content = strip_emojis(literature_data.content)
+
         return await self.repository.update(literature_id, literature_data)
 
     async def delete_literature(self, literature_id: UUID) -> bool:

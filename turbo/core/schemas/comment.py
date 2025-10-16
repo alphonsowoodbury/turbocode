@@ -35,7 +35,17 @@ class CommentBase(BaseModel):
 class CommentCreate(CommentBase):
     """Schema for creating new comments."""
 
-    issue_id: UUID
+    entity_type: str = Field(..., pattern="^(issue|project|milestone|initiative|document|literature|blueprint)$")
+    entity_id: UUID
+
+    @field_validator("entity_type")
+    @classmethod
+    def validate_entity_type(cls, v: str) -> str:
+        """Validate entity type."""
+        valid_types = ["issue", "project", "milestone", "initiative", "document", "literature", "blueprint"]
+        if v not in valid_types:
+            raise ValueError(f"Entity type must be one of: {', '.join(valid_types)}")
+        return v
 
 
 class CommentUpdate(BaseModel):
@@ -56,7 +66,8 @@ class CommentResponse(CommentBase):
     """Schema for comment API responses."""
 
     id: UUID
-    issue_id: UUID
+    entity_type: str
+    entity_id: UUID
     created_at: datetime
     updated_at: datetime
 

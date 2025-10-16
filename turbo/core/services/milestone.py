@@ -16,6 +16,7 @@ from turbo.core.schemas.milestone import (
     MilestoneResponse,
     MilestoneUpdate,
 )
+from turbo.core.utils import strip_emojis
 from turbo.utils.exceptions import (
     MilestoneNotFoundError,
     ProjectNotFoundError,
@@ -41,6 +42,12 @@ class MilestoneService:
 
     async def create_milestone(self, milestone_data: MilestoneCreate) -> MilestoneResponse:
         """Create a new milestone."""
+        # Strip emojis from text fields
+        if milestone_data.name:
+            milestone_data.name = strip_emojis(milestone_data.name)
+        if milestone_data.description:
+            milestone_data.description = strip_emojis(milestone_data.description)
+
         # Verify project exists
         project = await self._project_repository.get_by_id(milestone_data.project_id)
         if not project:
@@ -171,6 +178,12 @@ class MilestoneService:
         self, milestone_id: UUID, update_data: MilestoneUpdate
     ) -> MilestoneResponse:
         """Update a milestone."""
+        # Strip emojis from text fields
+        if update_data.name:
+            update_data.name = strip_emojis(update_data.name)
+        if update_data.description:
+            update_data.description = strip_emojis(update_data.description)
+
         milestone = await self._milestone_repository.get_by_id(milestone_id)
         if not milestone:
             raise MilestoneNotFoundError(milestone_id)
@@ -220,6 +233,39 @@ class MilestoneService:
     async def get_milestones_by_status(self, status: str) -> list[MilestoneResponse]:
         """Get milestones by status."""
         milestones = await self._milestone_repository.get_by_status(status)
+        # For list views, don't try to access relationships - just return basic data
+        return [
+            MilestoneResponse(
+                id=m.id,
+                name=m.name,
+                description=m.description,
+                status=m.status,
+                start_date=m.start_date,
+                due_date=m.due_date,
+                project_id=m.project_id,
+                created_at=m.created_at,
+                updated_at=m.updated_at,
+                issue_count=0,
+                tag_count=0,
+                document_count=0,
+            )
+            for m in milestones
+        ]
+
+    async def get_milestones_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[MilestoneResponse]:
+        """Get milestones filtered by workspace."""
+        milestones = await self._milestone_repository.get_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
         # For list views, don't try to access relationships - just return basic data
         return [
             MilestoneResponse(

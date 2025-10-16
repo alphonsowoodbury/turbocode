@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import {
   usePodcastShowWithEpisodes,
   useToggleShowFavorite,
@@ -14,13 +14,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  Loader2,
   Star,
   RefreshCw,
   ExternalLink,
-  Play,
   CheckCircle,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -70,35 +69,13 @@ export default function PodcastShowPage() {
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error || !showData) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Show Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Show not found or failed to load</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.push("/podcasts")}>
-              Back to Podcasts
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <Header title={showData.title} />
-
-      <div className="flex-1 p-6">
+    <PageLayout
+      title={showData?.title || "Show Not Found"}
+      isLoading={isLoading}
+      error={error || (!showData ? new Error("Show not found or failed to load") : null)}
+    >
+      <div className="p-6">
         {/* Show Header */}
         <div className="mb-6">
           <Card>
@@ -275,6 +252,6 @@ export default function PodcastShowPage() {
           )}
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

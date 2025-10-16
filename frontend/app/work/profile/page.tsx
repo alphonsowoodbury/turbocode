@@ -1,13 +1,11 @@
 "use client";
 
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 
 export default function CareerProfilePage() {
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Profile" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Profile">
+      <div className="p-6">
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
@@ -16,6 +14,6 @@ export default function CareerProfilePage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

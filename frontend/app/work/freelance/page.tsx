@@ -1,15 +1,13 @@
 "use client";
 
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Package, DollarSign, FileCheck, TrendingUp } from "lucide-react";
 
 export default function FreelanceDashboardPage() {
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Freelance" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Freelance">
+      <div className="p-6">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
           <Card>
@@ -102,6 +100,6 @@ export default function FreelanceDashboardPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

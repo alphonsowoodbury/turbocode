@@ -28,6 +28,7 @@ class Issue(Base):
     # Optional fields
     assignee = Column(String(255), nullable=True)  # Email address
     due_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_by = Column(String(255), nullable=True)  # User email or "AI: model_name"
 
     # Foreign keys
     project_id = Column(
@@ -42,10 +43,6 @@ class Issue(Base):
 
     tags = relationship(
         "Tag", secondary=issue_tags, back_populates="issues", lazy="select"
-    )
-
-    comments = relationship(
-        "Comment", back_populates="issue", cascade="all, delete-orphan", lazy="select"
     )
 
     milestones = relationship(

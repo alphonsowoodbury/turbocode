@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from turbo.core.models.initiative import Initiative
+from turbo.core.models.project import Project
 from turbo.core.repositories.base import BaseRepository
 from turbo.core.schemas.initiative import InitiativeCreate, InitiativeUpdate
 
@@ -103,5 +104,39 @@ class InitiativeRepository(BaseRepository[Initiative, InitiativeCreate, Initiati
             stmt = stmt.limit(limit)
         if offset is not None:
             stmt = stmt.offset(offset)
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[Initiative]:
+        """Get initiatives by workspace (filtering by project's workspace).
+
+        Note: Initiatives may have project_id=None. Those are excluded from workspace filtering.
+        """
+        stmt = (
+            select(self._model)
+            .join(Project, self._model.project_id == Project.id)
+            .where(Project.workspace == workspace)
+            .options(
+                selectinload(self._model.issues),
+                selectinload(self._model.tags),
+                selectinload(self._model.documents),
+            )
+        )
+
+        # For work workspace, optionally filter by company
+        if workspace == "work" and work_company:
+            stmt = stmt.where(Project.work_company == work_company)
+
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+
         result = await self._session.execute(stmt)
         return list(result.scalars().all())

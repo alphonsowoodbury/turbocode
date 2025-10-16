@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter, Receipt } from "lucide-react";
@@ -20,10 +20,8 @@ export default function InvoicesPage() {
   const [groupBy, setGroupBy] = useState<string>("none");
 
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Invoices" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Invoices">
+      <div className="p-6">
         <div className="mb-4 flex items-center justify-between">
           <Button onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
@@ -92,6 +90,6 @@ export default function InvoicesPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

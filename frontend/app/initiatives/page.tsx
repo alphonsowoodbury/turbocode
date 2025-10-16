@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { useSearchParams } from "next/navigation";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useInitiatives } from "@/hooks/use-initiatives";
-import { useProjects } from "@/hooks/use-projects";
+import { useProjects, useProject } from "@/hooks/use-projects";
+import { useWorkspace, getWorkspaceParams } from "@/hooks/use-workspace";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Target, Plus, Filter, X } from "lucide-react";
+import { Target, Plus, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 import {
@@ -27,13 +29,29 @@ const initiativeStatusColors = {
   cancelled: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
 };
 
-export default function InitiativesPage() {
+function InitiativesContent() {
+  const searchParams = useSearchParams();
+  const projectIdFromUrl = searchParams.get("project_id");
+
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [groupBy, setGroupBy] = useState<string>("none");
-  const { data: initiatives, isLoading, error } = useInitiatives();
-  const { data: projects } = useProjects();
+
+  const { workspace, workCompany } = useWorkspace();
+  const workspaceParams = getWorkspaceParams(workspace, workCompany);
+
+  const { data: initiatives, isLoading, error } = useInitiatives(workspaceParams);
+  const { data: projects } = useProjects(workspaceParams);
+  const { data: filteredProject } = useProject(projectIdFromUrl || null);
+
+  // Apply URL filter on mount
+  useEffect(() => {
+    if (projectIdFromUrl) {
+      setSelectedProject(projectIdFromUrl);
+      setShowFilters(true);
+    }
+  }, [projectIdFromUrl]);
 
   // Apply filters
   const filteredInitiatives = useMemo(() => {
@@ -94,37 +112,13 @@ export default function InitiativesPage() {
     setSelectedStatus("all");
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Initiatives" />
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Initiatives" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Failed to load initiatives</p>
-            <p className="mt-1 text-xs text-destructive">
-              {error instanceof Error ? error.message : "Unknown error"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Initiatives" />
-
+    <PageLayout
+      title="Initiatives"
+      isLoading={isLoading}
+      error={error}
+      breadcrumbs={filteredProject ? [{ label: filteredProject.name, href: `/projects/${filteredProject.id}` }] : undefined}
+    >
       <div className="flex-1 p-6">
         {/* Controls Bar */}
         <div className="mb-4 flex items-center justify-between">
@@ -292,6 +286,14 @@ export default function InitiativesPage() {
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
+  );
+}
+
+export default function InitiativesPage() {
+  return (
+    <Suspense fallback={<PageLayout title="Initiatives" isLoading={true} error={null}><div /></PageLayout>}>
+      <InitiativesContent />
+    </Suspense>
   );
 }

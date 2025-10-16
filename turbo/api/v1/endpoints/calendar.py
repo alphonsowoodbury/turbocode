@@ -25,6 +25,8 @@ async def get_calendar_events(
     end_date: Annotated[datetime | None, Query(description="End date for events")] = None,
     event_types: Annotated[list[EventType] | None, Query(description="Filter by event types")] = None,
     categories: Annotated[list[EventCategory] | None, Query(description="Filter by categories")] = None,
+    workspace: Annotated[str | None, Query(description="Filter by workspace", pattern="^(all|personal|freelance|work)$")] = None,
+    work_company: Annotated[str | None, Query(description="Filter by work company")] = None,
     session: AsyncSession = Depends(get_db_session),
 ):
     """
@@ -40,14 +42,14 @@ async def get_calendar_events(
     service = CalendarService(session)
 
     # Build filter
-    filter_params = None
-    if event_types or categories:
-        filter_params = CalendarEventFilter(
-            start_date=start_date,
-            end_date=end_date,
-            event_types=event_types,
-            categories=categories,
-        )
+    filter_params = CalendarEventFilter(
+        start_date=start_date,
+        end_date=end_date,
+        event_types=event_types,
+        categories=categories,
+        workspace=workspace,
+        work_company=work_company,
+    )
 
     return await service.get_events(start_date, end_date, filter_params)
 

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { CalendarEventsResponse, CalendarEvent } from "@/lib/types";
 import Link from "next/link";
+import { useWorkspace, getWorkspaceParams } from "@/hooks/use-workspace";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
@@ -16,6 +17,7 @@ export function CalendarWidget() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
+  const { workspace, workCompany } = useWorkspace();
 
   // Fetch events for the current month
   useEffect(() => {
@@ -25,10 +27,16 @@ export function CalendarWidget() {
         const start = startOfMonth(currentMonth);
         const end = endOfMonth(currentMonth);
 
+        // Build workspace params
+        const workspaceParams = getWorkspaceParams(workspace, workCompany);
+        const queryParams = new URLSearchParams({
+          start_date: start.toISOString(),
+          end_date: end.toISOString(),
+          ...workspaceParams,
+        });
+
         const response = await fetch(
-          `${API_BASE}/api/v1/calendar/events?` +
-            `start_date=${start.toISOString()}&` +
-            `end_date=${end.toISOString()}`
+          `${API_BASE}/api/v1/calendar/events?${queryParams.toString()}`
         );
 
         if (response.ok) {
@@ -43,7 +51,7 @@ export function CalendarWidget() {
     };
 
     fetchEvents();
-  }, [currentMonth]);
+  }, [currentMonth, workspace, workCompany]);
 
   const getEventsForDate = (date: Date) => {
     return events.filter((event) =>

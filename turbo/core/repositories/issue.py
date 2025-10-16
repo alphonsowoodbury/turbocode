@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from turbo.core.models.issue import Issue
+from turbo.core.models.project import Project
 from turbo.core.repositories.base import BaseRepository
 from turbo.core.schemas.issue import IssueCreate, IssueUpdate
 
@@ -112,3 +113,53 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
         )
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_all_with_relationships(self) -> list[Issue]:
+        """Get all issues with relationships eagerly loaded for refinement analysis."""
+        stmt = select(self._model).options(
+            selectinload(self._model.milestones),
+            selectinload(self._model.tags),
+            selectinload(self._model.initiatives),
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_by_project_with_relationships(self, project_id: UUID) -> list[Issue]:
+        """Get issues by project with relationships eagerly loaded."""
+        stmt = (
+            select(self._model)
+            .options(
+                selectinload(self._model.milestones),
+                selectinload(self._model.tags),
+                selectinload(self._model.initiatives),
+            )
+            .where(self._model.project_id == project_id)
+        )
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_by_workspace(
+        self,
+        workspace: str,
+        work_company: str | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[Issue]:
+        """Get issues by workspace (filtering by project's workspace)."""
+        stmt = (
+            select(self._model)
+            .join(Project, self._model.project_id == Project.id)
+            .where(Project.workspace == workspace)
+        )
+
+        # For work workspace, optionally filter by company
+        if workspace == "work" and work_company:
+            stmt = stmt.where(Project.work_company == work_company)
+
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())

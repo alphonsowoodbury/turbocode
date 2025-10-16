@@ -58,12 +58,22 @@ async def get_project(
 async def get_projects(
     status_filter: str | None = Query(None, alias="status"),
     priority: str | None = Query(None),
+    workspace: str | None = Query(None, pattern="^(all|personal|freelance|work)$"),
+    work_company: str | None = Query(None),
     limit: int | None = Query(None, ge=1, le=100),
     offset: int | None = Query(None, ge=0),
     project_service: ProjectService = Depends(get_project_service),
 ) -> list[ProjectResponse]:
-    """Get all projects with optional filtering."""
-    if status_filter:
+    """Get all projects with optional filtering by status, priority, and workspace."""
+    # Workspace filtering takes precedence
+    if workspace and workspace != "all":
+        return await project_service.get_projects_by_workspace(
+            workspace=workspace,
+            work_company=work_company,
+            limit=limit,
+            offset=offset,
+        )
+    elif status_filter:
         return await project_service.get_projects_by_status(status_filter)
     elif priority:
         return await project_service.get_projects_by_priority(priority)

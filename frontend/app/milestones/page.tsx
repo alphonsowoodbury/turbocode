@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { useSearchParams } from "next/navigation";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useMilestones } from "@/hooks/use-milestones";
-import { useProjects } from "@/hooks/use-projects";
+import { useProjects, useProject } from "@/hooks/use-projects";
+import { useWorkspace, getWorkspaceParams } from "@/hooks/use-workspace";
 import { CreateMilestoneDialog } from "@/components/milestones/create-milestone-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, Plus, Filter, X } from "lucide-react";
+import { Calendar, Plus, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 import {
@@ -27,14 +29,30 @@ const milestoneStatusColors = {
   cancelled: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
 };
 
-export default function MilestonesPage() {
+function MilestonesContent() {
+  const searchParams = useSearchParams();
+  const projectIdFromUrl = searchParams.get("project_id");
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProject, setSelectedProject] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [groupBy, setGroupBy] = useState<string>("none");
-  const { data: milestones, isLoading, error } = useMilestones();
-  const { data: projects } = useProjects();
+
+  const { workspace, workCompany } = useWorkspace();
+  const workspaceParams = getWorkspaceParams(workspace, workCompany);
+
+  const { data: milestones, isLoading, error } = useMilestones(workspaceParams);
+  const { data: projects } = useProjects(workspaceParams);
+  const { data: filteredProject } = useProject(projectIdFromUrl || null);
+
+  // Apply URL filter on mount
+  useEffect(() => {
+    if (projectIdFromUrl) {
+      setSelectedProject(projectIdFromUrl);
+      setShowFilters(true);
+    }
+  }, [projectIdFromUrl]);
 
   // Apply filters
   const filteredMilestones = useMemo(() => {
@@ -87,37 +105,13 @@ export default function MilestonesPage() {
     setSelectedStatus("all");
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Milestones" />
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Milestones" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Failed to load milestones</p>
-            <p className="mt-1 text-xs text-destructive">
-              {error instanceof Error ? error.message : "Unknown error"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Milestones" />
-
+    <PageLayout
+      title="Milestones"
+      isLoading={isLoading}
+      error={error}
+      breadcrumbs={filteredProject ? [{ label: filteredProject.name, href: `/projects/${filteredProject.id}` }] : undefined}
+    >
       <div className="flex-1 p-6">
         {/* Controls Bar */}
         <div className="mb-4 flex items-center justify-between">
@@ -284,6 +278,14 @@ export default function MilestonesPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />
-    </div>
+    </PageLayout>
+  );
+}
+
+export default function MilestonesPage() {
+  return (
+    <Suspense fallback={<PageLayout title="Milestones" isLoading={true} error={null}><div /></PageLayout>}>
+      <MilestonesContent />
+    </Suspense>
   );
 }

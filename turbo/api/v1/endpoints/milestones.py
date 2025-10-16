@@ -73,13 +73,23 @@ async def get_milestone_issues(
 async def get_milestones(
     project_id: UUID | None = Query(None),
     status_filter: str | None = Query(None, alias="status"),
+    workspace: str | None = Query(None, pattern="^(all|personal|freelance|work)$"),
+    work_company: str | None = Query(None),
     limit: int | None = Query(None, ge=1, le=100),
     offset: int | None = Query(None, ge=0),
     milestone_service: MilestoneService = Depends(get_milestone_service),
 ) -> list[MilestoneResponse]:
-    """Get all milestones with optional filtering."""
+    """Get all milestones with optional filtering by project, status, or workspace."""
     try:
-        if project_id:
+        # Workspace filtering takes precedence
+        if workspace and workspace != "all":
+            return await milestone_service.get_milestones_by_workspace(
+                workspace=workspace,
+                work_company=work_company,
+                limit=limit,
+                offset=offset,
+            )
+        elif project_id:
             return await milestone_service.get_milestones_by_project(project_id)
         elif status_filter:
             return await milestone_service.get_milestones_by_status(status_filter)

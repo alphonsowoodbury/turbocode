@@ -13,6 +13,8 @@ from turbo.core.repositories import (
     ProjectRepository,
     TagRepository,
 )
+from turbo.core.repositories.mentor import MentorRepository
+from turbo.core.repositories.mentor_conversation import MentorConversationRepository
 from turbo.core.services import (
     DocumentService,
     InitiativeService,
@@ -21,6 +23,8 @@ from turbo.core.services import (
     ProjectService,
     TagService,
 )
+from turbo.core.services.mentor import MentorService
+from turbo.core.services.mentor_context import MentorContextService
 
 
 # Repository dependencies
@@ -132,3 +136,37 @@ def get_initiative_service(
     return InitiativeService(
         initiative_repo, project_repo, issue_repo, tag_repo, document_repo
     )
+
+
+# Mentor repository dependencies
+def get_mentor_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> MentorRepository:
+    """Get mentor repository."""
+    return MentorRepository(session)
+
+
+def get_mentor_conversation_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> MentorConversationRepository:
+    """Get mentor conversation repository."""
+    return MentorConversationRepository(session)
+
+
+# Mentor service dependencies
+def get_mentor_context_service(
+    project_repo: ProjectRepository = Depends(get_project_repository),
+    issue_repo: IssueRepository = Depends(get_issue_repository),
+    document_repo: DocumentRepository = Depends(get_document_repository),
+) -> MentorContextService:
+    """Get mentor context service."""
+    return MentorContextService(project_repo, issue_repo, document_repo)
+
+
+def get_mentor_service(
+    mentor_repo: MentorRepository = Depends(get_mentor_repository),
+    conversation_repo: MentorConversationRepository = Depends(get_mentor_conversation_repository),
+    context_service: MentorContextService = Depends(get_mentor_context_service),
+) -> MentorService:
+    """Get mentor service."""
+    return MentorService(mentor_repo, conversation_repo, context_service)

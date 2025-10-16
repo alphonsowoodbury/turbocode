@@ -5,6 +5,7 @@ import os
 from uuid import UUID
 
 import httpx
+from turbo.core.services.websocket_manager import manager
 
 logger = logging.getLogger(__name__)
 
@@ -33,39 +34,51 @@ class ClaudeWebhookService:
         )
         self.claude_enabled = os.getenv("CLAUDE_AUTO_RESPOND", "true").lower() == "true"
 
-    async def trigger_claude_response(self, issue_id: UUID) -> None:
-        """Trigger Claude to analyze an issue and respond with a comment.
+    async def trigger_entity_response(
+        self, entity_type: str, entity_id: UUID
+    ) -> None:
+        """Trigger Claude to analyze an entity and respond with a comment.
 
-        This is called as a background task when a user adds a comment.
+        This is called as a background task when a user @mentions AI in a comment.
         Makes an HTTP request to the webhook server running on the host machine.
 
         Args:
-            issue_id: UUID of the issue to respond to
+            entity_type: Type of entity (issue, project, milestone, etc.)
+            entity_id: UUID of the entity to respond to
         """
         if not self.claude_enabled:
             logger.info("Claude auto-response is disabled")
             return
 
         try:
-            logger.info(f"Triggering Claude response for issue {issue_id}")
+            logger.info(
+                f"Triggering Claude response for {entity_type} {entity_id}"
+            )
+
+            # Broadcast typing start to WebSocket clients
+            await manager.send_ai_typing_start(entity_type, str(entity_id))
 
             # Send webhook request to host machine
             async with httpx.AsyncClient(timeout=120.0) as client:
                 response = await client.post(
                     self.webhook_url,
-                    json={"issue_id": str(issue_id)},
+                    json={
+                        "entity_type": entity_type,
+                        "entity_id": str(entity_id),
+                    },
                 )
                 response.raise_for_status()
                 result = response.json()
 
                 if result.get("success"):
                     logger.info(
-                        f"Claude generated response for issue {issue_id} "
+                        f"Claude generated response for {entity_type} {entity_id} "
                         f"(cost: ${result.get('cost_usd', 0):.4f})"
                     )
                 else:
                     logger.warning(
-                        f"Claude webhook failed for issue {issue_id}: {result.get('error')}"
+                        f"Claude webhook failed for {entity_type} {entity_id}: "
+                        f"{result.get('error')}"
                     )
 
         except httpx.HTTPError as e:
@@ -75,6 +88,9 @@ class ClaudeWebhookService:
             )
         except Exception as e:
             logger.error(f"Error triggering Claude response: {e}", exc_info=True)
+        finally:
+            # Always broadcast typing stop, even on error
+            await manager.send_ai_typing_stop(entity_type, str(entity_id))
 
 
 

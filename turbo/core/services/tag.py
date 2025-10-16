@@ -4,6 +4,7 @@ from uuid import UUID
 
 from turbo.core.repositories.tag import TagRepository
 from turbo.core.schemas.tag import TagCreate, TagResponse
+from turbo.core.utils import strip_emojis
 from turbo.utils.exceptions import DuplicateResourceError, TagNotFoundError
 
 
@@ -15,6 +16,12 @@ class TagService:
 
     async def create_tag(self, tag_data: TagCreate) -> TagResponse:
         """Create a new tag."""
+        # Strip emojis from text fields
+        if tag_data.name:
+            tag_data.name = strip_emojis(tag_data.name)
+        if tag_data.description:
+            tag_data.description = strip_emojis(tag_data.description)
+
         # Check if tag with same name already exists
         existing_tag = await self._tag_repository.get_by_name(tag_data.name)
         if existing_tag:
@@ -46,6 +53,12 @@ class TagService:
 
     async def update_tag(self, tag_id: UUID, tag_data: TagCreate) -> TagResponse:
         """Update a tag."""
+        # Strip emojis from text fields
+        if tag_data.name:
+            tag_data.name = strip_emojis(tag_data.name)
+        if tag_data.description:
+            tag_data.description = strip_emojis(tag_data.description)
+
         # Check if name is being changed to an existing name
         if tag_data.name:
             existing_tag = await self._tag_repository.get_by_name(tag_data.name)

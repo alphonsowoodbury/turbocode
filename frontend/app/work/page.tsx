@@ -1,6 +1,6 @@
 "use client";
 
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,10 +20,8 @@ import Link from "next/link";
 
 export default function WorkDashboardPage() {
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Work" />
-
-      <div className="flex-1 p-6">
+    <PageLayout title="Work">
+      <div className="p-6">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
           <Card>
@@ -264,6 +262,6 @@ export default function WorkDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }

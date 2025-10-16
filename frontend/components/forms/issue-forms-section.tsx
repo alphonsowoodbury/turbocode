@@ -34,14 +34,13 @@ export function IssueFormsSection({ issueId }: IssueFormsSectionProps) {
 
   if (!forms || forms.length === 0) {
     return (
-      <Card>
-        <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-          <FileText className="h-12 w-12 text-muted-foreground/50 mb-4" />
-          <p className="text-sm text-muted-foreground">
-            No forms attached to this issue yet.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
+        <p className="text-sm text-muted-foreground mb-1">No forms attached to this issue</p>
+        <p className="text-xs text-muted-foreground">
+          Forms can be added to collect structured information
+        </p>
+      </div>
     );
   }
 

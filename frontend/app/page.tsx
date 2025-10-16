@@ -1,6 +1,6 @@
 "use client";
 
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useProjects } from "@/hooks/use-projects";
 import { useIssues } from "@/hooks/use-issues";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,10 +18,8 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Dashboard" />
-
-      <div className="flex-1 space-y-6 p-6">
+    <PageLayout title="Dashboard">
+      <div className="space-y-6 p-6">
         {/* Stats Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
@@ -82,6 +80,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageLayout>
   );
 }

@@ -7,6 +7,8 @@ export function useMilestones(params?: {
   limit?: number;
   project_id?: string;
   status?: string;
+  workspace?: string;
+  work_company?: string;
 }) {
   return useQuery({
     queryKey: ["milestones", params],

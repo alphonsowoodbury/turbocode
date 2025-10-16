@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { TranscriptViewer } from "@/components/podcasts/transcript-viewer";
 import {
   usePodcastEpisode,
@@ -19,7 +19,6 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
 import {
-  Loader2,
   Star,
   CheckCircle,
   Circle,
@@ -30,6 +29,7 @@ import {
   FileText,
   Calendar,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
@@ -171,35 +171,13 @@ export default function PodcastEpisodePage() {
     );
   };
 
-  if (episodeLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (episodeError || !episode) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Episode Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Episode not found or failed to load</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.push(`/podcasts/${showId}`)}>
-              Back to Show
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <Header title={episode.title} />
-
-      <div className="flex-1 overflow-auto p-6">
+    <PageLayout
+      title={episode?.title || "Episode Not Found"}
+      isLoading={episodeLoading}
+      error={episodeError || (!episode ? new Error("Episode not found or failed to load") : null)}
+    >
+      <div className="p-6 overflow-auto">
         {/* Back to Show */}
         <div className="mb-4">
           <Link href={`/podcasts/${showId}`}>
@@ -559,6 +537,6 @@ export default function PodcastEpisodePage() {
           </Card>
         </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

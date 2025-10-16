@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useInitiative, useInitiativeIssues, useUpdateInitiative } from "@/hooks/use-initiatives";
 import { useProject } from "@/hooks/use-projects";
 import { EditInitiativeDialog } from "@/components/initiatives/edit-initiative-dialog";
+import { EntityCommentsSection } from "@/components/shared/entity-comments-section";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +20,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, Pencil, Target, CheckCircle2, FileText, Tag } from "lucide-react";
+import { Pencil, Target, CheckCircle2, FileText, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow, format } from "date-fns";
 import { toast } from "sonner";
@@ -49,37 +50,31 @@ export default function InitiativeDetailPage() {
   const { data: initiativeIssues } = useInitiativeIssues(initiativeId);
   const updateInitiative = useUpdateInitiative();
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error || !initiative) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Initiative Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-muted-foreground">
-            Initiative not found or failed to load
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   const issues = initiativeIssues || [];
 
-  return (
-    <div className="flex h-full flex-col">
-      <Header
-        title={initiative.name}
-        breadcrumbs={project ? [{ label: project.name, href: `/projects/${project.id}` }] : undefined}
-      />
+  // Early return if no initiative data
+  if (!initiative) {
+    return (
+      <PageLayout
+        title="Initiative Not Found"
+        isLoading={isLoading}
+        error={error || new Error("Initiative not found or failed to load")}
+      >
+        <div />
+      </PageLayout>
+    );
+  }
 
-      <div className="flex-1 space-y-4 p-6">
+  return (
+    <PageLayout
+      title={initiative.name}
+      isLoading={isLoading}
+      error={error}
+      breadcrumbs={project ? [{ label: project.name, href: `/projects/${project.id}` }] : undefined}
+    >
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto space-y-4 p-6 pb-0">
         {/* Initiative Metadata Pills */}
         <div className="flex flex-wrap items-center gap-2">
           <Button
@@ -223,6 +218,17 @@ export default function InitiativeDetailPage() {
             </div>
           )}
         </div>
+        </div>
+
+        {/* Collapsible & Resizable Comments Section */}
+        <EntityCommentsSection
+          entityType="initiative"
+          entityId={initiativeId}
+          defaultHeight={500}
+          minHeight={200}
+          maxHeight={800}
+          title="Comments"
+        />
       </div>
 
       <EditInitiativeDialog
@@ -231,6 +237,6 @@ export default function InitiativeDetailPage() {
         initiative={initiative}
         projectId={initiative.project_id}
       />
-    </div>
+    </PageLayout>
   );
 }

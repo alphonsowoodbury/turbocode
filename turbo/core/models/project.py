@@ -23,6 +23,10 @@ class Project(Base):
     completion_percentage = Column(Float, default=0.0)
     is_archived = Column(Boolean, default=False, index=True)
 
+    # Workspace fields for context filtering
+    workspace = Column(String(20), nullable=False, default="personal", index=True)  # personal, freelance, work
+    work_company = Column(String(100), nullable=True)  # For work workspace: company name (e.g., "JPMC")
+
     # Relationships
     issues = relationship(
         "Issue", back_populates="project", cascade="all, delete-orphan", lazy="dynamic"

@@ -2,14 +2,14 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useIssues } from "@/hooks/use-issues";
 import { useProjects } from "@/hooks/use-projects";
 import { CreateIssueDialog } from "@/components/issues/create-issue-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Filter, X, Plus } from "lucide-react";
+import { Filter, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -118,37 +118,8 @@ export default function DiscoveriesPage() {
     setSelectedPriority("all");
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Discovery" />
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Discovery" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Failed to load discoveries</p>
-            <p className="mt-1 text-xs text-destructive">
-              {error instanceof Error ? error.message : "Unknown error"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      <Header title="Discovery" />
-
+    <PageLayout title="Discovery" isLoading={isLoading} error={error}>
       <div className="flex-1 p-6">
         {/* Controls Bar */}
         <div className="mb-4 flex items-center justify-between">
@@ -351,6 +322,6 @@ export default function DiscoveriesPage() {
         onOpenChange={setCreateDialogOpen}
         defaultType="discovery"
       />
-    </div>
+    </PageLayout>
   );
 }

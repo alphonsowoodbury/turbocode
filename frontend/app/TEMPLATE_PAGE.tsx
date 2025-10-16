@@ -24,14 +24,14 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 // import { useEntities } from "@/hooks/use-entities";  // Replace with your hook
 // import { useProjects } from "@/hooks/use-projects";  // If needed for filtering
 // import { CreateEntityDialog } from "@/components/entities/create-entity-dialog";  // Replace with your dialog
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Plus, Filter, X } from "lucide-react";
+import { Plus, Filter, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -178,41 +178,13 @@ export default function EntitiesPage() {
     setSelectedCategory("all");
   };
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Entities" />
-        <div className="flex flex-1 items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Entities" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Failed to load entities</p>
-            <p className="mt-1 text-xs text-destructive">
-              {error instanceof Error ? error.message : "Unknown error"}
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex h-full flex-col">
-      {/* Header */}
-      <Header title="Entities" />
-
-      <div className="flex-1 p-6">
+    <PageLayout
+      title="Entities"
+      isLoading={isLoading}
+      error={error}
+    >
+      <div className="p-6">
         {/* Controls Bar - Issues style */}
         <div className="mb-4 flex items-center justify-between">
           {/* Create Button */}
@@ -461,6 +433,6 @@ export default function EntitiesPage() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       /> */}
-    </div>
+    </PageLayout>
   );
 }

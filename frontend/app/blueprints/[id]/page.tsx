@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Header } from "@/components/layout/header";
+import { PageLayout } from "@/components/layout/page-layout";
 import { useBlueprint, useDeleteBlueprint } from "@/hooks/use-blueprints";
 import { blueprintsApi } from "@/lib/api/blueprints";
+import { EntityCommentsSection } from "@/components/shared/entity-comments-section";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Loader2, MoreVertical, Trash2, ArrowLeft, FileCode2 } from "lucide-react";
+import { MoreVertical, Trash2, ArrowLeft, FileCode2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -121,33 +122,25 @@ export default function BlueprintDetailPage() {
     return <span>{String(obj)}</span>;
   };
 
-  if (isLoading) {
+  // Early return if no blueprint data
+  if (!blueprint) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (error || !blueprint) {
-    return (
-      <div className="flex h-full flex-col">
-        <Header title="Blueprint Not Found" />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground">Blueprint not found or failed to load</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.push("/blueprints")}>
-              Back to Blueprints
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageLayout
+        title="Blueprint Not Found"
+        isLoading={isLoading}
+        error={error || new Error("Blueprint not found or failed to load")}
+      >
+        <div />
+      </PageLayout>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <Header title={blueprint.name}>
+    <PageLayout
+      title={blueprint.name}
+      isLoading={isLoading}
+      error={error}
+      headerChildren={
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
             <Link href="/blueprints">
@@ -170,9 +163,11 @@ export default function BlueprintDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </Header>
-
-      <div className="flex-1 space-y-6 p-6 overflow-y-auto">
+      }
+    >
+      <div className="flex flex-col h-full overflow-hidden">
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto space-y-6 p-6 pb-0">
         {/* Header */}
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
@@ -314,7 +309,18 @@ export default function BlueprintDetailPage() {
             </Card>
           </div>
         </div>
+        </div>
+
+        {/* Collapsible & Resizable Comments Section */}
+        <EntityCommentsSection
+          entityType="document"
+          entityId={blueprintId}
+          defaultHeight={450}
+          minHeight={200}
+          maxHeight={700}
+          title="Comments"
+        />
       </div>
-    </div>
+    </PageLayout>
   );
 }
