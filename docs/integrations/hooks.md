@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Hooks Integration
+version: '1.0'
+---
+
 # Hooks Integration
 
 ## Overview

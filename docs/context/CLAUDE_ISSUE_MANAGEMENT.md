@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Claude Issue Management Protocol
+version: '1.0'
+---
+
 # Claude Issue Management Protocol
 
 ## Authentication Requirements

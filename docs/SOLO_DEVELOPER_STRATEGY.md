@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: 'Solo Developer Marketing Strategy: "Your AI Quality Assistant"'
+version: '1.0'
+---
+
 # Solo Developer Marketing Strategy: "Your AI Quality Assistant"
 
 ## Executive Summary

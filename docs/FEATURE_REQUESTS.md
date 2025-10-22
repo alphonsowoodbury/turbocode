@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo Feature Requests
+version: '1.0'
+---
+
 # Turbo Feature Requests
 
 This document tracks feature requests and enhancements for the Turbo project management platform.

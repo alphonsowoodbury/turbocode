@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Development Guide
+version: '1.0'
+---
+
 # Development Guide
 
 This guide covers setting up a development environment, understanding the codebase architecture, and contributing to Turbo Code.

@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: "\U0001F680 Chronikle Action Button & Shortcuts Setup Guide"
+version: '1.0'
+---
+
 # 🚀 Chronikle Action Button & Shortcuts Setup Guide
 
 ## 📱 **Setting Up Your Action Button (iPhone 15 Pro)**

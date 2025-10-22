@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Demo Database Usage Guide
+version: '1.0'
+---
+
 # Demo Database Usage Guide
 
 ## Overview

@@ -1,3 +1,10 @@
+---
+doc_type: readme
+project_name: Turbo Code Platform
+title: Turbo Code by Knol
+version: '1.0'
+---
+
 # Turbo Code by Knol
 `AI-Powered Project Management Platform`
 

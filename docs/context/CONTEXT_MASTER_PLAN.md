@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Context by Peridot
+version: '1.0'
+---
+
 # Context by Peridot
 ## The Bicycle for the Mind, Reimagined
 

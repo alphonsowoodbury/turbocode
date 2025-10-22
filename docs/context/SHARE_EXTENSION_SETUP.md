@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Share Extension Setup Guide
+version: '1.0'
+---
+
 # Share Extension Setup Guide
 
 This guide explains how to add the share extension target to enable sharing URLs from any app to Chronikle.

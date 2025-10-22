@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Docker Deployment Guide
+version: '1.0'
+---
+
 # Docker Deployment Guide
 
 This guide covers deploying Turbo Code using Docker and docker-compose for development and production environments.

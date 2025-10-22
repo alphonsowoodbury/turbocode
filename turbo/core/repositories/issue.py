@@ -163,3 +163,60 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
 
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    # Work Queue Methods
+
+    async def get_work_queue(
+        self,
+        status: str | None = None,
+        priority: str | None = None,
+        limit: int | None = 100,
+        offset: int | None = 0,
+        include_unranked: bool = False,
+    ) -> list[Issue]:
+        """Get work queue sorted by work_rank."""
+        stmt = select(self._model)
+
+        # Filter by work_rank
+        if not include_unranked:
+            stmt = stmt.where(self._model.work_rank.isnot(None))
+
+        # Optional filters
+        if status:
+            stmt = stmt.where(self._model.status == status)
+        if priority:
+            stmt = stmt.where(self._model.priority == priority)
+
+        # Sort by work_rank (ascending = highest priority first)
+        # If including unranked, put them at the end
+        if include_unranked:
+            stmt = stmt.order_by(
+                self._model.work_rank.asc().nullslast(),
+                self._model.priority.desc(),
+                self._model.created_at.asc(),
+            )
+        else:
+            stmt = stmt.order_by(self._model.work_rank.asc())
+
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+
+        result = await self._session.execute(stmt)
+        return list(result.scalars().all())
+
+    async def get_next_issue(self) -> Issue | None:
+        """Get the highest-ranked issue (work_rank=1) that is open or in_progress."""
+        stmt = (
+            select(self._model)
+            .where(
+                self._model.work_rank.isnot(None),
+                self._model.status.in_(["open", "in_progress"]),
+            )
+            .order_by(self._model.work_rank.asc())
+            .limit(1)
+        )
+
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()

@@ -1,3 +1,10 @@
+---
+doc_type: readme
+project_name: Turbo Code Platform
+title: Context
+version: '1.0'
+---
+
 # Context
 
 AI-Enhanced Personal Knowledge System

@@ -37,9 +37,16 @@ import {
   Sparkles,
   MessageCircle,
   FileUser,
+  Activity,
+  Shield,
+  UsersRound,
+  Code2,
+  ListOrdered,
 } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useIssues } from "@/hooks/use-issues";
+import { useDocuments } from "@/hooks/use-documents";
+import { useProjects } from "@/hooks/use-projects";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { WidgetContainer, type Widget } from "@/components/widgets/widget-container";
@@ -72,24 +79,52 @@ export function Sidebar() {
   const [projectsExpanded, setProjectsExpanded] = useState(true);
   const [workExpanded, setWorkExpanded] = useState(true);
   const [literatureExpanded, setLiteratureExpanded] = useState(true);
+  const [teamsExpanded, setTeamsExpanded] = useState(true);
   const { data: favorites = [] } = useFavorites();
   const { isCollapsed, toggle } = useSidebar();
   const { workspace, workCompany } = useWorkspace();
 
-  // Fetch issues filtered by workspace for favorites
+  // Fetch all entity types for favorites
   const { data: allIssues = [] } = useIssues({
-    // Only filter if not "all" workspace
     ...(workspace !== "all" && {
       workspace,
       ...(workspace === "work" && workCompany && { work_company: workCompany })
     })
   });
+  const { data: allDocuments = [] } = useDocuments();
+  const { data: allProjects = [] } = useProjects();
 
-  const favoriteIssues = favorites
-    .filter((f) => f.item_type === "issue")
-    .map((f) => allIssues.find((i) => i.id === f.item_id))
+  // Map favorites to their actual entities
+  const favoriteItems = favorites
+    .map((f) => {
+      let item, href, icon;
+
+      if (f.item_type === "issue") {
+        item = allIssues.find((i) => i.id === f.item_id);
+        href = `/issues/${f.item_id}`;
+        icon = ListTodo;
+      } else if (f.item_type === "document") {
+        item = allDocuments.find((d) => d.id === f.item_id);
+        href = `/documents?id=${f.item_id}`;
+        icon = FileText;
+      } else if (f.item_type === "project") {
+        item = allProjects.find((p) => p.id === f.item_id);
+        href = `/projects/${f.item_id}`;
+        icon = FolderKanban;
+      } else if (f.item_type === "tag") {
+        href = `/tags/${f.item_id}`;
+        icon = Tags;
+        item = { id: f.item_id, title: "Tag" }; // Placeholder
+      } else if (f.item_type === "blueprint") {
+        href = `/blueprints/${f.item_id}`;
+        icon = FileCode2;
+        item = { id: f.item_id, title: "Blueprint" }; // Placeholder
+      }
+
+      return item ? { ...item, href, icon, type: f.item_type } : null;
+    })
     .filter(Boolean)
-    .slice(0, 5);
+    .slice(0, 10);
 
   const isProjectsActive = pathname.startsWith("/projects") ||
                            pathname.startsWith("/issues") ||
@@ -102,6 +137,10 @@ export function Sidebar() {
 
   const isLiteratureActive = pathname.startsWith("/literature") ||
                              pathname.startsWith("/podcasts");
+
+  const isTeamsActive = pathname.startsWith("/chat") ||
+                        pathname.startsWith("/agents") ||
+                        pathname.startsWith("/scripts");
 
   // Workspace filtering logic
   const shouldShowProjects = true; // Always show projects (filtered by backend)
@@ -184,27 +223,31 @@ export function Sidebar() {
       {/* Scrollable Navigation Area */}
       <div className="flex-1 overflow-y-auto scrollbar-hide">
         {/* Favorites */}
-        {!isCollapsed && favoriteIssues.length > 0 && (
+        {!isCollapsed && favoriteItems.length > 0 && (
           <div className="p-2 space-y-1">
             <div className="px-2 py-1 text-xs font-medium text-muted-foreground">Favorites</div>
-            {favoriteIssues.map((issue) => (
-              <Link key={issue.id} href={`/issues/${issue.id}`}>
-                <Button
-                  variant="ghost"
-                  className={cn(
-                    "w-full justify-start gap-2 h-7 px-2 text-xs",
-                    pathname === `/issues/${issue.id}` && "bg-secondary"
-                  )}
-                >
-                  <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
-                  <span className="truncate">{issue.title}</span>
-                </Button>
-              </Link>
-            ))}
+            {favoriteItems.map((item) => {
+              const ItemIcon = item.icon;
+              return (
+                <Link key={item.id} href={item.href}>
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "w-full justify-start gap-2 h-7 px-2 text-xs",
+                      pathname === item.href && "bg-secondary"
+                    )}
+                  >
+                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                    <ItemIcon className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{item.title || item.name}</span>
+                  </Button>
+                </Link>
+              );
+            })}
           </div>
         )}
 
-        {!isCollapsed && favoriteIssues.length > 0 && <Separator className="my-0" />}
+        {!isCollapsed && favoriteItems.length > 0 && <Separator className="my-0" />}
 
         {/* Navigation */}
         <nav className="space-y-1 p-2">
@@ -238,18 +281,33 @@ export function Sidebar() {
           </Button>
         </Link>
 
-        {/* Mentors */}
-        <Link href="/mentors">
+        {/* Chat Button */}
+        <Link href="/chat">
           <Button
-            variant={pathname.startsWith("/mentors") ? "secondary" : "ghost"}
+            variant={pathname.startsWith("/chat") ? "secondary" : "ghost"}
             className={cn(
               "w-full gap-3",
               isCollapsed ? "justify-center px-2" : "justify-start",
-              pathname.startsWith("/mentors") && "bg-secondary"
+              pathname.startsWith("/chat") && "bg-secondary"
             )}
           >
             <MessageCircle className="h-4 w-4 flex-shrink-0" />
-            {!isCollapsed && "Mentors"}
+            {!isCollapsed && "Chat"}
+          </Button>
+        </Link>
+
+        {/* Work Queue */}
+        <Link href="/work-queue">
+          <Button
+            variant={pathname === "/work-queue" ? "secondary" : "ghost"}
+            className={cn(
+              "w-full gap-3",
+              isCollapsed ? "justify-center px-2" : "justify-start",
+              pathname === "/work-queue" && "bg-secondary"
+            )}
+          >
+            <ListOrdered className="h-4 w-4 flex-shrink-0" />
+            {!isCollapsed && "Work Queue"}
           </Button>
         </Link>
 

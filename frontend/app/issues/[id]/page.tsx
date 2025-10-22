@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { useIsFavorite, useToggleFavorite } from "@/hooks/use-favorites";
+import { SubagentButton } from "@/components/subagent/subagent-button";
 
 const priorityColors = {
   low: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
@@ -117,6 +118,12 @@ export default function IssueDetailPage() {
           >
             <Pencil className="h-2.5 w-2.5" />
           </Button>
+          <SubagentButton
+            context={{ issue_id: issueId }}
+            suggestedAgent="issue-triager"
+            suggestedPrompt="Analyze this issue and suggest priority, type, tags, and any dependencies."
+            size="sm"
+          />
           <span className="text-xs text-muted-foreground">•</span>
           <Badge variant="secondary" className={cn("h-4 text-[10px] leading-none capitalize px-1.5 py-0", typeColors[issue.type])}>
             {issue.type}

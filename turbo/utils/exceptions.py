@@ -80,6 +80,28 @@ class MentorNotFoundError(ResourceNotFoundError):
         self.mentor_id = mentor_id
 
 
+class StaffNotFoundError(ResourceNotFoundError):
+    """Raised when a staff member cannot be found."""
+
+    def __init__(self, staff_id: UUID) -> None:
+        super().__init__("Staff", staff_id, "STAFF_NOT_FOUND")
+        self.staff_id = staff_id
+
+
+class GroupDiscussionNotFoundError(TurboBaseException):
+    """Raised when a group discussion cannot be found."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "GROUP_DISCUSSION_NOT_FOUND")
+
+
+class WebhookNotFoundError(TurboBaseException):
+    """Raised when a webhook cannot be found."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "WEBHOOK_NOT_FOUND")
+
+
 class ResumeNotFoundError(ResourceNotFoundError):
     """Raised when a resume cannot be found."""
 

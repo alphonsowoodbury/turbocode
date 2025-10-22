@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: AI Agents Integration
+version: '1.0'
+---
+
 # AI Agents Integration
 
 ## Overview

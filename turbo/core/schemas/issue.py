@@ -24,6 +24,8 @@ class IssueBase(BaseModel):
     assignee: EmailStr | None = None
     due_date: datetime | None = None
     created_by: str | None = None  # User email or "AI: model_name"
+    work_rank: int | None = Field(None, ge=1, description="Work queue rank (1=highest priority)")
+    last_ranked_at: datetime | None = None
 
     @field_validator("title")
     @classmethod
@@ -67,6 +69,8 @@ class IssueUpdate(BaseModel):
     assignee: EmailStr | None = None
     due_date: datetime | None = None
     created_by: str | None = None
+    assigned_to_type: str | None = Field(None, pattern="^(staff|user)$")
+    assigned_to_id: UUID | None = None
     milestone_ids: list[UUID] | None = None
 
     @field_validator("title")

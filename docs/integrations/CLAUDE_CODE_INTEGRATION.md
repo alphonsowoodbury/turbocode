@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Claude Code Integration
+version: '1.0'
+---
+
 # Claude Code Integration
 
 Turbo integrates with Claude Code via the Model Context Protocol (MCP) to provide AI-powered project management assistance and automatic responses to comments.

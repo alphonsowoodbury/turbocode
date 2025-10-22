@@ -1,3 +1,10 @@
+---
+doc_type: design
+project_name: Turbo Code Platform
+title: Local AI Agents Architecture
+version: '1.0'
+---
+
 # Local AI Agents Architecture
 
 ## Vision

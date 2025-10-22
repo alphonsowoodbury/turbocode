@@ -86,6 +86,7 @@ async def init_database() -> None:
         # Import all models to ensure they're registered
         from turbo.core.models import (  # noqa: F401
             Agent,
+            AgentSession,
             Blueprint,
             Comment,
             Document,
@@ -101,6 +102,7 @@ async def init_database() -> None:
             PodcastEpisode,
             Project,
             SavedFilter,
+            ScriptRun,
             Tag,
             TerminalSession,
         )

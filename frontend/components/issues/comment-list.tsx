@@ -5,7 +5,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { MentionTextarea } from "@/components/ui/mention-textarea";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -243,7 +243,7 @@ export function CommentList({ entityType, entityId }: CommentListProps) {
 
                     {editingId === comment.id ? (
                       <div className="space-y-1.5">
-                        <Textarea
+                        <MentionTextarea
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
                           rows={2}
@@ -294,9 +294,9 @@ export function CommentList({ entityType, entityId }: CommentListProps) {
       <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <form onSubmit={handleSubmit} className="p-3">
           <div className="flex gap-2 items-end">
-            <Textarea
+            <MentionTextarea
               ref={textareaRef}
-              placeholder="Add a comment... (Enter to send, Shift+Enter for new line)"
+              placeholder="Add a comment... (type @ to mention staff, Enter to send, Shift+Enter for new line)"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={handleKeyDown}

@@ -10,14 +10,16 @@ AI_TRIGGER_PATTERNS: list[Pattern] = [
     re.compile(r"@assistant\b", re.IGNORECASE),
 ]
 
+# Pattern to detect any @ mention (for staff)
+MENTION_PATTERN: Pattern = re.compile(r"@(\w+)", re.IGNORECASE)
+
 
 def should_trigger_ai_response(content: str) -> bool:
-    """Check if comment content contains an AI mention trigger.
+    """Check if comment content contains an AI mention trigger (generic or staff).
 
     Detects:
-    - @claude
-    - @ai
-    - @assistant
+    - Generic AI triggers: @claude, @ai, @assistant
+    - Staff mentions: @<any_word> (e.g., @Derek, @ChiefOfStaff)
 
     All patterns are case-insensitive and can appear anywhere in the text.
 
@@ -25,22 +27,23 @@ def should_trigger_ai_response(content: str) -> bool:
         content: The comment content to check
 
     Returns:
-        True if an AI trigger is detected, False otherwise
+        True if an AI trigger or staff mention is detected, False otherwise
 
     Examples:
         >>> should_trigger_ai_response("@claude what do you think?")
         True
-        >>> should_trigger_ai_response("Hey @AI can you help?")
+        >>> should_trigger_ai_response("Hey @Derek can you help?")
         True
         >>> should_trigger_ai_response("This looks good!")
         False
-        >>> should_trigger_ai_response("claude is great")  # No @ symbol
+        >>> should_trigger_ai_response("derek is great")  # No @ symbol
         False
     """
     if not content or not isinstance(content, str):
         return False
 
-    return any(pattern.search(content) for pattern in AI_TRIGGER_PATTERNS)
+    # Check for generic AI triggers OR any @ mention
+    return any(pattern.search(content) for pattern in AI_TRIGGER_PATTERNS) or bool(MENTION_PATTERN.search(content))
 
 
 def extract_mentioned_ai_name(content: str) -> str | None:
@@ -70,3 +73,29 @@ def extract_mentioned_ai_name(content: str) -> str | None:
             return match.group(0)[1:].lower()
 
     return None
+
+
+def extract_staff_mentions(content: str) -> list[str]:
+    """Extract all staff @ mentions from comment content.
+
+    Finds all @mentions in the text and returns them as a list.
+
+    Args:
+        content: The comment content to check
+
+    Returns:
+        List of mentioned names (without @), or empty list if none found
+
+    Examples:
+        >>> extract_staff_mentions("@Derek what do you think?")
+        ['Derek']
+        >>> extract_staff_mentions("@Derek and @Kevin please review")
+        ['Derek', 'Kevin']
+        >>> extract_staff_mentions("no mentions here")
+        []
+    """
+    if not content or not isinstance(content, str):
+        return []
+
+    matches = MENTION_PATTERN.findall(content)
+    return list(matches) if matches else []

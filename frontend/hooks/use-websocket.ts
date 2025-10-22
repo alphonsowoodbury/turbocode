@@ -40,7 +40,7 @@ export function useWebSocket({
 
     // Determine WebSocket URL based on environment
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, "") || window.location.host.replace(":3000", ":8000");
+    const host = process.env.NEXT_PUBLIC_API_URL?.replace(/^https?:\/\//, "") || window.location.host.replace(":3001", ":8001");
     const wsUrl = `${protocol}//${host}/api/v1/ws/comments/${entityType}/${entityId}`;
 
     try {

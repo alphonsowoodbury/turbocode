@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: 'Folios: Living Intelligence from Your Stream of Consciousness'
+version: '1.0'
+---
+
 # Folios: Living Intelligence from Your Stream of Consciousness
 
 ## Concept Overview

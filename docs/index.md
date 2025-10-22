@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo Code Documentation
+version: '1.0'
+---
+
 # Turbo Code Documentation
 
 Welcome to the Turbo Code documentation! This directory contains comprehensive guides and references for using and developing with Turbo Code.

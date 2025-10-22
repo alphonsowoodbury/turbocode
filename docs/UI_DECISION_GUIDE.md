@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo Code UI Decision Guide
+version: '1.0'
+---
+
 # Turbo Code UI Decision Guide
 
 > **Quick Decision Summary**: Start with **Streamlit** for immediate results, evaluate **FastAPI Templates** for long-term flexibility, consider **Admin Panels** for internal tooling.

@@ -1,3 +1,11 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: 'Turbo: Code Style Guide'
+version: '1.0'
+tags: development
+---
+
 # Turbo: Code Style Guide
 
 **Version:** 1.0

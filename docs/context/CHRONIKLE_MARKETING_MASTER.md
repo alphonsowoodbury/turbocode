@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: 'Context: The AI-Enhanced Personal Knowledge System'
+version: '1.0'
+---
+
 # Context: The AI-Enhanced Personal Knowledge System
 
 *Redefining how you capture, organize, and discover the moments that matter*

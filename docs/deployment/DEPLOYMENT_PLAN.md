@@ -1,3 +1,11 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: 'Turbo: Deployment and Infrastructure Plan'
+version: '1.0'
+tags: deployment
+---
+
 # Turbo: Deployment and Infrastructure Plan
 
 **Version:** 1.0

@@ -1,8 +1,11 @@
 """Project model definition."""
 
 
+from typing import Optional
+
 from sqlalchemy import Boolean, Column, Float, String
-from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from turbo.core.database.base import Base
 from turbo.core.models.associations import project_blueprints, project_tags
@@ -26,6 +29,14 @@ class Project(Base):
     # Workspace fields for context filtering
     workspace = Column(String(20), nullable=False, default="personal", index=True)  # personal, freelance, work
     work_company = Column(String(100), nullable=True)  # For work workspace: company name (e.g., "JPMC")
+
+    # Polymorphic assignment (who owns/is responsible for this project)
+    assigned_to_type: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, index=True
+    )  # "user" | "staff"
+    assigned_to_id: Mapped[Optional[UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
 
     # Relationships
     issues = relationship(

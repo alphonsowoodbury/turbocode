@@ -13,11 +13,25 @@ class DocumentBase(BaseModel):
     content: str = Field(..., min_length=1)
     type: str = Field(
         default="specification",
-        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$",
+        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|adr|other)$",
     )
     format: str = Field(default="markdown", pattern="^(markdown|html|text|pdf|docx)$")
+    status: str = Field(
+        default="draft",
+        pattern="^(draft|in_review|approved|published|archived)$",
+    )
     version: str | None = Field(None, max_length=20)
     author: EmailStr | None = None
+    doc_metadata: dict | None = Field(
+        None,
+        description="Structured metadata (owner, update_frequency, review_cycle, etc.)",
+    )
+    assigned_to_type: str | None = Field(
+        default=None, pattern="^(user|staff)$", description="Owner type: user or staff"
+    )
+    assigned_to_id: UUID | None = Field(
+        default=None, description="UUID of the assigned user or staff member"
+    )
 
     @field_validator("title")
     @classmethod
@@ -49,11 +63,18 @@ class DocumentUpdate(BaseModel):
     content: str | None = Field(None, min_length=1)
     type: str | None = Field(
         None,
-        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|other)$",
+        pattern="^(specification|user_guide|api_doc|readme|changelog|requirements|design|adr|other)$",
     )
     format: str | None = Field(None, pattern="^(markdown|html|text|pdf|docx)$")
+    status: str | None = Field(
+        None,
+        pattern="^(draft|in_review|approved|published|archived)$",
+    )
     version: str | None = Field(None, max_length=20)
     author: EmailStr | None = None
+    doc_metadata: dict | None = None
+    assigned_to_type: str | None = Field(None, pattern="^(user|staff)$")
+    assigned_to_id: UUID | None = None
 
     @field_validator("title")
     @classmethod
@@ -77,6 +98,8 @@ class DocumentResponse(DocumentBase):
 
     id: UUID
     project_id: UUID
+    assigned_to_type: str | None
+    assigned_to_id: UUID | None
     created_at: datetime
     updated_at: datetime
 

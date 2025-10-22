@@ -12,6 +12,9 @@ interface WorkspaceLayoutProps {
   terminalPanel?: ReactNode;
   terminalOpen?: boolean;
   terminalHeight?: number;
+  chatSidebar?: ReactNode;
+  chatOpen?: boolean;
+  chatWidth?: number;
 }
 
 export function WorkspaceLayout({
@@ -22,6 +25,9 @@ export function WorkspaceLayout({
   terminalPanel,
   terminalOpen = false,
   terminalHeight = 300,
+  chatSidebar,
+  chatOpen = false,
+  chatWidth = 400,
 }: WorkspaceLayoutProps) {
   const { isCollapsed } = useSidebar();
 
@@ -32,25 +38,26 @@ export function WorkspaceLayout({
         "grid transition-all duration-200 ease-out"
       )}
       style={{
-        gridTemplateColumns: `${isCollapsed ? "64px" : "256px"} 1fr 0px`,
+        gridTemplateColumns: `${isCollapsed ? "64px" : "256px"} 1fr ${chatOpen ? `${chatWidth}px` : "0px"}`,
         gridTemplateRows: header
           ? `56px 1fr ${terminalOpen ? `${terminalHeight}px` : "0px"} 28px`
           : `1fr ${terminalOpen ? `${terminalHeight}px` : "0px"} 28px`,
         gridTemplateAreas: header
           ? `
             "header header header"
-            "sidebar workspace workspace"
-            "sidebar terminal terminal"
+            "sidebar workspace chat"
+            "sidebar terminal chat"
             "sidebar status status"
           `
           : `
-            "sidebar workspace workspace"
-            "sidebar terminal terminal"
+            "sidebar workspace chat"
+            "sidebar terminal chat"
             "sidebar status status"
           `,
       }}
       data-terminal-open={terminalOpen}
       data-sidebar-collapsed={isCollapsed}
+      data-chat-open={chatOpen}
     >
       {/* Header */}
       {header && (
@@ -98,6 +105,19 @@ export function WorkspaceLayout({
       >
         {statusBar}
       </div>
+
+      {/* Chat Sidebar */}
+      {chatSidebar && (
+        <div
+          className={cn(
+            "bg-background overflow-hidden transition-all duration-200 ease-out",
+            !chatOpen && "hidden"
+          )}
+          style={{ gridArea: "chat" }}
+        >
+          {chatSidebar}
+        </div>
+      )}
     </div>
   );
 }

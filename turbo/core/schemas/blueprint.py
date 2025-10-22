@@ -22,6 +22,12 @@ class BlueprintBase(BaseModel):
     )
     version: str = Field(..., min_length=1, max_length=50, description="Blueprint version")
     is_active: bool = Field(True, description="Whether blueprint is active")
+    assigned_to_type: str | None = Field(
+        default=None, pattern="^(user|staff)$", description="Owner type: user or staff"
+    )
+    assigned_to_id: UUID | None = Field(
+        default=None, description="UUID of the assigned user or staff member"
+    )
 
 
 class BlueprintCreate(BlueprintBase):
@@ -39,6 +45,8 @@ class BlueprintUpdate(BaseModel):
     content: dict[str, Any] | None = None
     version: str | None = Field(None, max_length=50)
     is_active: bool | None = None
+    assigned_to_type: str | None = Field(None, pattern="^(user|staff)$")
+    assigned_to_id: UUID | None = None
 
 
 class BlueprintResponse(BlueprintBase):
@@ -47,6 +55,8 @@ class BlueprintResponse(BlueprintBase):
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    assigned_to_type: str | None
+    assigned_to_id: UUID | None
     created_at: datetime
     updated_at: datetime
 

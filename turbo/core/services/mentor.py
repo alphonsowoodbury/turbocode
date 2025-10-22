@@ -273,6 +273,18 @@ class MentorService:
 
         return deleted_count
 
+    async def delete_message(self, mentor_id: UUID, message_id: UUID) -> bool:
+        """Delete a specific message from the conversation."""
+        mentor = await self._mentor_repository.get_by_id(mentor_id)
+        if not mentor:
+            raise MentorNotFoundError(mentor_id)
+
+        success = await self._conversation_repository.delete_message(mentor_id, message_id)
+        if not success:
+            raise ValueError(f"Message {message_id} not found or does not belong to mentor {mentor_id}")
+
+        return success
+
     # File-based communication helpers
 
     async def _initialize_mentor_directory(self, mentor: Mentor) -> None:

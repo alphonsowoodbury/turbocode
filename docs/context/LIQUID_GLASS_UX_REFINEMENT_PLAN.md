@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Context App - iOS 26 Liquid Glass UX Refinement Plan
+version: '1.0'
+---
+
 # Context App - iOS 26 Liquid Glass UX Refinement Plan
 
 ## Executive Summary

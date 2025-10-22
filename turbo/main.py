@@ -49,9 +49,11 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     async def startup_event():
-        """Initialize database on startup."""
+        """Initialize database and agent tracker on startup."""
         from turbo.core.database import init_database
+        from turbo.core.services.agent_activity import tracker
         await init_database()
+        await tracker.start()
 
     # Mount documentation if site directory exists
     site_dir = Path("site")

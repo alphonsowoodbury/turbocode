@@ -1,8 +1,10 @@
 """Initiative model definition."""
 
+from typing import Optional
+
 from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from turbo.core.database.base import Base
 from turbo.core.models.associations import initiative_documents, initiative_issues, initiative_tags
@@ -21,6 +23,14 @@ class Initiative(Base):
     # Date fields (optional for initiatives)
     start_date = Column(DateTime(timezone=True), nullable=True)
     target_date = Column(DateTime(timezone=True), nullable=True)
+
+    # Polymorphic assignment
+    assigned_to_type: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, index=True
+    )  # "user" | "staff"
+    assigned_to_id: Mapped[Optional[UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
 
     # Foreign keys (optional - initiatives can be cross-project)
     project_id = Column(

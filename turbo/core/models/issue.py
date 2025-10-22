@@ -26,9 +26,21 @@ class Issue(Base):
     priority = Column(String(10), default="medium")
 
     # Optional fields
-    assignee = Column(String(255), nullable=True)  # Email address
+    assignee = Column(String(255), nullable=True)  # Email address (deprecated - use assigned_to_*)
     due_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_by = Column(String(255), nullable=True)  # User email or "AI: model_name"
+
+    # Work queue ranking
+    work_rank: Mapped[Optional[int]] = mapped_column(nullable=True, index=True)  # Lower number = higher priority
+    last_ranked_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # Polymorphic assignment (replaces assignee field)
+    assigned_to_type: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, index=True
+    )  # "user" | "staff"
+    assigned_to_id: Mapped[Optional[UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
 
     # Foreign keys
     project_id = Column(

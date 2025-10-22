@@ -16,6 +16,9 @@ class ConnectionManager:
         # Key format: "entity_type:entity_id"
         self.active_connections: Dict[str, Set[WebSocket]] = {}
 
+        # Global agent activity connections
+        self.agent_activity_connections: Set[WebSocket] = set()
+
     def _get_room_key(self, entity_type: str, entity_id: str) -> str:
         """Generate room key for entity."""
         return f"{entity_type}:{entity_id}"
@@ -98,6 +101,66 @@ class ConnectionManager:
         await self.broadcast(entity_type, entity_id, {
             "type": "ai_typing_stop",
             "data": {"author_name": author_name}
+        })
+
+    # Global Agent Activity Methods
+
+    async def connect_agent_activity(self, websocket: WebSocket):
+        """Connect client to global agent activity stream."""
+        await websocket.accept()
+        self.agent_activity_connections.add(websocket)
+        logger.info(f"Client connected to agent activity. Total: {len(self.agent_activity_connections)}")
+
+    def disconnect_agent_activity(self, websocket: WebSocket):
+        """Disconnect client from global agent activity stream."""
+        self.agent_activity_connections.discard(websocket)
+        logger.info(f"Client disconnected from agent activity. Total: {len(self.agent_activity_connections)}")
+
+    async def broadcast_agent_activity(self, message: dict):
+        """Broadcast message to all agent activity subscribers."""
+        if not self.agent_activity_connections:
+            return
+
+        connections = list(self.agent_activity_connections)
+        disconnected = []
+
+        for connection in connections:
+            try:
+                await connection.send_json(message)
+            except Exception as e:
+                logger.error(f"Error sending agent activity to client: {e}")
+                disconnected.append(connection)
+
+        # Clean up disconnected clients
+        for connection in disconnected:
+            self.agent_activity_connections.discard(connection)
+
+    async def send_agent_started(self, session_data: dict):
+        """Broadcast agent session started event."""
+        await self.broadcast_agent_activity({
+            "type": "agent_started",
+            "data": session_data
+        })
+
+    async def send_agent_status_update(self, session_data: dict):
+        """Broadcast agent status update event."""
+        await self.broadcast_agent_activity({
+            "type": "agent_status_update",
+            "data": session_data
+        })
+
+    async def send_agent_completed(self, session_data: dict):
+        """Broadcast agent session completed event."""
+        await self.broadcast_agent_activity({
+            "type": "agent_completed",
+            "data": session_data
+        })
+
+    async def send_agent_failed(self, session_data: dict):
+        """Broadcast agent session failed event."""
+        await self.broadcast_agent_activity({
+            "type": "agent_failed",
+            "data": session_data
         })
 
 

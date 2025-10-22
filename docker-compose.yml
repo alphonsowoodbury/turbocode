@@ -42,8 +42,9 @@ services:
       - TURBO_DEBUG=false
       - CLAUDE_AUTO_RESPOND=true
       - TURBO_API_URL=http://localhost:8000/api/v1
-      - CLAUDE_WEBHOOK_URL=http://host.docker.internal:9000/webhook/comment
+      - CLAUDE_WEBHOOK_URL=http://webhook:9002/webhook/comment
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
     ports:
       - "8001:8000"
     depends_on:
@@ -192,6 +193,85 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Claude Code Service - Headless AI Subagents & Autonomous Issue Implementation
+  # Uses Claude Code CLI for local execution (cost-effective)
+  claude-code:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.claude-code
+    container_name: turbo-claude-code
+    environment:
+      - DATABASE_URL=postgresql://turbo:turbo_password@postgres:5432/turbo
+      - CLAUDE_BACKEND=${CLAUDE_BACKEND:-api}  # "api" or "claude-cli"
+      - MCP_SERVER_URL=http://turbo-api:8000
+      - SERVICE_PORT=9000
+      - WORKSPACE_DIR=/workspace
+      - WEBHOOK_SECRET=${WEBHOOK_SECRET:-turbo-webhook-secret-change-me}
+    ports:
+      - "9000:9000"
+    networks:
+      - turbo-network
+    volumes:
+      - ./subagents:/app/subagents:ro
+      - ./skills:/app/skills:ro
+      - claude_data:/root/.config/claude-code
+      - workspace_data:/workspace  # Workspace for issue implementations
+      - .:/app/project:rw  # Mount project for autonomous code changes
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Claude Webhook Service - Automatic AI Responses
+  webhook:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.webhook
+    container_name: turbo-webhook
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - TURBO_API_URL=http://api:8000/api/v1
+      - WEBHOOK_PORT=9002
+    ports:
+      - "9002:9002"
+    networks:
+      - turbo-network
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:9002/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Docs Watcher Service - Automatic Document Upload
+  docs-watcher:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.docs-watcher
+    container_name: turbo-docs-watcher
+    environment:
+      - TURBO_API_URL=http://api:8000/api/v1
+      - DOCS_WATCH_DIR=/docs
+    networks:
+      - turbo-network
+    volumes:
+      - ./docs:/docs:ro
+      - docs_watcher_logs:/app/logs
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
 networks:
   turbo-network:
     driver: bridge
@@ -218,3 +298,9 @@ volumes:
     name: turbo-ollama-data
   pgadmin_data:
     name: turbo-pgadmin-data
+  claude_data:
+    name: turbo-claude-data
+  workspace_data:
+    name: turbo-workspace-data
+  docs_watcher_logs:
+    name: turbo-docs-watcher-logs

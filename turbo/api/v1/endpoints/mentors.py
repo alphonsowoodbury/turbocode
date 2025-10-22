@@ -1,8 +1,11 @@
 """Mentor API endpoints."""
 
 from uuid import UUID
+import json
+import asyncio
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 
 from turbo.api.dependencies import (
     get_mentor_context_service,
@@ -153,6 +156,82 @@ async def send_message(
         )
 
 
+@router.post("/{mentor_id}/messages/stream")
+async def send_message_stream(
+    mentor_id: UUID,
+    message_request: SendMessageRequest,
+    mentor_service: MentorService = Depends(get_mentor_service),
+):
+    """
+    Send a message to a mentor and receive streaming response.
+
+    Returns Server-Sent Events (SSE) stream with real-time AI response.
+    Each event contains a JSON chunk with either:
+    - {"type": "token", "content": "..."} - A chunk of the response
+    - {"type": "done", "message_id": "..."} - Stream complete with saved message ID
+    - {"type": "error", "detail": "..."} - Error occurred
+    """
+    try:
+        # Verify mentor exists
+        mentor = await mentor_service.get_mentor(mentor_id)
+
+        # Save user message immediately
+        user_message = await mentor_service.send_message(mentor_id, message_request.content)
+
+        async def generate():
+            """Generate SSE stream for AI response."""
+            try:
+                # Import streaming service
+                from turbo.core.services.streaming import get_streaming_response
+
+                accumulated_content = ""
+
+                # Stream the AI response
+                async for chunk in get_streaming_response(
+                    entity_type="mentor",
+                    entity_id=mentor_id,
+                    user_message_content=message_request.content
+                ):
+                    accumulated_content += chunk
+                    # Send token event
+                    yield f"data: {json.dumps({'type': 'token', 'content': chunk})}\n\n"
+                    await asyncio.sleep(0)  # Allow other tasks to run
+
+                # Save the complete assistant message
+                assistant_message = await mentor_service.add_assistant_message(
+                    mentor_id=mentor_id,
+                    content=accumulated_content,
+                )
+
+                # Send done event with message ID
+                yield f"data: {json.dumps({'type': 'done', 'message_id': str(assistant_message.id)})}\n\n"
+
+            except Exception as e:
+                # Send error event
+                yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
+
+        return StreamingResponse(
+            generate(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",  # Disable nginx buffering
+            }
+        )
+
+    except MentorNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Mentor with id {mentor_id} not found",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send streaming message: {str(e)}",
+        )
+
+
 @router.post("/{mentor_id}/assistant-message", response_model=MentorConversationResponse)
 async def add_assistant_message(
     mentor_id: UUID,
@@ -215,6 +294,27 @@ async def update_message(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update message: {str(e)}",
+        )
+
+
+@router.delete("/{mentor_id}/messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_message(
+    mentor_id: UUID,
+    message_id: UUID,
+    mentor_service: MentorService = Depends(get_mentor_service),
+) -> None:
+    """Delete a specific message from the conversation."""
+    try:
+        await mentor_service.delete_message(mentor_id, message_id)
+    except MentorNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Mentor with id {mentor_id} not found",
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
         )
 
 

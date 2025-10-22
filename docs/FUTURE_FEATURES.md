@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Future Features
+version: '1.0'
+---
+
 # Future Features
 
 ## Auto-Documentation System

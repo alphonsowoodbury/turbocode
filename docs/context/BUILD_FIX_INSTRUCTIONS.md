@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Build Fix Instructions
+version: '1.0'
+---
+
 # Build Fix Instructions
 
 ## Problem

@@ -74,3 +74,13 @@ class MentorConversationRepository(
         result = await self._session.execute(stmt)
         await self._session.commit()
         return result.rowcount  # type: ignore
+
+    async def delete_message(self, mentor_id: UUID, message_id: UUID) -> bool:
+        """Delete a specific message from mentor conversation. Returns True if deleted."""
+        stmt = delete(self._model).where(
+            self._model.mentor_id == mentor_id,
+            self._model.id == message_id
+        )
+        result = await self._session.execute(stmt)
+        await self._session.commit()
+        return result.rowcount > 0  # type: ignore

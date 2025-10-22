@@ -1,3 +1,11 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: 'Turbo: Development Environment Setup'
+version: '1.0'
+tags: development
+---
+
 # Turbo: Development Environment Setup
 
 **Version:** 1.0

@@ -5,8 +5,9 @@ import { MessageBubble } from "./message-bubble";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Loader2, Send, Trash2 } from "lucide-react";
+import { Loader2, Send, Trash2, Zap } from "lucide-react";
 import { useMentorMessages, useSendMessage, useClearConversation } from "@/hooks/use-mentor-messages";
+import { useMentorStreaming } from "@/hooks/use-mentor-streaming";
 import {
   Dialog,
   DialogContent,
@@ -22,9 +23,10 @@ interface MentorChatProps {
   mentorId: string;
   messagesOnly?: boolean; // If true, only show messages (no input)
   inputOnly?: boolean; // If true, only show input (no messages)
+  enableStreaming?: boolean; // If true, use real-time streaming instead of webhook
 }
 
-export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false }: MentorChatProps) {
+export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false, enableStreaming = true }: MentorChatProps) {
   const [message, setMessage] = useState("");
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -33,8 +35,17 @@ export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false }
   // Fetch conversation history
   const { data: conversation, isLoading, error } = useMentorMessages(mentorId);
 
-  // Send message mutation
+  // Send message mutation (webhook-based)
   const sendMessageMutation = useSendMessage();
+
+  // Streaming hook (SSE-based)
+  const {
+    sendMessage: sendStreamingMessage,
+    isStreaming,
+    streamingContent,
+    error: streamingError,
+    abortStream
+  } = useMentorStreaming(mentorId);
 
   // Clear conversation mutation
   const clearConversationMutation = useClearConversation();
@@ -59,7 +70,7 @@ export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false }
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!message.trim() || sendMessageMutation.isPending) return;
+    if (!message.trim() || sendMessageMutation.isPending || isStreaming) return;
 
     const messageContent = message.trim();
     setMessage(""); // Clear input immediately for better UX
@@ -70,19 +81,31 @@ export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false }
     }
 
     try {
-      const response = await sendMessageMutation.mutateAsync({
-        mentorId,
-        content: messageContent,
-      });
+      if (enableStreaming) {
+        // Use streaming endpoint
+        await sendStreamingMessage(messageContent);
 
-      if (response.status === "error") {
-        toast.error("Error", {
-          description: response.error || "Failed to send message",
+        if (!streamingError) {
+          toast.success("Message Sent", {
+            description: "Response received in real-time.",
+          });
+        }
+      } else {
+        // Use webhook endpoint (original behavior)
+        const response = await sendMessageMutation.mutateAsync({
+          mentorId,
+          content: messageContent,
         });
-      } else if (response.status === "pending") {
-        toast.info("Processing", {
-          description: "Your message is being processed. The response may take a moment.",
-        });
+
+        if (response.status === "error") {
+          toast.error("Error", {
+            description: response.error || "Failed to send message",
+          });
+        } else if (response.status === "pending") {
+          toast.info("Processing", {
+            description: "Your message is being processed. The response may take a moment.",
+          });
+        }
       }
     } catch (error) {
       toast.error("Error", {
@@ -196,7 +219,7 @@ export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false }
           <div className="flex items-center justify-center h-32">
             <div className="text-sm text-muted-foreground">Loading messages...</div>
           </div>
-        ) : conversation?.messages?.length === 0 ? (
+        ) : conversation?.messages?.length === 0 && !isStreaming ? (
           <div className="flex items-center justify-center h-32">
             <div className="text-center text-muted-foreground">
               <p className="text-sm font-medium">No messages yet</p>
@@ -208,6 +231,22 @@ export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false }
             {conversation?.messages?.map((msg) => (
               <MessageBubble key={msg.id} message={msg} mentorId={mentorId} />
             ))}
+
+            {/* Show streaming message while it's being generated or until saved */}
+            {streamingContent && (
+              <div className="flex justify-start">
+                <div className="relative max-w-[85%] rounded-lg px-3 py-2 text-xs bg-muted">
+                  <div className="flex items-start gap-2">
+                    <Zap className={`h-3 w-3 mt-0.5 text-blue-500 flex-shrink-0 ${isStreaming ? 'animate-pulse' : ''}`} />
+                    <div className="whitespace-pre-wrap break-words">
+                      {streamingContent}
+                      {isStreaming && <span className="inline-block w-1 h-3 ml-0.5 bg-current animate-pulse" />}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </>
         )}
@@ -231,11 +270,14 @@ export function MentorChat({ mentorId, messagesOnly = false, inputOnly = false }
               <Button
                 type="submit"
                 size="sm"
-                disabled={!message.trim() || sendMessageMutation.isPending}
+                disabled={!message.trim() || sendMessageMutation.isPending || isStreaming}
                 className="h-9 w-9 p-0 flex-shrink-0"
+                title={enableStreaming ? "Send with real-time streaming" : "Send message"}
               >
-                {sendMessageMutation.isPending ? (
+                {(sendMessageMutation.isPending || isStreaming) ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : enableStreaming ? (
+                  <Zap className="h-3.5 w-3.5" />
                 ) : (
                   <Send className="h-3.5 w-3.5" />
                 )}

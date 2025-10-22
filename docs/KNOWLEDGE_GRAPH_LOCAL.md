@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Knowledge Graph with Local Embeddings
+version: '1.0'
+---
+
 # Knowledge Graph with Local Embeddings
 
 ## Overview

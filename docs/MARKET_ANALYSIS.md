@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo Code Market Analysis & Competitive Landscape
+version: '1.0'
+---
+
 # Turbo Code Market Analysis & Competitive Landscape
 
 ## Executive Summary

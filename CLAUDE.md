@@ -7,35 +7,34 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Turbo Code** is an AI-powered local project management and development platform built with modern Python.
 
 ### Technology Stack
-- **Framework**: FastAPI (REST API), Streamlit (Web UI), Typer/Click (CLI)
+- **Framework**: FastAPI (REST API), Next.js (Web UI)
 - **Database**: SQLAlchemy 2.0 with async support (PostgreSQL/SQLite)
 - **Architecture**: Clean Architecture with Repository/Service pattern
 - **Validation**: Pydantic schemas with automatic validation
 - **Testing**: pytest with async support
+- **MCP Server**: Model Context Protocol for Claude integration
 
 ### Project Structure
 ```
 turbo/
 ├── api/                    # FastAPI REST API
-│   ├── v1/endpoints/      # API endpoints (projects, issues, documents, tags)
+│   ├── v1/endpoints/      # API endpoints (projects, issues, documents, tags, mentors)
 │   └── dependencies.py    # Dependency injection
-├── cli/                   # CLI interface
-│   ├── commands/          # Command groups (projects, issues, etc.)
-│   └── utils.py           # CLI utilities
 ├── core/                  # Core business logic
 │   ├── database/          # Database connection & session management
-│   ├── models/            # SQLAlchemy models (Project, Issue, Document, Tag)
+│   ├── models/            # SQLAlchemy models (Project, Issue, Document, Tag, Mentor)
 │   ├── repositories/      # Data access layer (CRUD operations)
 │   ├── schemas/           # Pydantic schemas (validation)
 │   └── services/          # Business logic layer
-└── utils/                 # Shared utilities (config, exceptions)
+├── utils/                 # Shared utilities (config, exceptions)
+└── mcp_server.py          # MCP server for Claude integration
 ```
 
 ## Architecture Patterns
 
 ### Data Flow
 ```
-CLI/API → Services → Repositories → Models → Database
+MCP/API → Services → Repositories → Models → Database
          ↓
     Schemas (validation)
 ```
@@ -45,8 +44,145 @@ CLI/API → Services → Repositories → Models → Database
 - **Repositories**: `turbo/core/repositories/base.py:19` - BaseRepository with CRUD
 - **Services**: `turbo/core/services/` - Business logic orchestration
 - **API Endpoints**: `turbo/api/v1/endpoints/` - FastAPI routes
-- **CLI Commands**: `turbo/cli/commands/` - Typer/Click commands
+- **MCP Server**: `turbo/mcp_server.py` - MCP tools for Claude
 - **Database**: `turbo/core/database/connection.py:69` - Session management
+
+## MCP Integration (Primary Interface)
+
+### Using MCP Tools
+
+**ALWAYS use MCP tools** (prefixed with `mcp__turbo__`) for all database operations. These tools provide automatic validation, error handling, and consistent interfaces.
+
+### Common MCP Operations
+
+#### Projects
+```python
+# List projects
+mcp__turbo__list_projects(status="active", limit=10)
+
+# Get project details
+mcp__turbo__get_project(project_id="uuid")
+
+# Update project
+mcp__turbo__update_project(
+    project_id="uuid",
+    name="New Name",
+    completion_percentage=75.0
+)
+
+# Get project issues
+mcp__turbo__get_project_issues(project_id="uuid")
+```
+
+#### Issues
+```python
+# Create issue
+mcp__turbo__create_issue(
+    title="Issue Title",
+    description="Description",
+    type="feature",
+    priority="high",
+    project_id="uuid"
+)
+
+# List issues with filters
+mcp__turbo__list_issues(
+    project_id="uuid",
+    status="open",
+    priority="high"
+)
+
+# Update issue
+mcp__turbo__update_issue(
+    issue_id="uuid",
+    status="in_progress",
+    priority="critical"
+)
+
+# Get issue details
+mcp__turbo__get_issue(issue_id="uuid")
+```
+
+#### Mentors
+```python
+# Get mentor
+mcp__turbo__get_mentor(mentor_id="uuid")
+
+# Get conversation history
+mcp__turbo__get_mentor_messages(mentor_id="uuid", limit=50)
+
+# Add message to conversation
+mcp__turbo__add_mentor_message(
+    mentor_id="uuid",
+    content="Response content"
+)
+```
+
+#### Tags & Organization
+```python
+# Create tag
+mcp__turbo__create_tag(
+    name="frontend",
+    color="#3b82f6",
+    description="Frontend tasks"
+)
+
+# Add tag to entity
+mcp__turbo__add_tag_to_entity(
+    entity_type="issue",
+    entity_id="uuid",
+    tag_id="tag-uuid"
+)
+```
+
+#### Comments
+```python
+# Add comment (works on any entity)
+mcp__turbo__add_comment(
+    entity_type="issue",
+    entity_id="uuid",
+    content="Comment text",
+    author_type="ai",
+    author_name="Claude"
+)
+
+# Get entity comments
+mcp__turbo__get_entity_comments(
+    entity_type="issue",
+    entity_id="uuid"
+)
+```
+
+#### Dependencies & Relationships
+```python
+# Add blocker (issue A blocks issue B)
+mcp__turbo__add_blocker(
+    blocking_issue_id="uuid-a",
+    blocked_issue_id="uuid-b"
+)
+
+# Get related entities via knowledge graph
+mcp__turbo__get_related_entities(
+    entity_type="issue",
+    entity_id="uuid",
+    limit=10
+)
+
+# Semantic search
+mcp__turbo__search_knowledge_graph(
+    query="authentication bug",
+    entity_types=["issue", "document"],
+    min_relevance=0.7
+)
+```
+
+### MCP Best Practices
+
+1. **Always use MCP tools first** - Don't use API or direct database access unless MCP doesn't support the operation
+2. **Let MCP handle validation** - All MCP tools validate inputs automatically
+3. **Use semantic search** - `search_knowledge_graph` is powerful for finding related content
+4. **Partial updates** - Only specify fields you want to change
+5. **Check responses** - MCP tools return detailed error messages
 
 ## Database Operations
 
@@ -58,7 +194,7 @@ CLI/API → Services → Repositories → Models → Database
 
 ### Transaction Handling
 ```python
-# Automatic via get_db_session (used by CLI/API)
+# Automatic via get_db_session (used by MCP/API)
 async for session in get_db_session():
     service = create_project_service(session)
     await service.update_project(id, data)  # Auto-commit on success
@@ -71,124 +207,23 @@ All updates use **partial updates** via `model_dump(exclude_unset=True)`:
 - Validation before database operations
 - Rollback on any error
 
-## CLI Usage Guide
-
-### Getting Project IDs
-```bash
-# List all projects
-turbo projects list
-
-# Get specific project (for UUIDs, get from list command)
-turbo projects get <project-id>
-
-# Search by name
-turbo projects search "Turbo Code"
-```
-
-### Common CLI Workflows
-
-#### Creating Resources
-```bash
-# Create project
-turbo projects create --name "Project Name" --description "Description" --priority high
-
-# Create issue (requires project-id)
-turbo issues create \
-  --title "Issue Title" \
-  --description "Description" \
-  --project-id <uuid> \
-  --type [bug|feature|enhancement|task] \
-  --priority [low|medium|high|critical] \
-  --status open
-
-# Create tag
-turbo tags create --name "frontend" --color blue --description "Frontend tasks"
-```
-
-#### Updating Resources
-```bash
-# Update project (partial updates - only specify what changes)
-turbo projects update <project-id> --name "New Name"
-turbo projects update <project-id> --completion 75
-turbo projects update <project-id> --status completed
-
-# Update issue
-turbo issues update <issue-id> --status in_progress --priority high
-turbo issues assign <issue-id> developer@example.com
-turbo issues close <issue-id> --resolution "Fixed the bug"
-turbo issues reopen <issue-id>
-
-# Update tags
-turbo tags update <tag-id> --name "new-name" --color red
-```
-
-#### Querying & Filtering
-```bash
-# List with filters
-turbo issues list --project-id <uuid>
-turbo issues list --status open
-turbo issues list --priority high
-turbo issues list --assignee developer@example.com
-
-# List with pagination
-turbo projects list --limit 10 --offset 20
-
-# Output formats
-turbo projects list --format table   # Default, Rich formatted
-turbo projects list --format json    # JSON output
-turbo projects list --format csv     # CSV output
-```
-
-#### Statistics & Status
-```bash
-# Project statistics
-turbo projects stats <project-id>
-
-# Issue statistics for project
-turbo issues stats <project-id>
-
-# Workspace overview
-turbo status
-
-# Project search
-turbo projects search "keyword"
-turbo search "global keyword"  # Search across all entities
-```
-
-#### Archive & Delete
-```bash
-# Archive project (soft delete)
-turbo projects archive <project-id>
-
-# Delete (hard delete - use with caution)
-turbo issues delete <issue-id> --confirm
-turbo projects delete <project-id> --confirm
-```
-
-### CLI Implementation Details
-- **Location**: `turbo/cli/commands/`
-- **Pattern**: Each command uses `async for session in get_db_session()`
-- **Services**: Created via utility functions in `turbo/cli/utils.py`
-- **Validation**: Automatic via Pydantic schemas before DB operations
-- **Error Handling**: `@handle_exceptions` decorator with Rich console output
-
 ## API Usage Guide
 
 ### Starting the API Server
 ```bash
+# Docker (recommended)
+docker-compose up -d
+
 # Development with auto-reload
 uvicorn turbo.main:app --reload
 
 # Production
 uvicorn turbo.main:app --host 0.0.0.0 --port 8000
-
-# Docker
-docker-compose up -d
 ```
 
 API will be available at `http://localhost:8000` with docs at `http://localhost:8000/docs`
 
-### API Endpoints
+### Key API Endpoints
 
 #### Projects
 - `POST /api/v1/projects/` - Create project
@@ -196,10 +231,6 @@ API will be available at `http://localhost:8000` with docs at `http://localhost:
 - `GET /api/v1/projects/{id}` - Get project
 - `PUT /api/v1/projects/{id}` - Update project (partial updates)
 - `DELETE /api/v1/projects/{id}` - Delete project
-- `POST /api/v1/projects/{id}/archive` - Archive project
-- `GET /api/v1/projects/{id}/stats` - Project statistics
-- `GET /api/v1/projects/{id}/issues` - Get project issues
-- `POST /api/v1/projects/{id}/tags/{tag_id}` - Add tag to project
 
 #### Issues
 - `POST /api/v1/issues/` - Create issue
@@ -208,80 +239,45 @@ API will be available at `http://localhost:8000` with docs at `http://localhost:
 - `PUT /api/v1/issues/{id}` - Update issue
 - `DELETE /api/v1/issues/{id}` - Delete issue
 
-#### Documents & Tags
-- Similar REST patterns for `/api/v1/documents/` and `/api/v1/tags/`
-
-### API Request Examples
-```bash
-# Create project
-curl -X POST "http://localhost:8000/api/v1/projects/" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "New Project",
-    "description": "Description",
-    "priority": "high"
-  }'
-
-# Update project (partial)
-curl -X PUT "http://localhost:8000/api/v1/projects/{id}" \
-  -H "Content-Type: application/json" \
-  -d '{"completion_percentage": 75.0}'
-
-# Get with filters
-curl "http://localhost:8000/api/v1/projects/?status=active&limit=10"
-```
+#### Mentors
+- `GET /api/v1/mentors/` - List mentors
+- `GET /api/v1/mentors/{id}` - Get mentor
+- `POST /api/v1/mentors/{id}/messages` - Send message
+- `GET /api/v1/mentors/{id}/messages` - Get conversation
+- `DELETE /api/v1/mentors/{id}/conversation` - Clear conversation
 
 ### API Implementation
-- **Endpoints**: `turbo/api/v1/endpoints/projects.py:74` (update example)
+- **Endpoints**: `turbo/api/v1/endpoints/` - All REST endpoints
 - **Dependencies**: `turbo/api/dependencies.py` - Dependency injection
 - **Validation**: Automatic via Pydantic request/response models
 - **Session**: Injected via `Depends(get_db_session)`
 
 ## Configuration
 
-### Database Setup
-```bash
-# Interactive configuration
-turbo config database
-
-# Direct configuration
-turbo config database --type sqlite     # Local development
-turbo config database --type postgres   # Production (requires Docker)
-
-# Show current config
-turbo config show
-
-# Config file locations
-turbo config path
-```
-
-### Configuration Files
-- **User config**: `~/.turbo/database.env`
-- **Project config**: `.turbo/config.toml`
-- **Environment**: Set `DATABASE_URL` directly
-
 ### Docker Deployment
 ```bash
-# Start complete stack (API + DB + Web UI)
+# Start complete stack (API + DB + Frontend + Webhook Server)
 docker-compose up -d
 
 # View logs
 docker-compose logs -f turbo-api
+docker-compose logs -f turbo-frontend
 
 # Stop
 docker-compose down
+
+# Rebuild after changes
+docker-compose build api
+docker-compose up -d
 ```
+
+### Environment Configuration
+- **Database URL**: Set in `docker-compose.yml` or `.env`
+- **API Port**: 8000 (configurable)
+- **Frontend Port**: 3010 (configurable)
+- **MCP Server**: Runs within Claude Code environment
 
 ## Development Commands
-
-### Installation
-```bash
-# Install in development mode
-pip install -e .
-
-# Install with dev dependencies
-pip install -e ".[dev]"
-```
 
 ### Testing
 ```bash
@@ -294,7 +290,6 @@ pytest --cov=turbo --cov-report=html
 # Run specific test categories
 pytest tests/unit/
 pytest tests/integration/
-pytest -m "not slow"
 ```
 
 ### Code Quality
@@ -306,79 +301,83 @@ ruff --fix .
 # Check linting
 ruff check .
 mypy .
-
-# Clean emoji from docs
-python scripts/cleanup_emoji.py
 ```
 
 ## Common Patterns for Claude
 
 ### When Asked to Update Database:
-1. **CLI Method** (for single/manual updates):
-   ```bash
-   turbo issues update <id> --status closed
-   ```
 
-2. **API Method** (for programmatic updates):
-   ```python
-   # Use the service layer directly
-   from turbo.core.services import IssueService
-   await issue_service.update_issue(id, IssueUpdate(status="closed"))
-   ```
+**ALWAYS use MCP tools first:**
+```python
+# Update issue status
+mcp__turbo__update_issue(
+    issue_id="uuid",
+    status="closed"
+)
 
-3. **Direct Python** (for complex operations):
-   ```python
-   async with DatabaseConnection() as session:
-       repo = IssueRepository(session)
-       issue = await repo.update(id, update_data)
-       await session.commit()
-   ```
+# Update project completion
+mcp__turbo__update_project(
+    project_id="uuid",
+    completion_percentage=100.0
+)
+```
 
-### Getting UUIDs for Commands:
-```bash
-# Always list first to get UUIDs
-turbo projects list
-turbo issues list --project-id <project-uuid>
+### Getting Entity Information:
 
-# Or use Python to query
-python -c "
-import asyncio
-from turbo.core.database.connection import get_db_session
-from turbo.core.repositories import ProjectRepository
+```python
+# List to find UUIDs
+projects = mcp__turbo__list_projects(status="active")
 
-async def get():
-    async for session in get_db_session():
-        repo = ProjectRepository(session)
-        projects = await repo.search_by_name('Turbo Code')
-        for p in projects:
-            print(f'{p.id}')
-asyncio.run(get())
-"
+# Get detailed information
+project = mcp__turbo__get_project(project_id="uuid")
+issues = mcp__turbo__get_project_issues(project_id="uuid")
+
+# Search for entities
+results = mcp__turbo__search_knowledge_graph(
+    query="authentication",
+    entity_types=["issue", "document"]
+)
 ```
 
 ### Best Practices:
-- **Always validate first**: CLI/API do automatic Pydantic validation
-- **Use partial updates**: Only send changed fields
-- **Check before delete**: Use `--confirm` flag or verify via API
-- **Transaction safety**: All methods auto-rollback on error
-- **Type hints**: All code uses full type hints for IDE support
 
-## Quick Reference
+- **Use MCP tools exclusively** - They handle all validation and error handling
+- **Partial updates only** - Only specify fields that need to change
+- **Leverage semantic search** - Use knowledge graph for finding related content
+- **Check entity relationships** - Use get_related_entities for discovering connections
+- **Add context via comments** - Use add_comment to document changes
+- **Transaction safety** - All MCP tools auto-rollback on error
 
-### Entity Field Patterns
+## Entity Field Patterns
 
-**Project**:
-- Required: name, description
-- Optional: priority (low|medium|high|critical), status (active|on_hold|completed|archived), completion_percentage (0-100), is_archived
+### Project
+- Required: `name`, `description`
+- Optional: `priority` (low|medium|high|critical), `status` (active|on_hold|completed|archived), `completion_percentage` (0-100), `workspace` (personal|freelance|work)
 
-**Issue**:
-- Required: title, description, project_id
-- Optional: type (bug|feature|enhancement|task), status (open|in_progress|review|testing|closed), priority (low|medium|high|critical), assignee (email)
+### Issue
+- Required: `title`, `description`, `project_id`, `type`, `priority`
+- Optional: `status` (open|in_progress|review|testing|closed), `assignee` (email), `due_date`
 
-**Document**:
-- Required: title, content, project_id
-- Optional: doc_type, version
+### Mentor
+- Required: `name`, `description`, `persona`, `workspace`
+- Optional: `work_company`, `context_preferences`, `is_active`
 
-**Tag**:
-- Required: name
-- Optional: color, description
+### Document
+- Required: `title`, `content`, `project_id`
+- Optional: `doc_type`, `version`, `format`
+
+### Tag
+- Required: `name`, `color`
+- Optional: `description`
+
+## Webhook System
+
+The platform includes a webhook server (`scripts/claude_webhook_server.py`) that handles asynchronous AI responses for mentor conversations. The webhook server:
+
+- Listens for incoming mentor messages
+- Builds context from projects, issues, and documents
+- Calls Claude API with mentor persona
+- Posts responses back via MCP tools
+- Supports WebSearch for current information
+
+This enables real-time AI mentor conversations without blocking the main application.

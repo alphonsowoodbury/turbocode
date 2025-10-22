@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo Code CLI Reference
+version: '1.0'
+---
+
 # Turbo Code CLI Reference
 
 This document provides a comprehensive reference for all Turbo Code CLI commands and options.

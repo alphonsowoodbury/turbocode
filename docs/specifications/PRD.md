@@ -1,3 +1,10 @@
+---
+doc_type: specification
+project_name: Turbo Code Platform
+title: 'Turbo: AI Product Development Platform'
+version: '1.0'
+---
+
 # Turbo: AI Product Development Platform
 ## Product Requirements Document (PRD)
 

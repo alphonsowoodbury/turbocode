@@ -31,6 +31,26 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
         </code>
       );
     },
+    a({ node, href, children, ...props }) {
+      // Check if link is external (starts with http:// or https://)
+      const isExternal = href?.startsWith("http://") || href?.startsWith("https://");
+
+      // Open external links in new tab
+      if (isExternal) {
+        return (
+          <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+            {children}
+          </a>
+        );
+      }
+
+      // Internal links open normally
+      return (
+        <a href={href} {...props}>
+          {children}
+        </a>
+      );
+    },
   };
 
   return (

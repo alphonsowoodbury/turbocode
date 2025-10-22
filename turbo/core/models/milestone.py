@@ -1,8 +1,10 @@
 """Milestone model definition."""
 
+from typing import Optional
+
 from sqlalchemy import Column, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from turbo.core.database.base import Base
 from turbo.core.models.associations import milestone_documents, milestone_issues, milestone_tags
@@ -21,6 +23,14 @@ class Milestone(Base):
     # Date fields
     start_date = Column(DateTime(timezone=True), nullable=True)
     due_date = Column(DateTime(timezone=True), nullable=False)
+
+    # Polymorphic assignment
+    assigned_to_type: Mapped[Optional[str]] = mapped_column(
+        String(20), nullable=True, index=True
+    )  # "user" | "staff"
+    assigned_to_id: Mapped[Optional[UUID]] = mapped_column(
+        UUID(as_uuid=True), nullable=True, index=True
+    )
 
     # Foreign keys
     project_id = Column(

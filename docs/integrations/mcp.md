@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo MCP Server - Claude Code Integration
+version: '1.0'
+---
+
 # Turbo MCP Server - Claude Code Integration
 
 ## Overview

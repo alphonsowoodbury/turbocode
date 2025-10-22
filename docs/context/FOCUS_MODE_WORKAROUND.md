@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Focus Mode Detection via App Intents & Shortcuts
+version: '1.0'
+---
+
 # Focus Mode Detection via App Intents & Shortcuts
 
 ## The Strategy

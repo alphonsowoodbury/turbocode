@@ -228,6 +228,62 @@ async def list_tools() -> list[Tool]:
                 "required": ["issue_id"],
             },
         ),
+        # Work Queue Tools
+        Tool(
+            name="get_next_issue",
+            description="Get THE next issue to work on. Returns the highest-ranked issue (work_rank=1) that is open or in_progress. Use this when the user asks 'work the next issue' or 'what should I work on next'. Returns null if no ranked issues exist.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        Tool(
+            name="get_work_queue",
+            description="Get all issues in the work queue, sorted by priority rank. Lower rank number = higher priority (rank 1 is most important). Only returns issues that have been explicitly ranked.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": ["open", "in_progress", "review", "testing", "closed"],
+                        "description": "Filter by status",
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high", "critical"],
+                        "description": "Filter by priority",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of issues to return (default 100)",
+                    },
+                },
+            },
+        ),
+        Tool(
+            name="set_issue_rank",
+            description="Set the work queue rank for an issue. Rank 1 is highest priority. Use this to manually prioritize issues.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_id": {"type": "string", "description": "UUID of the issue"},
+                    "work_rank": {
+                        "type": "integer",
+                        "description": "Rank position (1=highest priority)",
+                        "minimum": 1,
+                    },
+                },
+                "required": ["issue_id", "work_rank"],
+            },
+        ),
+        Tool(
+            name="auto_rank_issues",
+            description="Automatically rank all open/in_progress issues using intelligent scoring based on priority, age, blockers, and dependencies. This will overwrite existing ranks.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
         # Discovery Tools
         Tool(
             name="list_discoveries",
@@ -633,6 +689,102 @@ async def list_tools() -> list[Tool]:
                     },
                 },
                 "required": ["mentor_id", "content"],
+            },
+        ),
+        # Staff Tools
+        Tool(
+            name="list_staff",
+            description="Get all staff members with optional filtering. Staff are AI domain experts that can be @ mentioned in comments for execution and guidance.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "role_type": {
+                        "type": "string",
+                        "enum": ["leadership", "domain_expert"],
+                        "description": "Filter by role type (leadership = universal permissions, domain_expert = assigned only)",
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "description": "Filter by active status (default: true)",
+                    },
+                },
+            },
+        ),
+        Tool(
+            name="get_staff",
+            description="Get detailed information about a specific staff member including handle, role, persona, monitoring scope, and capabilities.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "staff_id": {
+                        "type": "string",
+                        "description": "UUID of the staff member",
+                    }
+                },
+                "required": ["staff_id"],
+            },
+        ),
+        Tool(
+            name="get_staff_by_handle",
+            description="Get staff member by handle (for @ mention resolution). Example: get_staff_by_handle('ChiefOfStaff') or get_staff_by_handle('AgilityLead')",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "handle": {
+                        "type": "string",
+                        "description": "Staff handle without @ prefix (e.g., 'ChiefOfStaff', 'ProductManager', 'AgilityLead', 'EngineeringManager')",
+                    }
+                },
+                "required": ["handle"],
+            },
+        ),
+        Tool(
+            name="get_staff_conversation",
+            description="Get conversation history with a staff member. Returns all messages ordered chronologically.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "staff_id": {
+                        "type": "string",
+                        "description": "UUID of the staff member",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of messages to return (default: 50)",
+                    },
+                },
+                "required": ["staff_id"],
+            },
+        ),
+        Tool(
+            name="add_staff_message",
+            description="Add an assistant message to staff conversation (called by webhook after staff response generation). Use this when staff @ mentioned in comments.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "staff_id": {
+                        "type": "string",
+                        "description": "UUID of the staff member",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "The staff's response message content",
+                    },
+                },
+                "required": ["staff_id", "content"],
+            },
+        ),
+        Tool(
+            name="get_my_queue",
+            description="Get the unified My Queue with all pending work: action approvals, assigned tasks (issues/initiatives/milestones), and review requests from staff.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max items per section (default: 50)",
+                    },
+                },
             },
         ),
         # Literature Tools
@@ -1910,6 +2062,33 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
+            # Work Queue
+            elif name == "get_next_issue":
+                response = await client.get(f"{TURBO_API_URL}/work-queue/next")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_work_queue":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/work-queue/", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "set_issue_rank":
+                issue_id = arguments["issue_id"]
+                work_rank = arguments["work_rank"]
+                response = await client.post(
+                    f"{TURBO_API_URL}/work-queue/{issue_id}/rank",
+                    json={"work_rank": work_rank}
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "auto_rank_issues":
+                response = await client.post(f"{TURBO_API_URL}/work-queue/auto-rank")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
             # Discovery
             elif name == "list_discoveries":
                 params = {**arguments, "type": "discovery"}
@@ -2141,6 +2320,52 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     f"{TURBO_API_URL}/mentors/{mentor_id}/assistant-message",
                     json={"content": content}
                 )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            # Staff
+            elif name == "list_staff":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/staff/", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_staff":
+                staff_id = arguments["staff_id"]
+                response = await client.get(f"{TURBO_API_URL}/staff/{staff_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_staff_by_handle":
+                handle = arguments["handle"]
+                response = await client.get(f"{TURBO_API_URL}/staff/handle/{handle}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_staff_conversation":
+                staff_id = arguments["staff_id"]
+                params = {}
+                if "limit" in arguments:
+                    params["limit"] = arguments["limit"]
+                response = await client.get(f"{TURBO_API_URL}/staff/{staff_id}/messages", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "add_staff_message":
+                staff_id = arguments["staff_id"]
+                content = arguments["content"]
+                response = await client.post(
+                    f"{TURBO_API_URL}/staff/{staff_id}/assistant-message",
+                    json={"content": content}
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_my_queue":
+                params = {}
+                if "limit" in arguments:
+                    params["limit"] = arguments["limit"]
+                response = await client.get(f"{TURBO_API_URL}/my-queue/", params=params)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 

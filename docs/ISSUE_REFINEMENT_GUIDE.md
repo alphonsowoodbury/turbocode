@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Issue Refinement Guide
+version: '1.0'
+---
+
 # Issue Refinement Guide
 
 **AI-Powered Issue Hygiene with Human-in-the-Loop**

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Filter, X, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { SubagentButton } from "@/components/subagent/subagent-button";
 import {
   Select,
   SelectContent,
@@ -123,10 +124,17 @@ export default function DiscoveriesPage() {
       <div className="flex-1 p-6">
         {/* Controls Bar */}
         <div className="mb-4 flex items-center justify-between">
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Discovery
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              New Discovery
+            </Button>
+            <SubagentButton
+              suggestedAgent="discovery-guide"
+              suggestedPrompt="Help me analyze my discovery issues and decide next steps for research topics."
+              size="default"
+            />
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant={showFilters ? "secondary" : "outline"}

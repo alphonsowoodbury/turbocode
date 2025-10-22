@@ -18,6 +18,12 @@ class ProjectBase(BaseModel):
     completion_percentage: float | None = Field(default=0.0, ge=0.0, le=100.0)
     workspace: str = Field(default="personal", pattern="^(personal|freelance|work)$")
     work_company: str | None = Field(default=None, max_length=100)
+    assigned_to_type: str | None = Field(
+        default=None, pattern="^(user|staff)$", description="Owner type: user or staff"
+    )
+    assigned_to_id: UUID | None = Field(
+        default=None, description="UUID of the assigned user or staff member"
+    )
 
     @field_validator("name")
     @classmethod
@@ -53,6 +59,8 @@ class ProjectUpdate(BaseModel):
     is_archived: bool | None = None
     workspace: str | None = Field(None, pattern="^(personal|freelance|work)$")
     work_company: str | None = Field(None, max_length=100)
+    assigned_to_type: str | None = Field(None, pattern="^(user|staff)$")
+    assigned_to_id: UUID | None = None
 
     @field_validator("name")
     @classmethod
@@ -78,6 +86,8 @@ class ProjectResponse(ProjectBase):
     is_archived: bool
     workspace: str
     work_company: str | None
+    assigned_to_type: str | None
+    assigned_to_id: UUID | None
     created_at: datetime
     updated_at: datetime
 

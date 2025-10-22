@@ -1,3 +1,10 @@
+---
+doc_type: design
+project_name: Turbo Code Platform
+title: Claude Code Integration Architecture
+version: '1.0'
+---
+
 # Claude Code Integration Architecture
 ## AI-Powered Project Management with User Approval Workflow
 

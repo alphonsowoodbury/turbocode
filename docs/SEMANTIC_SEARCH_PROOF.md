@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: 'Semantic Search: Proof of Value'
+version: '1.0'
+---
+
 # Semantic Search: Proof of Value
 
 ## 🎯 The Challenge

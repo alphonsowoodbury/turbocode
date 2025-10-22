@@ -21,6 +21,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { IssueFiltersComponent, type IssueFilters as IssueFiltersType } from "@/components/projects/issue-filters";
 import { ActivityFeed } from "@/components/projects/activity-feed";
 import { useSavedFilters, useCreateSavedFilter, useDeleteSavedFilter } from "@/hooks/use-saved-filters";
+import { SubagentButton } from "@/components/subagent/subagent-button";
 import {
   Dialog,
   DialogContent,
@@ -166,7 +167,13 @@ export default function ProjectDetailPage() {
                   {project.description}
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
+                <SubagentButton
+                  context={{ project_id: projectId }}
+                  suggestedAgent="project-manager"
+                  suggestedPrompt="Generate a comprehensive health report for this project including status, risks, and recommendations."
+                  size="sm"
+                />
                 <Badge
                   variant="secondary"
                   className={cn("text-xs", priorityColors[project.priority])}

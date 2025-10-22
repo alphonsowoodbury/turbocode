@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Claude Code Integration
+version: '1.0'
+---
+
 # Claude Code Integration
 
 ## Overview

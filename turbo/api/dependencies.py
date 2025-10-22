@@ -15,6 +15,9 @@ from turbo.core.repositories import (
 )
 from turbo.core.repositories.mentor import MentorRepository
 from turbo.core.repositories.mentor_conversation import MentorConversationRepository
+from turbo.core.repositories.staff import StaffRepository
+from turbo.core.repositories.staff_conversation import StaffConversationRepository
+from turbo.core.repositories.webhook import WebhookRepository
 from turbo.core.services import (
     DocumentService,
     InitiativeService,
@@ -25,6 +28,8 @@ from turbo.core.services import (
 )
 from turbo.core.services.mentor import MentorService
 from turbo.core.services.mentor_context import MentorContextService
+from turbo.core.services.staff import StaffService
+from turbo.core.services.webhook_service import WebhookService
 
 
 # Repository dependencies
@@ -77,6 +82,13 @@ def get_issue_dependency_repository(
     return IssueDependencyRepository(session)
 
 
+def get_webhook_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> WebhookRepository:
+    """Get webhook repository."""
+    return WebhookRepository(session)
+
+
 # Service dependencies
 def get_project_service(
     project_repo: ProjectRepository = Depends(get_project_repository),
@@ -92,9 +104,11 @@ def get_issue_service(
     project_repo: ProjectRepository = Depends(get_project_repository),
     milestone_repo: MilestoneRepository = Depends(get_milestone_repository),
     dependency_repo: IssueDependencyRepository = Depends(get_issue_dependency_repository),
+    webhook_repo: WebhookRepository = Depends(get_webhook_repository),
 ) -> IssueService:
     """Get issue service."""
-    return IssueService(issue_repo, project_repo, milestone_repo, dependency_repo)
+    webhook_service = WebhookService(webhook_repo)
+    return IssueService(issue_repo, project_repo, milestone_repo, dependency_repo, webhook_service)
 
 
 def get_document_service(
@@ -170,3 +184,53 @@ def get_mentor_service(
 ) -> MentorService:
     """Get mentor service."""
     return MentorService(mentor_repo, conversation_repo, context_service)
+
+
+# Staff repository dependencies
+def get_staff_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> StaffRepository:
+    """Get staff repository."""
+    return StaffRepository(session)
+
+
+def get_staff_conversation_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> StaffConversationRepository:
+    """Get staff conversation repository."""
+    return StaffConversationRepository(session)
+
+
+# Staff service dependencies
+def get_staff_service(
+    staff_repo: StaffRepository = Depends(get_staff_repository),
+    conversation_repo: StaffConversationRepository = Depends(get_staff_conversation_repository),
+) -> StaffService:
+    """Get staff service."""
+    return StaffService(staff_repo, conversation_repo)
+
+
+# Group discussion repository dependencies
+def get_group_discussion_repository(
+    session: AsyncSession = Depends(get_db_session),
+):
+    """Get group discussion repository."""
+    from turbo.core.repositories.group_discussion import GroupDiscussionRepository
+    return GroupDiscussionRepository(session)
+
+
+def get_webhook_repository(
+    session: AsyncSession = Depends(get_db_session),
+) -> WebhookRepository:
+    """Get webhook repository."""
+    return WebhookRepository(session)
+
+
+# Group discussion service dependencies
+def get_group_discussion_service(
+    discussion_repo = Depends(get_group_discussion_repository),
+    conversation_repo: StaffConversationRepository = Depends(get_staff_conversation_repository),
+):
+    """Get group discussion service."""
+    from turbo.core.services.group_discussion import GroupDiscussionService
+    return GroupDiscussionService(discussion_repo, conversation_repo)

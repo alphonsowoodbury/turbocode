@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Chronikle Development Status
+version: '1.0'
+---
+
 # Chronikle Development Status
 
 This document tracks the completion status of features and identifies areas requiring development attention.

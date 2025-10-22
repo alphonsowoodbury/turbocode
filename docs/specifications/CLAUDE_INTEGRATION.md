@@ -1,3 +1,10 @@
+---
+doc_type: specification
+project_name: Turbo Code Platform
+title: 'Turbo: Claude Integration Strategy'
+version: '1.0'
+---
+
 # Turbo: Claude Integration Strategy
 
 **Version:** 1.0

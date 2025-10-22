@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Context DevOps Strategy
+version: '1.0'
+---
+
 # Context DevOps Strategy
 *Accelerating development while maintaining quality*
 

@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo Architecture Split Plan
+version: '1.0'
+---
+
 # Turbo Architecture Split Plan
 
 ## Overview

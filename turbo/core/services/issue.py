@@ -30,11 +30,13 @@ class IssueService:
         project_repository: ProjectRepository,
         milestone_repository: MilestoneRepository,
         dependency_repository: IssueDependencyRepository,
+        webhook_service=None,  # Optional - for event emission
     ) -> None:
         self._issue_repository = issue_repository
         self._project_repository = project_repository
         self._milestone_repository = milestone_repository
         self._dependency_repository = dependency_repository
+        self._webhook_service = webhook_service
         self._settings = get_settings()
 
     async def _index_issue_in_graph(self, issue) -> None:
@@ -224,6 +226,22 @@ class IssueService:
         # Re-index in knowledge graph to update search
         await self._index_issue_in_graph(issue)
 
+        # Emit webhook event if issue was assigned
+        if self._webhook_service and update_data.assigned_to_id is not None:
+            try:
+                issue_response = IssueResponse.model_validate(issue)
+                payload = {
+                    "issue": issue_response.model_dump(mode="json"),
+                    "assigned_to_type": issue.assigned_to_type,
+                    "assigned_to_id": str(issue.assigned_to_id) if issue.assigned_to_id else None,
+                    "project_id": str(issue.project_id) if issue.project_id else None,
+                }
+                await self._webhook_service.emit_event("issue.assigned", payload)
+                logger.info(f"Emitted issue.assigned event for issue {issue_id}")
+            except Exception as e:
+                # Log webhook errors but don't fail the update
+                logger.error(f"Failed to emit webhook for issue {issue_id}: {str(e)}")
+
         return IssueResponse.model_validate(issue)
 
     async def delete_issue(self, issue_id: UUID) -> bool:
@@ -337,3 +355,183 @@ class IssueService:
 
         issues = await self._issue_repository.get_project_closed_issues(project_id)
         return [IssueResponse.model_validate(issue) for issue in issues]
+
+    # Work Queue Methods
+
+    async def get_work_queue(
+        self,
+        status: str | None = None,
+        priority: str | None = None,
+        limit: int | None = 100,
+        offset: int | None = 0,
+        include_unranked: bool = False,
+    ) -> list[IssueResponse]:
+        """
+        Get work queue - issues sorted by work_rank.
+
+        Args:
+            status: Optional status filter
+            priority: Optional priority filter
+            limit: Maximum number of results
+            offset: Offset for pagination
+            include_unranked: If True, include issues without work_rank
+
+        Returns:
+            List of issues sorted by work_rank (ascending)
+        """
+        issues = await self._issue_repository.get_work_queue(
+            status=status,
+            priority=priority,
+            limit=limit,
+            offset=offset,
+            include_unranked=include_unranked,
+        )
+        return [IssueResponse.model_validate(issue) for issue in issues]
+
+    async def get_next_issue(self) -> IssueResponse | None:
+        """
+        Get THE next issue to work on (highest ranked).
+
+        Returns the issue with the lowest work_rank value (highest priority)
+        that is in open or in_progress status.
+
+        Returns:
+            The next issue to work on, or None if no ranked issues exist
+        """
+        issue = await self._issue_repository.get_next_issue()
+        if issue:
+            return IssueResponse.model_validate(issue)
+        return None
+
+    async def set_work_rank(
+        self, issue_id: UUID, work_rank: int | None
+    ) -> IssueResponse:
+        """
+        Set or clear work rank for an issue.
+
+        Args:
+            issue_id: ID of the issue
+            work_rank: New rank (1=highest priority) or None to remove from queue
+
+        Returns:
+            Updated issue
+
+        Raises:
+            IssueNotFoundError: If issue doesn't exist
+        """
+        from datetime import datetime
+
+        issue = await self._issue_repository.get_by_id(issue_id)
+        if not issue:
+            raise IssueNotFoundError(issue_id)
+
+        # Update rank and timestamp
+        issue.work_rank = work_rank
+        issue.last_ranked_at = datetime.utcnow() if work_rank is not None else None
+
+        updated_issue = await self._issue_repository.update(issue)
+        return IssueResponse.model_validate(updated_issue)
+
+    async def bulk_rerank(self, issue_ranks: list[dict]) -> int:
+        """
+        Bulk update work ranks for multiple issues.
+
+        Args:
+            issue_ranks: List of dicts with 'issue_id' and 'rank' keys
+
+        Returns:
+            Number of issues updated
+
+        Example:
+            await bulk_rerank([
+                {"issue_id": "uuid1", "rank": 1},
+                {"issue_id": "uuid2", "rank": 2},
+            ])
+        """
+        from datetime import datetime
+
+        updated_count = 0
+        now = datetime.utcnow()
+
+        for item in issue_ranks:
+            issue_id = UUID(item["issue_id"])
+            rank = item["rank"]
+
+            issue = await self._issue_repository.get_by_id(issue_id)
+            if issue:
+                issue.work_rank = rank
+                issue.last_ranked_at = now
+                await self._issue_repository.update(issue)
+                updated_count += 1
+
+        return updated_count
+
+    async def auto_rank_issues(self) -> int:
+        """
+        Auto-rank all open/in_progress issues using intelligent scoring.
+
+        Ranking factors:
+        - Priority (critical=100, high=50, medium=25, low=10)
+        - Age (older issues get higher priority)
+        - Blockers (issues not blocked rank higher)
+        - Dependencies (issues that block others rank higher)
+
+        Returns:
+            Number of issues ranked
+        """
+        from datetime import datetime
+
+        # Get all open and in_progress issues
+        issues = await self._issue_repository.get_all()
+        eligible_issues = [
+            i for i in issues if i.status in ["open", "in_progress"]
+        ]
+
+        if not eligible_issues:
+            return 0
+
+        # Calculate scores for each issue
+        scored_issues = []
+        for issue in eligible_issues:
+            score = await self._calculate_auto_rank_score(issue)
+            scored_issues.append((issue, score))
+
+        # Sort by score (descending) and assign ranks
+        scored_issues.sort(key=lambda x: x[1], reverse=True)
+
+        now = datetime.utcnow()
+        for rank, (issue, score) in enumerate(scored_issues, start=1):
+            # Directly update the issue object
+            issue.work_rank = rank
+            issue.last_ranked_at = now
+
+        # Flush and commit all changes at once
+        await self._issue_repository._session.flush()
+        await self._issue_repository._session.commit()
+
+        return len(scored_issues)
+
+    async def _calculate_auto_rank_score(self, issue) -> float:
+        """Calculate auto-ranking score for an issue."""
+        from datetime import datetime
+
+        score = 0.0
+
+        # Priority weight (most important factor)
+        priority_weights = {"critical": 100, "high": 50, "medium": 25, "low": 10}
+        score += priority_weights.get(issue.priority, 25)
+
+        # Age factor (older issues get higher priority)
+        age_days = (datetime.utcnow() - issue.created_at.replace(tzinfo=None)).days
+        score += min(age_days * 0.5, 20)  # Cap at 20 points
+
+        # Blocker penalty (check if issue is blocked)
+        blockers = await self._dependency_repository.get_blocking_issues(issue.id)
+        if blockers:
+            score -= 15  # Reduce priority if blocked
+
+        # Dependency boost (issues that block others are more important)
+        blocked_issues = await self._dependency_repository.get_blocked_issues(issue.id)
+        score += len(blocked_issues) * 5  # +5 points per issue blocked
+
+        return score

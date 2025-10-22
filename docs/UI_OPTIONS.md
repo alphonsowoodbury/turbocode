@@ -1,3 +1,10 @@
+---
+doc_type: other
+project_name: Turbo Code Platform
+title: Turbo Code UI Options Analysis
+version: '1.0'
+---
+
 # Turbo Code UI Options Analysis
 
 ## Overview
