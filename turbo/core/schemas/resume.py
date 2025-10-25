@@ -66,6 +66,7 @@ class ResumeUpdate(BaseModel):
     """Schema for updating a resume."""
 
     title: str | None = Field(None, max_length=200)
+    file_path: str | None = Field(None, max_length=500)
     is_primary: bool | None = None
     target_role: str | None = Field(None, max_length=200)
     target_company: str | None = Field(None, max_length=200)

@@ -64,6 +64,7 @@ dependencies = [
     "reportlab>=4.0.0",
     "markdown>=3.5.0",
     "PyYAML>=6.0",
+    "weasyprint>=62.0",  # PDF generation from HTML
 
     # Content Extraction (Literature)
     "feedparser>=6.0.0",

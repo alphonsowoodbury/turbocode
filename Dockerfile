@@ -34,13 +34,20 @@ ENV PYTHONUNBUFFERED=1 \
     PATH="/app/.venv/bin:$PATH" \
     TURBO_ENVIRONMENT=production
 
-# Install runtime dependencies (including PyTorch/torchaudio requirements)
+# Install runtime dependencies (including PyTorch/torchaudio requirements, git for worktrees, and WeasyPrint dependencies)
 RUN apt-get update && apt-get install -y \
     libpq5 \
     curl \
     libgomp1 \
     libsndfile1 \
     ffmpeg \
+    git \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libharfbuzz0b \
+    libffi-dev \
+    libjpeg-dev \
+    libopenjp2-7 \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app user with home directory
@@ -56,8 +63,8 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 # Copy application code and docs
 COPY --chown=appuser:appuser . .
 
-# Build documentation
-RUN mkdocs build
+# Build documentation if mkdocs.yml exists
+RUN if [ -f mkdocs.yml ]; then mkdocs build; fi
 
 # Create necessary directories
 RUN mkdir -p /app/.turbo /app/logs && \
