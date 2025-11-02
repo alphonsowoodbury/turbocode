@@ -134,6 +134,199 @@ class ToolExecutor:
                     response.raise_for_status()
                     return {"results": response.json()}
 
+                # Career management tools
+                elif tool_name == "list_job_applications":
+                    params = {}
+                    if "status" in tool_input:
+                        params["status"] = tool_input["status"]
+                    if "company_name" in tool_input:
+                        params["company_name"] = tool_input["company_name"]
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/job-applications/", params=params)
+                    response.raise_for_status()
+                    return {"applications": response.json()}
+
+                elif tool_name == "get_job_application":
+                    application_id = tool_input["application_id"]
+                    response = await client.get(f"{self.api_base_url}/job-applications/{application_id}")
+                    response.raise_for_status()
+                    return {"application": response.json()}
+
+                elif tool_name == "create_job_application":
+                    response = await client.post(
+                        f"{self.api_base_url}/job-applications/",
+                        json=tool_input
+                    )
+                    response.raise_for_status()
+                    return {"application": response.json(), "message": "Job application created successfully"}
+
+                elif tool_name == "update_job_application":
+                    application_id = tool_input.pop("application_id")
+                    response = await client.put(
+                        f"{self.api_base_url}/job-applications/{application_id}",
+                        json=tool_input
+                    )
+                    response.raise_for_status()
+                    return {"application": response.json(), "message": "Job application updated successfully"}
+
+                elif tool_name == "list_resumes":
+                    params = {}
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/resumes/", params=params)
+                    response.raise_for_status()
+                    return {"resumes": response.json()}
+
+                elif tool_name == "get_resume":
+                    resume_id = tool_input["resume_id"]
+                    response = await client.get(f"{self.api_base_url}/resumes/{resume_id}")
+                    response.raise_for_status()
+                    return {"resume": response.json()}
+
+                elif tool_name == "list_companies":
+                    params = {}
+                    if "target_status" in tool_input:
+                        params["target_status"] = tool_input["target_status"]
+                    if "industry" in tool_input:
+                        params["industry"] = tool_input["industry"]
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/companies/", params=params)
+                    response.raise_for_status()
+                    return {"companies": response.json()}
+
+                elif tool_name == "get_company":
+                    company_id = tool_input["company_id"]
+                    response = await client.get(f"{self.api_base_url}/companies/{company_id}")
+                    response.raise_for_status()
+                    return {"company": response.json()}
+
+                elif tool_name == "create_company":
+                    response = await client.post(
+                        f"{self.api_base_url}/companies/",
+                        json=tool_input
+                    )
+                    response.raise_for_status()
+                    return {"company": response.json(), "message": "Company created successfully"}
+
+                elif tool_name == "list_network_contacts":
+                    params = {}
+                    if "current_company" in tool_input:
+                        params["current_company"] = tool_input["current_company"]
+                    if "contact_type" in tool_input:
+                        params["contact_type"] = tool_input["contact_type"]
+                    if "is_active" in tool_input:
+                        params["is_active"] = tool_input["is_active"]
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/network-contacts/", params=params)
+                    response.raise_for_status()
+                    return {"contacts": response.json()}
+
+                elif tool_name == "get_network_contact":
+                    contact_id = tool_input["contact_id"]
+                    response = await client.get(f"{self.api_base_url}/network-contacts/{contact_id}")
+                    response.raise_for_status()
+                    return {"contact": response.json()}
+
+                elif tool_name == "create_network_contact":
+                    response = await client.post(
+                        f"{self.api_base_url}/network-contacts/",
+                        json=tool_input
+                    )
+                    response.raise_for_status()
+                    return {"contact": response.json(), "message": "Network contact created successfully"}
+
+                elif tool_name == "list_skills":
+                    params = {}
+                    if "category" in tool_input:
+                        params["category"] = tool_input["category"]
+                    if "proficiency_level" in tool_input:
+                        params["proficiency_level"] = tool_input["proficiency_level"]
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/skills/", params=params)
+                    response.raise_for_status()
+                    return {"skills": response.json()}
+
+                # Work experience tools
+                elif tool_name == "list_work_experiences":
+                    params = {}
+                    if "company_id" in tool_input:
+                        params["company_id"] = tool_input["company_id"]
+                    if "is_current" in tool_input:
+                        params["is_current"] = tool_input["is_current"]
+                    if "employment_type" in tool_input:
+                        params["employment_type"] = tool_input["employment_type"]
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/work-experiences/", params=params)
+                    response.raise_for_status()
+                    return {"work_experiences": response.json()}
+
+                elif tool_name == "get_work_experience":
+                    experience_id = tool_input["experience_id"]
+                    response = await client.get(f"{self.api_base_url}/work-experiences/{experience_id}")
+                    response.raise_for_status()
+                    return {"work_experience": response.json()}
+
+                elif tool_name == "create_work_experience":
+                    response = await client.post(
+                        f"{self.api_base_url}/work-experiences/",
+                        json=tool_input
+                    )
+                    response.raise_for_status()
+                    return {"work_experience": response.json(), "message": "Work experience created successfully"}
+
+                elif tool_name == "list_achievements":
+                    params = {}
+                    if "experience_id" in tool_input:
+                        params["experience_id"] = tool_input["experience_id"]
+                    if "metric_type" in tool_input:
+                        params["metric_type"] = tool_input["metric_type"]
+                    if "dimensions" in tool_input:
+                        params["dimensions"] = tool_input["dimensions"]
+                    if "leadership_principles" in tool_input:
+                        params["leadership_principles"] = tool_input["leadership_principles"]
+                    if "skills_used" in tool_input:
+                        params["skills_used"] = tool_input["skills_used"]
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/work-experiences/achievements/", params=params)
+                    response.raise_for_status()
+                    return {"achievements": response.json()}
+
+                elif tool_name == "get_achievement":
+                    achievement_id = tool_input["achievement_id"]
+                    response = await client.get(f"{self.api_base_url}/work-experiences/achievements/{achievement_id}")
+                    response.raise_for_status()
+                    return {"achievement": response.json()}
+
+                elif tool_name == "create_achievement":
+                    response = await client.post(
+                        f"{self.api_base_url}/work-experiences/achievements/",
+                        json=tool_input
+                    )
+                    response.raise_for_status()
+                    return {"achievement": response.json(), "message": "Achievement created successfully"}
+
+                elif tool_name == "search_achievements":
+                    params = {"q": tool_input["query"]}
+                    if "limit" in tool_input:
+                        params["limit"] = tool_input["limit"]
+
+                    response = await client.get(f"{self.api_base_url}/work-experiences/achievements/search/", params=params)
+                    response.raise_for_status()
+                    return {"achievements": response.json()}
+
                 else:
                     return {"error": f"Unknown tool: {tool_name}"}
 

@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -17,6 +17,8 @@ class Initiative(Base):
 
     # Required fields
     name = Column(String(100), nullable=False, index=True)
+    initiative_key = Column(String(20), nullable=True, unique=True, index=True)  # e.g., "CNTXT-I1" (nullable for cross-project initiatives)
+    initiative_number = Column(Integer, nullable=True)  # Sequential per project: 1, 2, 3... (nullable for cross-project initiatives)
     description = Column(String, nullable=False)
     status = Column(String(20), nullable=False, default="planning", index=True)
 

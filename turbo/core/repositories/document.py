@@ -144,3 +144,10 @@ class DocumentRepository(BaseRepository[Document, DocumentCreate, DocumentUpdate
 
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_by_key(self, document_key: str) -> Document | None:
+        """Get document by its human-readable key (e.g., 'CNTXT-D1')."""
+        stmt = select(self._model).where(self._model.document_key == document_key)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+

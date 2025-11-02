@@ -1,5 +1,6 @@
 """Project Pydantic schemas."""
 
+import re
 from datetime import datetime
 from uuid import UUID
 
@@ -16,6 +17,7 @@ class ProjectBase(BaseModel):
         default="active", pattern="^(active|on_hold|completed|archived)$"
     )
     completion_percentage: float | None = Field(default=0.0, ge=0.0, le=100.0)
+    repository_path: str | None = Field(default=None, max_length=500, description="Local filesystem path to git repository")
     workspace: str = Field(default="personal", pattern="^(personal|freelance|work)$")
     work_company: str | None = Field(default=None, max_length=100)
     assigned_to_type: str | None = Field(
@@ -45,7 +47,25 @@ class ProjectBase(BaseModel):
 class ProjectCreate(ProjectBase):
     """Schema for creating new projects."""
 
+    project_key: str = Field(..., min_length=2, max_length=10, description="Unique project key (e.g., CNTXT, TURBO)")
     is_archived: bool | None = Field(default=False)
+
+    @field_validator("project_key")
+    @classmethod
+    def validate_project_key(cls, v: str) -> str:
+        """Validate project key format."""
+        if not v:
+            raise ValueError("Project key is required")
+
+        v = v.strip().upper()
+
+        if len(v) < 2 or len(v) > 10:
+            raise ValueError("Project key must be 2-10 characters")
+
+        if not re.match(r"^[A-Z][A-Z0-9]*$", v):
+            raise ValueError("Project key must start with a letter and contain only uppercase letters and numbers")
+
+        return v
 
 
 class ProjectUpdate(BaseModel):
@@ -57,6 +77,7 @@ class ProjectUpdate(BaseModel):
     status: str | None = Field(None, pattern="^(active|on_hold|completed|archived)$")
     completion_percentage: float | None = Field(None, ge=0.0, le=100.0)
     is_archived: bool | None = None
+    repository_path: str | None = Field(None, max_length=500)
     workspace: str | None = Field(None, pattern="^(personal|freelance|work)$")
     work_company: str | None = Field(None, max_length=100)
     assigned_to_type: str | None = Field(None, pattern="^(user|staff)$")
@@ -83,7 +104,9 @@ class ProjectResponse(ProjectBase):
     """Schema for project API responses."""
 
     id: UUID
+    project_key: str
     is_archived: bool
+    repository_path: str | None
     workspace: str
     work_company: str | None
     assigned_to_type: str | None
@@ -107,6 +130,7 @@ class ProjectSummary(BaseModel):
     """Summary information about a project."""
 
     id: UUID
+    project_key: str
     name: str
     status: str
     priority: str

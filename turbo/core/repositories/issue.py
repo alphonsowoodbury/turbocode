@@ -220,3 +220,9 @@ class IssueRepository(BaseRepository[Issue, IssueCreate, IssueUpdate]):
 
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none()
+
+    async def get_by_key(self, issue_key: str) -> Issue | None:
+        """Get issue by its human-readable key (e.g., 'CNTXT-1')."""
+        stmt = select(self._model).where(self._model.issue_key == issue_key)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()

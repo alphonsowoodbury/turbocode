@@ -145,3 +145,9 @@ class ProjectRepository(BaseRepository[Project, ProjectCreate, ProjectUpdate]):
 
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_by_key(self, project_key: str) -> Project | None:
+        """Get project by its human-readable key (e.g., 'CNTXT', 'TURBO')."""
+        stmt = select(self._model).where(self._model.project_key == project_key)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()

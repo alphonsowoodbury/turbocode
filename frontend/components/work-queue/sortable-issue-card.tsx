@@ -9,6 +9,7 @@ import { GripVertical, Eye, X } from "lucide-react";
 
 interface Issue {
   id: string;
+  issue_key?: string | null;
   title: string;
   description: string;
   type: string;
@@ -62,9 +63,16 @@ export function SortableIssueCard({ issue, onRemove, onView }: SortableIssueCard
 
             {/* Issue Content */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-base mb-1 line-clamp-1">
-                {issue.title}
-              </h3>
+              <div className="flex items-center gap-2 mb-1">
+                {issue.issue_key && (
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {issue.issue_key}
+                  </Badge>
+                )}
+                <h3 className="font-semibold text-base line-clamp-1">
+                  {issue.title}
+                </h3>
+              </div>
               <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                 {issue.description}
               </p>

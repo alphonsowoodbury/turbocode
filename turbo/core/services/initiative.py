@@ -33,12 +33,14 @@ class InitiativeService:
         issue_repository: IssueRepository,
         tag_repository: TagRepository,
         document_repository: DocumentRepository,
+        key_generator_service=None,  # Optional - for key generation
     ) -> None:
         self._initiative_repository = initiative_repository
         self._project_repository = project_repository
         self._issue_repository = issue_repository
         self._tag_repository = tag_repository
         self._document_repository = document_repository
+        self._key_generator = key_generator_service
 
     async def create_initiative(self, initiative_data: InitiativeCreate) -> InitiativeResponse:
         """Create a new initiative."""
@@ -59,8 +61,16 @@ class InitiativeService:
         tag_ids = initiative_data.tag_ids
         document_ids = initiative_data.document_ids
 
-        # Create initiative without association fields
+        # Generate initiative key if project_id exists and key generator is available
         initiative_dict = initiative_data.model_dump(exclude={"issue_ids", "tag_ids", "document_ids"})
+        if initiative_data.project_id and self._key_generator:
+            initiative_key, initiative_number = await self._key_generator.generate_entity_key(
+                initiative_data.project_id, "initiative"
+            )
+            initiative_dict["initiative_key"] = initiative_key
+            initiative_dict["initiative_number"] = initiative_number
+
+        # Create initiative without association fields
         initiative = await self._initiative_repository.create(InitiativeCreate(**initiative_dict))
 
         # Commit the initiative first
@@ -109,6 +119,8 @@ class InitiativeService:
             "start_date": initiative.start_date,
             "target_date": initiative.target_date,
             "project_id": initiative.project_id,
+            "initiative_key": initiative.initiative_key,
+            "initiative_number": initiative.initiative_number,
             "created_at": initiative.created_at,
             "updated_at": initiative.updated_at,
             "issue_count": len(issue_ids) if issue_ids else 0,
@@ -252,6 +264,8 @@ class InitiativeService:
             "start_date": initiative.start_date,
             "target_date": initiative.target_date,
             "project_id": initiative.project_id,
+            "initiative_key": initiative.initiative_key,
+            "initiative_number": initiative.initiative_number,
             "created_at": initiative.created_at,
             "updated_at": initiative.updated_at,
             "issue_count": issue_count,

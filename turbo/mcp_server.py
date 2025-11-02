@@ -2,7 +2,10 @@
 """Turbo MCP Server - Exposes Turbo functionality to Claude Code via Model Context Protocol."""
 
 import asyncio
+import json
 import os
+import subprocess
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -15,6 +18,230 @@ app = Server("turbo")
 
 # Turbo API base URL
 TURBO_API_URL = os.getenv("TURBO_API_URL", "http://localhost:8001/api/v1")
+
+# Project-scoped access control (optional)
+# Set TURBO_ALLOWED_PROJECT_IDS env var to comma-separated UUIDs to restrict access
+ALLOWED_PROJECT_IDS = None
+if os.getenv("TURBO_ALLOWED_PROJECT_IDS"):
+    ALLOWED_PROJECT_IDS = set(
+        pid.strip() for pid in os.getenv("TURBO_ALLOWED_PROJECT_IDS", "").split(",") if pid.strip()
+    )
+
+
+def is_project_allowed(project_id: str) -> bool:
+    """Check if project access is allowed based on ALLOWED_PROJECT_IDS."""
+    if ALLOWED_PROJECT_IDS is None:
+        return True  # No restrictions
+    return project_id in ALLOWED_PROJECT_IDS
+
+
+def filter_projects(projects: list) -> list:
+    """Filter projects list to only allowed projects."""
+    if ALLOWED_PROJECT_IDS is None:
+        return projects
+    return [p for p in projects if p.get("id") in ALLOWED_PROJECT_IDS]
+
+
+def filter_entities_by_project(entities: list, project_id_field: str = "project_id") -> list:
+    """Filter entities list to only those in allowed projects."""
+    if ALLOWED_PROJECT_IDS is None:
+        return entities
+    return [e for e in entities if e.get(project_id_field) in ALLOWED_PROJECT_IDS]
+
+
+# Git Worktree Helper Functions (run locally, not in API container)
+
+def get_git_root(project_path: str) -> Path | None:
+    """Find the git repository root for a project."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=project_path,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return Path(result.stdout.strip())
+    except subprocess.CalledProcessError:
+        return None
+
+
+def sanitize_branch_name(text: str) -> str:
+    """Sanitize text for use in git branch names."""
+    sanitized = text.lower()
+    sanitized = "".join(c if c.isalnum() or c in "-_" else "-" for c in sanitized)
+    while "--" in sanitized:
+        sanitized = sanitized.replace("--", "-")
+    sanitized = sanitized.strip("-")
+    return sanitized[:50]
+
+
+def create_worktree_local(issue_key: str, issue_title: str, project_name: str, project_path: str, base_branch: str = "main") -> dict:
+    """
+    Create a git worktree locally.
+
+    Args:
+        issue_key: Issue key (e.g., "TURBOCODE-1")
+        issue_title: Issue title for branch name
+        project_name: Project name for worktree directory
+        project_path: Path to the main project repository
+        base_branch: Base branch to create worktree from
+
+    Returns:
+        Dictionary with worktree info
+
+    Raises:
+        ValueError: If not a git repository or worktree creation fails
+    """
+    git_root = get_git_root(project_path)
+    if not git_root:
+        raise ValueError(f"{project_path} is not a git repository")
+
+    # Create branch name: TURBOCODE-1/fix-auth-bug
+    sanitized_title = sanitize_branch_name(issue_title)
+    branch_name = f"{issue_key}/{sanitized_title}"
+
+    # Create worktree path: ~/worktrees/ProjectName-TURBOCODE-1/
+    base_path = Path.home() / "worktrees"
+    base_path.mkdir(parents=True, exist_ok=True)
+
+    worktree_name = f"{project_name}-{issue_key}"
+    worktree_name = sanitize_branch_name(worktree_name)
+    worktree_path = base_path / worktree_name
+
+    if worktree_path.exists():
+        raise ValueError(f"Worktree already exists at {worktree_path}")
+
+    # Create the worktree
+    try:
+        subprocess.run(
+            ["git", "worktree", "add", "-b", branch_name, str(worktree_path), base_branch],
+            cwd=str(git_root),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except subprocess.CalledProcessError as e:
+        raise ValueError(f"Failed to create worktree: {e.stderr}")
+
+    return {
+        "worktree_path": str(worktree_path),
+        "branch_name": branch_name,
+        "issue_key": issue_key,
+        "git_root": str(git_root),
+    }
+
+
+def remove_worktree_local(worktree_path: str, force: bool = False) -> bool:
+    """
+    Remove a git worktree locally.
+
+    Args:
+        worktree_path: Path to the worktree directory
+        force: Force removal even if there are uncommitted changes
+
+    Returns:
+        True if worktree was removed, False if it didn't exist
+
+    Raises:
+        ValueError: If removal fails
+    """
+    path = Path(worktree_path)
+    if not path.exists():
+        return False
+
+    try:
+        cmd = ["git", "worktree", "remove", str(path)]
+        if force:
+            cmd.append("--force")
+
+        subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return True
+    except subprocess.CalledProcessError as e:
+        raise ValueError(f"Failed to remove worktree: {e.stderr}")
+
+
+def list_worktrees_local(project_path: str) -> list[dict]:
+    """List all worktrees for a project locally."""
+    git_root = get_git_root(project_path)
+    if not git_root:
+        raise ValueError(f"{project_path} is not a git repository")
+
+    try:
+        result = subprocess.run(
+            ["git", "worktree", "list", "--porcelain"],
+            cwd=str(git_root),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        worktrees = []
+        current = {}
+
+        for line in result.stdout.strip().split("\n"):
+            if line.startswith("worktree "):
+                if current:
+                    worktrees.append(current)
+                current = {"path": line.split(" ", 1)[1]}
+            elif line.startswith("branch "):
+                current["branch"] = line.split(" ", 1)[1]
+            elif line.startswith("HEAD "):
+                current["commit"] = line.split(" ", 1)[1]
+            elif line == "":
+                if current:
+                    worktrees.append(current)
+                    current = {}
+
+        if current:
+            worktrees.append(current)
+
+        return worktrees
+    except subprocess.CalledProcessError as e:
+        raise ValueError(f"Failed to list worktrees: {e.stderr}")
+
+
+def get_worktree_status_local(worktree_path: str) -> dict:
+    """Get the git status of a worktree locally."""
+    path = Path(worktree_path).expanduser()
+    if not path.exists():
+        raise ValueError(f"Worktree does not exist at {worktree_path}")
+
+    try:
+        # Get current branch
+        branch_result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=str(path),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        branch = branch_result.stdout.strip()
+
+        # Get status
+        status_result = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=str(path),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        uncommitted = [line for line in status_result.stdout.strip().split("\n") if line]
+
+        return {
+            "has_changes": len(uncommitted) > 0,
+            "uncommitted_files": len(uncommitted),
+            "branch": branch,
+            "path": str(path),
+        }
+    except subprocess.CalledProcessError as e:
+        raise ValueError(f"Failed to get worktree status: {e.stderr}")
 
 
 @app.list_tools()
@@ -135,7 +362,7 @@ async def list_tools() -> list[Tool]:
                     "project_id": {"type": "string", "description": "Filter by project UUID"},
                     "status": {
                         "type": "string",
-                        "enum": ["open", "in_progress", "review", "testing", "closed"],
+                        "enum": ["open", "ready", "in_progress", "review", "testing", "closed"],
                         "description": "Filter by issue status",
                     },
                     "priority": {
@@ -182,7 +409,7 @@ async def list_tools() -> list[Tool]:
                     },
                     "status": {
                         "type": "string",
-                        "enum": ["open", "in_progress", "review", "testing", "closed"],
+                        "enum": ["open", "ready", "in_progress", "review", "testing", "closed"],
                         "description": "Issue status (default: open)",
                     },
                     "priority": {
@@ -212,7 +439,7 @@ async def list_tools() -> list[Tool]:
                     "description": {"type": "string", "description": "Updated description (supports Markdown)"},
                     "status": {
                         "type": "string",
-                        "enum": ["open", "in_progress", "review", "testing", "closed"],
+                        "enum": ["open", "ready", "in_progress", "review", "testing", "closed"],
                     },
                     "priority": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
                     "type": {
@@ -245,7 +472,7 @@ async def list_tools() -> list[Tool]:
                 "properties": {
                     "status": {
                         "type": "string",
-                        "enum": ["open", "in_progress", "review", "testing", "closed"],
+                        "enum": ["open", "ready", "in_progress", "review", "testing", "closed"],
                         "description": "Filter by status",
                     },
                     "priority": {
@@ -282,6 +509,37 @@ async def list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {},
+            },
+        ),
+        # Workflow Tools
+        Tool(
+            name="start_issue_work",
+            description="Start work on an issue (ready -> in_progress). Creates work log and adds automatic comment. Can ONLY be used on issues with status='ready'. Cannot be used to mark issues as 'ready'.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_id": {"type": "string", "description": "UUID of the issue"},
+                    "started_by": {
+                        "type": "string",
+                        "description": "Who is starting work (e.g., 'ai:context', 'ai:turbo', 'user')",
+                    },
+                },
+                "required": ["issue_id", "started_by"],
+            },
+        ),
+        Tool(
+            name="submit_issue_for_review",
+            description="Submit an issue for review (in_progress -> review). Ends work log with commit URL and adds automatic comment. Can ONLY be used on issues with status='in_progress'.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_id": {"type": "string", "description": "UUID of the issue"},
+                    "commit_url": {
+                        "type": "string",
+                        "description": "Git commit URL for the completed work",
+                    },
+                },
+                "required": ["issue_id", "commit_url"],
             },
         ),
         # Discovery Tools
@@ -914,7 +1172,7 @@ async def list_tools() -> list[Tool]:
         # Document Tools
         Tool(
             name="load_document",
-            description="Load a file (markdown, text, code, HTML, etc.) as a Turbo Document. Automatically detects file type and extracts title. Supports .md, .txt, .html, .py, .js, .ts, and many code files.",
+            description="Load a file (markdown, text, code, HTML, etc.) as a Turbo Document. Automatically detects file type and extracts title. Supports .md, .txt, .html, .py, .js, .ts, and many code files. When used with project-scoped MCP (turbo-context), automatically associates with allowed project.",
             inputSchema={
                 "type": "object",
                 "properties": {
@@ -929,12 +1187,15 @@ async def list_tools() -> list[Tool]:
                     "doc_type": {
                         "type": "string",
                         "description": "Document type (optional - auto-detected from file path)",
-                        "enum": ["design", "specification", "requirements", "api_doc", "user_guide", "code", "changelog", "other"],
+                        "enum": ["design", "specification", "requirements", "api_doc", "user_guide", "code", "changelog", "adr", "other"],
+                    },
+                    "project_id": {
+                        "type": "string",
+                        "description": "Project UUID to associate document with (takes precedence over project_name)",
                     },
                     "project_name": {
                         "type": "string",
-                        "description": "Project name to associate document with (default: 'Turbo Code Platform')",
-                        "default": "Turbo Code Platform",
+                        "description": "Project name to associate document with (fuzzy matched, ignored if project_id provided)",
                     },
                 },
                 "required": ["file_path"],
@@ -1203,6 +1464,485 @@ async def list_tools() -> list[Tool]:
                     },
                 },
                 "required": ["resume_id"],
+            },
+        ),
+        # Career Management - Company Tools
+        Tool(
+            name="create_company",
+            description="Create a new company for career tracking.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Company name (max 200 characters)"},
+                    "description": {"type": "string", "description": "Company description (optional)"},
+                    "industry": {"type": "string", "description": "Industry (max 100 characters, optional)"},
+                    "size": {"type": "string", "description": "Company size (max 50 characters, optional)"},
+                    "location": {"type": "string", "description": "Location (max 200 characters, optional)"},
+                    "website": {"type": "string", "description": "Website URL (optional)"},
+                    "linkedin_url": {"type": "string", "description": "LinkedIn URL (optional)"},
+                    "glassdoor_url": {"type": "string", "description": "Glassdoor URL (optional)"},
+                    "target_status": {
+                        "type": "string",
+                        "enum": ["researching", "interested", "applying", "interviewing", "offer", "not_interested"],
+                        "description": "Target status (default: researching)",
+                    },
+                    "notes": {"type": "string", "description": "Notes (optional)"},
+                },
+                "required": ["name"],
+            },
+        ),
+        Tool(
+            name="list_companies",
+            description="Get all companies with optional filtering by target status, industry, or search query.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "target_status": {
+                        "type": "string",
+                        "enum": ["researching", "interested", "applying", "interviewing", "offer", "not_interested"],
+                        "description": "Filter by target status",
+                    },
+                    "industry": {"type": "string", "description": "Filter by industry"},
+                    "search": {"type": "string", "description": "Search by company name"},
+                    "limit": {"type": "integer", "description": "Maximum number to return (1-100)"},
+                    "offset": {"type": "integer", "description": "Offset for pagination (default: 0)"},
+                },
+            },
+        ),
+        Tool(
+            name="get_company",
+            description="Get detailed information about a specific company.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "company_id": {"type": "string", "description": "UUID of the company"},
+                },
+                "required": ["company_id"],
+            },
+        ),
+        Tool(
+            name="update_company",
+            description="Update a company's details. Only include fields you want to change.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "company_id": {"type": "string", "description": "UUID of the company to update"},
+                    "name": {"type": "string", "description": "Company name"},
+                    "description": {"type": "string", "description": "Company description"},
+                    "industry": {"type": "string", "description": "Industry"},
+                    "size": {"type": "string", "description": "Company size"},
+                    "location": {"type": "string", "description": "Location"},
+                    "website": {"type": "string", "description": "Website URL"},
+                    "linkedin_url": {"type": "string", "description": "LinkedIn URL"},
+                    "glassdoor_url": {"type": "string", "description": "Glassdoor URL"},
+                    "target_status": {
+                        "type": "string",
+                        "enum": ["researching", "interested", "applying", "interviewing", "offer", "not_interested"],
+                        "description": "Target status",
+                    },
+                    "notes": {"type": "string", "description": "Notes"},
+                },
+                "required": ["company_id"],
+            },
+        ),
+        Tool(
+            name="delete_company",
+            description="Delete a company permanently.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "company_id": {"type": "string", "description": "UUID of the company to delete"},
+                },
+                "required": ["company_id"],
+            },
+        ),
+        # Career Management - Job Application Tools
+        Tool(
+            name="create_job_application",
+            description="Create a new job application to track application progress.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "company_id": {"type": "string", "description": "UUID of the company"},
+                    "job_title": {"type": "string", "description": "Job title (max 200 characters)"},
+                    "description": {"type": "string", "description": "Job description (optional)"},
+                    "job_url": {"type": "string", "description": "Job posting URL (optional)"},
+                    "location": {"type": "string", "description": "Job location (max 200 characters, optional)"},
+                    "salary_range": {"type": "string", "description": "Salary range (max 100 characters, optional)"},
+                    "status": {
+                        "type": "string",
+                        "enum": ["researching", "preparing", "applied", "screening", "interviewing", "offer", "rejected", "withdrawn", "accepted"],
+                        "description": "Application status (default: researching)",
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high", "critical"],
+                        "description": "Priority level (default: medium)",
+                    },
+                    "applied_date": {"type": "string", "description": "Application date (ISO format, optional)"},
+                    "deadline": {"type": "string", "description": "Application deadline (ISO format, optional)"},
+                    "next_followup": {"type": "string", "description": "Next follow-up date (ISO format, optional)"},
+                    "resume_id": {"type": "string", "description": "UUID of resume used (optional)"},
+                    "cover_letter_project_id": {"type": "string", "description": "UUID of cover letter project (optional)"},
+                    "notes": {"type": "string", "description": "Notes (optional)"},
+                },
+                "required": ["company_id", "job_title"],
+            },
+        ),
+        Tool(
+            name="list_job_applications",
+            description="Get all job applications with optional filtering by status, company, or active status.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": ["researching", "preparing", "applied", "screening", "interviewing", "offer", "rejected", "withdrawn", "accepted"],
+                        "description": "Filter by status",
+                    },
+                    "company_id": {"type": "string", "description": "Filter by company UUID"},
+                    "active_only": {"type": "boolean", "description": "Filter for active applications only (default: false)"},
+                    "limit": {"type": "integer", "description": "Maximum number to return (1-100)"},
+                    "offset": {"type": "integer", "description": "Offset for pagination (default: 0)"},
+                },
+            },
+        ),
+        Tool(
+            name="get_job_application",
+            description="Get detailed information about a specific job application.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "application_id": {"type": "string", "description": "UUID of the job application"},
+                },
+                "required": ["application_id"],
+            },
+        ),
+        Tool(
+            name="update_job_application",
+            description="Update a job application's details. Only include fields you want to change.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "application_id": {"type": "string", "description": "UUID of the application to update"},
+                    "job_title": {"type": "string", "description": "Job title"},
+                    "description": {"type": "string", "description": "Job description"},
+                    "job_url": {"type": "string", "description": "Job posting URL"},
+                    "location": {"type": "string", "description": "Job location"},
+                    "salary_range": {"type": "string", "description": "Salary range"},
+                    "status": {
+                        "type": "string",
+                        "enum": ["researching", "preparing", "applied", "screening", "interviewing", "offer", "rejected", "withdrawn", "accepted"],
+                        "description": "Application status",
+                    },
+                    "priority": {
+                        "type": "string",
+                        "enum": ["low", "medium", "high", "critical"],
+                        "description": "Priority level",
+                    },
+                    "applied_date": {"type": "string", "description": "Application date (ISO format)"},
+                    "deadline": {"type": "string", "description": "Application deadline (ISO format)"},
+                    "next_followup": {"type": "string", "description": "Next follow-up date (ISO format)"},
+                    "notes": {"type": "string", "description": "Notes"},
+                },
+                "required": ["application_id"],
+            },
+        ),
+        Tool(
+            name="delete_job_application",
+            description="Delete a job application permanently.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "application_id": {"type": "string", "description": "UUID of the application to delete"},
+                },
+                "required": ["application_id"],
+            },
+        ),
+        Tool(
+            name="get_applications_needing_followup",
+            description="Get job applications with upcoming or overdue follow-ups.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        # Career Management - Network Contact Tools
+        Tool(
+            name="create_network_contact",
+            description="Create a new network contact for relationship tracking.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "first_name": {"type": "string", "description": "First name (max 100 characters)"},
+                    "last_name": {"type": "string", "description": "Last name (max 100 characters)"},
+                    "email": {"type": "string", "description": "Email address (optional)"},
+                    "phone": {"type": "string", "description": "Phone number (max 50 characters, optional)"},
+                    "company_id": {"type": "string", "description": "UUID of associated company (optional)"},
+                    "current_title": {"type": "string", "description": "Current job title (max 255 characters, optional)"},
+                    "current_company": {"type": "string", "description": "Current company name (max 255 characters, optional)"},
+                    "linkedin_url": {"type": "string", "description": "LinkedIn URL (optional)"},
+                    "contact_type": {
+                        "type": "string",
+                        "enum": ["recruiter_internal", "recruiter_external", "hiring_manager", "peer", "referrer", "mentor", "former_colleague"],
+                        "description": "Contact type (optional)",
+                    },
+                    "relationship_strength": {
+                        "type": "string",
+                        "enum": ["cold", "warm", "hot"],
+                        "description": "Relationship strength (default: cold)",
+                    },
+                    "last_contact_date": {"type": "string", "description": "Last contact date (ISO format, optional)"},
+                    "next_followup_date": {"type": "string", "description": "Next follow-up date (ISO format, optional)"},
+                    "how_we_met": {"type": "string", "description": "How we met (optional)"},
+                    "referral_status": {
+                        "type": "string",
+                        "enum": ["none", "requested", "agreed", "completed"],
+                        "description": "Referral status (optional)",
+                    },
+                    "notes": {"type": "string", "description": "Notes (optional)"},
+                },
+                "required": ["first_name", "last_name"],
+            },
+        ),
+        Tool(
+            name="list_network_contacts",
+            description="Get all network contacts with optional filtering by type, company, or relationship strength.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "contact_type": {
+                        "type": "string",
+                        "enum": ["recruiter_internal", "recruiter_external", "hiring_manager", "peer", "referrer", "mentor", "former_colleague"],
+                        "description": "Filter by contact type",
+                    },
+                    "company_id": {"type": "string", "description": "Filter by company UUID"},
+                    "warm_only": {"type": "boolean", "description": "Filter for warm/hot contacts only (default: false)"},
+                    "search": {"type": "string", "description": "Search by name"},
+                    "limit": {"type": "integer", "description": "Maximum number to return (1-100)"},
+                    "offset": {"type": "integer", "description": "Offset for pagination (default: 0)"},
+                },
+            },
+        ),
+        Tool(
+            name="get_network_contact",
+            description="Get detailed information about a specific network contact.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "contact_id": {"type": "string", "description": "UUID of the network contact"},
+                },
+                "required": ["contact_id"],
+            },
+        ),
+        Tool(
+            name="update_network_contact",
+            description="Update a network contact's details. Only include fields you want to change.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "contact_id": {"type": "string", "description": "UUID of the contact to update"},
+                    "first_name": {"type": "string", "description": "First name"},
+                    "last_name": {"type": "string", "description": "Last name"},
+                    "email": {"type": "string", "description": "Email address"},
+                    "phone": {"type": "string", "description": "Phone number"},
+                    "current_title": {"type": "string", "description": "Current job title"},
+                    "current_company": {"type": "string", "description": "Current company name"},
+                    "linkedin_url": {"type": "string", "description": "LinkedIn URL"},
+                    "contact_type": {
+                        "type": "string",
+                        "enum": ["recruiter_internal", "recruiter_external", "hiring_manager", "peer", "referrer", "mentor", "former_colleague"],
+                        "description": "Contact type",
+                    },
+                    "relationship_strength": {
+                        "type": "string",
+                        "enum": ["cold", "warm", "hot"],
+                        "description": "Relationship strength",
+                    },
+                    "last_contact_date": {"type": "string", "description": "Last contact date (ISO format)"},
+                    "next_followup_date": {"type": "string", "description": "Next follow-up date (ISO format)"},
+                    "how_we_met": {"type": "string", "description": "How we met"},
+                    "referral_status": {
+                        "type": "string",
+                        "enum": ["none", "requested", "agreed", "completed"],
+                        "description": "Referral status",
+                    },
+                    "notes": {"type": "string", "description": "Notes"},
+                },
+                "required": ["contact_id"],
+            },
+        ),
+        Tool(
+            name="delete_network_contact",
+            description="Delete a network contact permanently.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "contact_id": {"type": "string", "description": "UUID of the contact to delete"},
+                },
+                "required": ["contact_id"],
+            },
+        ),
+        Tool(
+            name="get_contacts_needing_followup",
+            description="Get network contacts with upcoming or overdue follow-ups.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        # Email Template Tools
+        Tool(
+            name="create_email_template",
+            description="Create a new email template with variable substitution support.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_id": {"type": "string", "description": "UUID of the project"},
+                    "name": {"type": "string", "description": "Template name"},
+                    "content": {"type": "string", "description": "Template content with {{variable}} placeholders"},
+                    "category": {
+                        "type": "string",
+                        "enum": ["cover_letter", "cold_outreach", "followup", "thank_you", "networking", "referral_request", "status_check", "other"],
+                        "description": "Template category",
+                    },
+                    "variables": {"type": "array", "items": {"type": "string"}, "description": "List of variable names (optional, auto-detected if not provided)"},
+                    "version": {"type": "string", "description": "Template version (default: 1.0)"},
+                },
+                "required": ["project_id", "name", "content", "category"],
+            },
+        ),
+        Tool(
+            name="list_email_templates",
+            description="List email templates with optional filtering by project, category, or status.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_id": {"type": "string", "description": "Filter by project UUID"},
+                    "category": {
+                        "type": "string",
+                        "enum": ["cover_letter", "cold_outreach", "followup", "thank_you", "networking", "referral_request", "status_check", "other"],
+                        "description": "Filter by category",
+                    },
+                    "status": {"type": "string", "description": "Filter by status"},
+                    "limit": {"type": "integer", "description": "Maximum number to return (1-100)"},
+                    "offset": {"type": "integer", "description": "Offset for pagination"},
+                },
+            },
+        ),
+        Tool(
+            name="get_email_template",
+            description="Get a specific email template by ID.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "template_id": {"type": "string", "description": "UUID of the template"},
+                },
+                "required": ["template_id"],
+            },
+        ),
+        Tool(
+            name="render_email_template",
+            description="Render an email template with variable substitution.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "template_id": {"type": "string", "description": "UUID of the template"},
+                    "variables": {
+                        "type": "object",
+                        "description": "Dictionary of variable names to values (e.g., {'company': 'Acme', 'role': 'Engineer'})",
+                    },
+                },
+                "required": ["template_id", "variables"],
+            },
+        ),
+        Tool(
+            name="update_email_template",
+            description="Update an email template. Only include fields you want to change.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "template_id": {"type": "string", "description": "UUID of the template to update"},
+                    "name": {"type": "string", "description": "Template name"},
+                    "content": {"type": "string", "description": "Template content"},
+                    "category": {
+                        "type": "string",
+                        "enum": ["cover_letter", "cold_outreach", "followup", "thank_you", "networking", "referral_request", "status_check", "other"],
+                        "description": "Template category",
+                    },
+                    "status": {"type": "string", "description": "Template status"},
+                },
+                "required": ["template_id"],
+            },
+        ),
+        Tool(
+            name="delete_email_template",
+            description="Delete an email template permanently.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "template_id": {"type": "string", "description": "UUID of the template to delete"},
+                },
+                "required": ["template_id"],
+            },
+        ),
+        # Resume Generation Tools
+        Tool(
+            name="generate_tailored_resume",
+            description="Generate a tailored resume for a specific job. Analyzes job description, customizes content, reorders sections by relevance, and creates resume file in requested format.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "base_resume_id": {"type": "string", "description": "UUID of the base resume to customize"},
+                    "job_description": {"type": "string", "description": "Full job description text"},
+                    "job_title": {"type": "string", "description": "Job title (optional)"},
+                    "company_name": {"type": "string", "description": "Company name (optional)"},
+                    "job_application_id": {"type": "string", "description": "Job application UUID to link (optional)"},
+                    "output_format": {
+                        "type": "string",
+                        "enum": ["markdown", "pdf", "docx"],
+                        "description": "Output format (default: markdown)",
+                    },
+                },
+                "required": ["base_resume_id", "job_description"],
+            },
+        ),
+        Tool(
+            name="generate_resume_from_application",
+            description="Generate resume directly from a job application. Uses application's job description, title, and company. If no base resume provided, uses primary resume.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "application_id": {"type": "string", "description": "UUID of the job application"},
+                    "base_resume_id": {"type": "string", "description": "UUID of base resume (optional, uses primary if not provided)"},
+                    "output_format": {
+                        "type": "string",
+                        "enum": ["markdown", "pdf", "docx"],
+                        "description": "Output format (default: markdown)",
+                    },
+                },
+                "required": ["application_id"],
+            },
+        ),
+        Tool(
+            name="batch_generate_resumes",
+            description="Generate resumes for multiple job applications in one operation. Useful for bulk resume generation.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "base_resume_id": {"type": "string", "description": "UUID of the base resume to customize"},
+                    "application_ids": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of job application UUIDs",
+                    },
+                    "output_format": {
+                        "type": "string",
+                        "enum": ["markdown", "pdf", "docx"],
+                        "description": "Output format (default: markdown)",
+                    },
+                },
+                "required": ["base_resume_id", "application_ids"],
             },
         ),
         # Forms Tools
@@ -1992,6 +2732,202 @@ async def list_tools() -> list[Tool]:
                 "required": ["blueprint_id"],
             },
         ),
+        # Git Worktree Management Tools
+        Tool(
+            name="start_work_on_issue",
+            description="Start work on an issue. Creates a git worktree at ~/worktrees/ProjectName-ISSUEKEY/ with a branch ISSUEKEY/title. Updates issue status to 'in_progress', creates work log, and tracks worktree path.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "type": "string",
+                        "description": "UUID of the issue to start work on",
+                    },
+                    "started_by": {
+                        "type": "string",
+                        "description": "Who is starting work (e.g., 'user', 'ai:context', 'ai:turbo')",
+                    },
+                    "project_path": {
+                        "type": "string",
+                        "description": "Path to the project git repository (e.g., '/path/to/turboCode'). Optional - if not provided, worktree creation is skipped.",
+                    },
+                },
+                "required": ["issue_id", "started_by"],
+            },
+        ),
+        Tool(
+            name="submit_issue_for_review",
+            description="Submit an issue for review after completing work. Cleans up git worktree, updates issue status to 'review', ends work log with commit URL, and adds automatic comment with time spent.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "issue_id": {
+                        "type": "string",
+                        "description": "UUID of the issue to submit for review",
+                    },
+                    "commit_url": {
+                        "type": "string",
+                        "description": "Git commit URL for the completed work (e.g., 'https://github.com/org/repo/commit/abc123')",
+                    },
+                    "cleanup_worktree": {
+                        "type": "boolean",
+                        "description": "Whether to remove the git worktree after submission (default: true)",
+                    },
+                },
+                "required": ["issue_id", "commit_url"],
+            },
+        ),
+        Tool(
+            name="list_worktrees",
+            description="List all git worktrees for a project repository. Returns worktree paths, branches, and commit hashes.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {
+                        "type": "string",
+                        "description": "Path to the project git repository",
+                    }
+                },
+                "required": ["project_path"],
+            },
+        ),
+        Tool(
+            name="get_worktree_status",
+            description="Get the git status of a worktree. Returns information about uncommitted files, current branch, and whether there are changes.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "worktree_path": {
+                        "type": "string",
+                        "description": "Path to the worktree directory (e.g., '~/worktrees/Project-KEY-1')",
+                    }
+                },
+                "required": ["worktree_path"],
+            },
+        ),
+        # Job Search Tools
+        Tool(
+            name="create_search_criteria",
+            description="Create job search criteria to automatically find job postings. Define your preferences for job titles, locations, salary, keywords, and more.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Name for this search (e.g., 'Senior Data Engineer Remote')"},
+                    "description": {"type": "string", "description": "Optional description"},
+                    "job_titles": {"type": "array", "items": {"type": "string"}, "description": "Target job titles"},
+                    "locations": {"type": "array", "items": {"type": "string"}, "description": "Preferred locations"},
+                    "excluded_states": {"type": "array", "items": {"type": "string"}, "description": "States to exclude"},
+                    "remote_policies": {"type": "array", "items": {"type": "string"}, "description": "remote, hybrid, onsite"},
+                    "exclude_onsite": {"type": "boolean", "description": "Exclude on-site only jobs"},
+                    "salary_minimum": {"type": "integer", "description": "Minimum acceptable salary"},
+                    "salary_target": {"type": "integer", "description": "Target salary"},
+                    "required_keywords": {"type": "array", "items": {"type": "string"}, "description": "Must have these keywords"},
+                    "preferred_keywords": {"type": "array", "items": {"type": "string"}, "description": "Nice to have keywords"},
+                    "excluded_keywords": {"type": "array", "items": {"type": "string"}, "description": "Exclude jobs with these"},
+                    "enabled_sources": {"type": "array", "items": {"type": "string"}, "description": "Job boards to search (indeed, linkedin, etc.)"},
+                    "auto_search_enabled": {"type": "boolean", "description": "Enable automatic searches"},
+                    "search_frequency_hours": {"type": "integer", "description": "How often to search (hours)"},
+                },
+                "required": ["name"],
+            },
+        ),
+        Tool(
+            name="list_search_criteria",
+            description="List all job search criteria.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "is_active": {"type": "boolean", "description": "Filter by active status"},
+                    "limit": {"type": "integer", "description": "Max results"},
+                },
+            },
+        ),
+        Tool(
+            name="get_search_criteria",
+            description="Get detailed information about a search criteria.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "criteria_id": {"type": "string", "description": "UUID of search criteria"}
+                },
+                "required": ["criteria_id"],
+            },
+        ),
+        Tool(
+            name="update_search_criteria",
+            description="Update job search criteria settings.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "criteria_id": {"type": "string", "description": "UUID of search criteria"},
+                    "name": {"type": "string"},
+                    "is_active": {"type": "boolean"},
+                    "job_titles": {"type": "array", "items": {"type": "string"}},
+                    "salary_minimum": {"type": "integer"},
+                    "auto_search_enabled": {"type": "boolean"},
+                },
+                "required": ["criteria_id"],
+            },
+        ),
+        Tool(
+            name="execute_job_search",
+            description="Execute a job search based on search criteria. Searches configured job boards, scores matches, and stores results.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "criteria_id": {"type": "string", "description": "UUID of search criteria"},
+                    "sources": {"type": "array", "items": {"type": "string"}, "description": "Optional: override sources (indeed, linkedin, etc.)"},
+                },
+                "required": ["criteria_id"],
+            },
+        ),
+        Tool(
+            name="list_job_postings",
+            description="List discovered job postings with optional filters. Shows new jobs found through automated searches.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "status": {"type": "string", "enum": ["new", "interested", "not_interested", "applied", "expired"], "description": "Filter by status"},
+                    "source": {"type": "string", "description": "Filter by job board (indeed, linkedin, etc.)"},
+                    "min_score": {"type": "number", "description": "Minimum match score (0-100)"},
+                    "limit": {"type": "integer", "description": "Max results (default 100)"},
+                },
+            },
+        ),
+        Tool(
+            name="get_job_posting",
+            description="Get detailed information about a job posting including full description and match reasons.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "posting_id": {"type": "string", "description": "UUID of job posting"}
+                },
+                "required": ["posting_id"],
+            },
+        ),
+        Tool(
+            name="update_job_posting",
+            description="Update a job posting (e.g., mark as interested, not interested, or applied).",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "posting_id": {"type": "string", "description": "UUID of job posting"},
+                    "status": {"type": "string", "enum": ["new", "interested", "not_interested", "applied", "expired"]},
+                },
+                "required": ["posting_id"],
+            },
+        ),
+        Tool(
+            name="get_job_search_history",
+            description="Get history of job search executions with results stats.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "criteria_id": {"type": "string", "description": "Optional: filter by criteria UUID"},
+                    "limit": {"type": "integer", "description": "Max results (default 50)"},
+                },
+            },
+        ),
     ]
 
 
@@ -2006,34 +2942,69 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 params = {k: v for k, v in arguments.items() if v is not None}
                 response = await client.get(f"{TURBO_API_URL}/projects/", params=params)
                 response.raise_for_status()
-                return [TextContent(type="text", text=response.text)]
+                # Filter to allowed projects
+                projects = response.json()
+                filtered = filter_projects(projects)
+                return [TextContent(type="text", text=json.dumps(filtered))]
 
             elif name == "get_project":
                 project_id = arguments["project_id"]
+                # Check access
+                if not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to project {project_id}"
+                    }))]
                 response = await client.get(f"{TURBO_API_URL}/projects/{project_id}")
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "get_project_issues":
                 project_id = arguments["project_id"]
-                response = await client.get(f"{TURBO_API_URL}/projects/{project_id}/issues")
+                # Check access
+                if not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to project {project_id}"
+                    }))]
+                # Use the filtered issues endpoint instead of the broken project endpoint
+                response = await client.get(f"{TURBO_API_URL}/issues/", params={"project_id": project_id})
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "update_project":
-                project_id = arguments.pop("project_id")
+                project_id = arguments.get("project_id")
+                # Check access
+                if not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to modify project {project_id}"
+                    }))]
+                arguments.pop("project_id")
                 response = await client.put(f"{TURBO_API_URL}/projects/{project_id}", json=arguments)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "delete_project":
                 project_id = arguments["project_id"]
+                # Check access
+                if not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to delete project {project_id}"
+                    }))]
                 response = await client.delete(f"{TURBO_API_URL}/projects/{project_id}")
                 response.raise_for_status()
                 return [TextContent(type="text", text="Project deleted successfully")]
 
             elif name == "archive_project":
                 project_id = arguments["project_id"]
+                # Check access
+                if not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to archive project {project_id}"
+                    }))]
                 response = await client.post(f"{TURBO_API_URL}/projects/{project_id}/archive")
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
@@ -2043,21 +3014,48 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 params = {k: v for k, v in arguments.items() if v is not None}
                 response = await client.get(f"{TURBO_API_URL}/issues/", params=params)
                 response.raise_for_status()
-                return [TextContent(type="text", text=response.text)]
+                # Filter to issues in allowed projects
+                issues = response.json()
+                filtered = filter_entities_by_project(issues)
+                return [TextContent(type="text", text=json.dumps(filtered))]
 
             elif name == "get_issue":
                 issue_id = arguments["issue_id"]
                 response = await client.get(f"{TURBO_API_URL}/issues/{issue_id}")
                 response.raise_for_status()
+                # Check if issue is in allowed project
+                issue = response.json()
+                if not is_project_allowed(issue.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to this issue's project"
+                    }))]
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "create_issue":
+                # Check if creating in allowed project
+                project_id = arguments.get("project_id")
+                if project_id and not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You can only create issues in allowed projects"
+                    }))]
                 response = await client.post(f"{TURBO_API_URL}/issues/", json=arguments)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "update_issue":
-                issue_id = arguments.pop("issue_id")
+                issue_id = arguments.get("issue_id")
+                # First get the issue to check project
+                get_response = await client.get(f"{TURBO_API_URL}/issues/{issue_id}")
+                get_response.raise_for_status()
+                issue = get_response.json()
+                if not is_project_allowed(issue.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to modify this issue"
+                    }))]
+                arguments.pop("issue_id")
                 response = await client.put(f"{TURBO_API_URL}/issues/{issue_id}", json=arguments)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
@@ -2066,17 +3064,36 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             elif name == "get_next_issue":
                 response = await client.get(f"{TURBO_API_URL}/work-queue/next")
                 response.raise_for_status()
+                # Check if next issue is in allowed project
+                issue = response.json()
+                if issue and not is_project_allowed(issue.get("project_id")):
+                    # Skip to next allowed issue
+                    return [TextContent(type="text", text=json.dumps({
+                        "message": "Next issue is not in allowed projects"
+                    }))]
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "get_work_queue":
                 params = {k: v for k, v in arguments.items() if v is not None}
                 response = await client.get(f"{TURBO_API_URL}/work-queue/", params=params)
                 response.raise_for_status()
-                return [TextContent(type="text", text=response.text)]
+                # Filter to issues in allowed projects
+                queue = response.json()
+                filtered = filter_entities_by_project(queue)
+                return [TextContent(type="text", text=json.dumps(filtered))]
 
             elif name == "set_issue_rank":
                 issue_id = arguments["issue_id"]
                 work_rank = arguments["work_rank"]
+                # Check if issue is in allowed project
+                get_response = await client.get(f"{TURBO_API_URL}/issues/{issue_id}")
+                get_response.raise_for_status()
+                issue = get_response.json()
+                if not is_project_allowed(issue.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to modify this issue's rank"
+                    }))]
                 response = await client.post(
                     f"{TURBO_API_URL}/work-queue/{issue_id}/rank",
                     json={"work_rank": work_rank}
@@ -2085,7 +3102,59 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "auto_rank_issues":
+                # This ranks all issues - only allow if no project filter
+                if ALLOWED_PROJECT_IDS is not None:
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Not allowed",
+                        "message": "Auto-ranking all issues is not permitted with project restrictions"
+                    }))]
                 response = await client.post(f"{TURBO_API_URL}/work-queue/auto-rank")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "start_issue_work":
+                issue_id = arguments.get("issue_id")
+                started_by = arguments.get("started_by")
+
+                # Check project access
+                issue_response = await client.get(f"{TURBO_API_URL}/issues/{issue_id}")
+                issue_response.raise_for_status()
+                issue = issue_response.json()
+
+                if issue.get("project_id") and not is_project_allowed(issue["project_id"]):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": "You do not have access to start work on this issue"
+                    }))]
+
+                # Call the API endpoint
+                response = await client.post(
+                    f"{TURBO_API_URL}/issues/{issue_id}/start-work",
+                    json={"started_by": started_by}
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "submit_issue_for_review":
+                issue_id = arguments.get("issue_id")
+                commit_url = arguments.get("commit_url")
+
+                # Check project access
+                issue_response = await client.get(f"{TURBO_API_URL}/issues/{issue_id}")
+                issue_response.raise_for_status()
+                issue = issue_response.json()
+
+                if issue.get("project_id") and not is_project_allowed(issue["project_id"]):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": "You do not have access to submit this issue for review"
+                    }))]
+
+                # Call the API endpoint
+                response = await client.post(
+                    f"{TURBO_API_URL}/issues/{issue_id}/submit-review",
+                    json={"commit_url": commit_url}
+                )
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
@@ -2094,10 +3163,20 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 params = {**arguments, "type": "discovery"}
                 response = await client.get(f"{TURBO_API_URL}/issues/", params=params)
                 response.raise_for_status()
-                return [TextContent(type="text", text=response.text)]
+                # Filter to discoveries in allowed projects
+                discoveries = response.json()
+                filtered = filter_entities_by_project(discoveries)
+                return [TextContent(type="text", text=json.dumps(filtered))]
 
             # Initiatives
             elif name == "create_initiative":
+                # Check if creating in allowed project
+                project_id = arguments.get("project_id")
+                if project_id and not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You can only create initiatives in allowed projects"
+                    }))]
                 response = await client.post(f"{TURBO_API_URL}/initiatives/", json=arguments)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
@@ -2106,28 +3185,66 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 params = {k: v for k, v in arguments.items() if v is not None}
                 response = await client.get(f"{TURBO_API_URL}/initiatives/", params=params)
                 response.raise_for_status()
-                return [TextContent(type="text", text=response.text)]
+                # Filter to initiatives in allowed projects
+                initiatives = response.json()
+                filtered = filter_entities_by_project(initiatives)
+                return [TextContent(type="text", text=json.dumps(filtered))]
 
             elif name == "get_initiative":
                 initiative_id = arguments["initiative_id"]
                 response = await client.get(f"{TURBO_API_URL}/initiatives/{initiative_id}")
                 response.raise_for_status()
+                # Check if initiative is in allowed project
+                initiative = response.json()
+                if not is_project_allowed(initiative.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to this initiative's project"
+                    }))]
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "get_initiative_issues":
                 initiative_id = arguments["initiative_id"]
+                # First check if initiative is allowed
+                init_response = await client.get(f"{TURBO_API_URL}/initiatives/{initiative_id}")
+                init_response.raise_for_status()
+                initiative = init_response.json()
+                if not is_project_allowed(initiative.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to this initiative's project"
+                    }))]
                 response = await client.get(f"{TURBO_API_URL}/initiatives/{initiative_id}/issues")
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "update_initiative":
-                initiative_id = arguments.pop("initiative_id")
+                initiative_id = arguments.get("initiative_id")
+                # First get the initiative to check project
+                get_response = await client.get(f"{TURBO_API_URL}/initiatives/{initiative_id}")
+                get_response.raise_for_status()
+                initiative = get_response.json()
+                if not is_project_allowed(initiative.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to modify this initiative"
+                    }))]
+                arguments.pop("initiative_id")
                 response = await client.put(f"{TURBO_API_URL}/initiatives/{initiative_id}", json=arguments)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "delete_initiative":
                 initiative_id = arguments["initiative_id"]
+                # First get the initiative to check project
+                get_response = await client.get(f"{TURBO_API_URL}/initiatives/{initiative_id}")
+                get_response.raise_for_status()
+                initiative = get_response.json()
+                if not is_project_allowed(initiative.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to delete this initiative"
+                    }))]
                 response = await client.delete(f"{TURBO_API_URL}/initiatives/{initiative_id}")
                 response.raise_for_status()
                 return [TextContent(type="text", text="Initiative deleted successfully")]
@@ -2188,6 +3305,13 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
             # Milestones
             elif name == "create_milestone":
+                # Check if creating in allowed project (milestones require project_id)
+                project_id = arguments.get("project_id")
+                if not is_project_allowed(project_id):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You can only create milestones in allowed projects"
+                    }))]
                 response = await client.post(f"{TURBO_API_URL}/milestones/", json=arguments)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
@@ -2196,28 +3320,66 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 params = {k: v for k, v in arguments.items() if v is not None}
                 response = await client.get(f"{TURBO_API_URL}/milestones/", params=params)
                 response.raise_for_status()
-                return [TextContent(type="text", text=response.text)]
+                # Filter to milestones in allowed projects
+                milestones = response.json()
+                filtered = filter_entities_by_project(milestones)
+                return [TextContent(type="text", text=json.dumps(filtered))]
 
             elif name == "get_milestone":
                 milestone_id = arguments["milestone_id"]
                 response = await client.get(f"{TURBO_API_URL}/milestones/{milestone_id}")
                 response.raise_for_status()
+                # Check if milestone is in allowed project
+                milestone = response.json()
+                if not is_project_allowed(milestone.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to this milestone's project"
+                    }))]
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "get_milestone_issues":
                 milestone_id = arguments["milestone_id"]
+                # First check if milestone is allowed
+                ms_response = await client.get(f"{TURBO_API_URL}/milestones/{milestone_id}")
+                ms_response.raise_for_status()
+                milestone = ms_response.json()
+                if not is_project_allowed(milestone.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to this milestone's project"
+                    }))]
                 response = await client.get(f"{TURBO_API_URL}/milestones/{milestone_id}/issues")
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "update_milestone":
-                milestone_id = arguments.pop("milestone_id")
+                milestone_id = arguments.get("milestone_id")
+                # First get the milestone to check project
+                get_response = await client.get(f"{TURBO_API_URL}/milestones/{milestone_id}")
+                get_response.raise_for_status()
+                milestone = get_response.json()
+                if not is_project_allowed(milestone.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to modify this milestone"
+                    }))]
+                arguments.pop("milestone_id")
                 response = await client.put(f"{TURBO_API_URL}/milestones/{milestone_id}", json=arguments)
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
             elif name == "delete_milestone":
                 milestone_id = arguments["milestone_id"]
+                # First get the milestone to check project
+                get_response = await client.get(f"{TURBO_API_URL}/milestones/{milestone_id}")
+                get_response.raise_for_status()
+                milestone = get_response.json()
+                if not is_project_allowed(milestone.get("project_id")):
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Access denied",
+                        "message": f"You do not have access to delete this milestone"
+                    }))]
                 response = await client.delete(f"{TURBO_API_URL}/milestones/{milestone_id}")
                 response.raise_for_status()
                 return [TextContent(type="text", text="Milestone deleted successfully")]
@@ -2430,21 +3592,21 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             elif name == "load_document":
                 from pathlib import Path
                 from turbo.core.services.document_loader import DocumentLoaderService
-                from turbo.core.database.connection import get_db_session
-                from turbo.core.repositories import DocumentRepository, ProjectRepository
-                from turbo.core.schemas.document import DocumentCreate
-                from turbo.core.services import DocumentService
 
                 file_path = Path(arguments["file_path"])
                 title = arguments.get("title")
                 doc_type = arguments.get("doc_type")
-                project_name = arguments.get("project_name", "Turbo Code Platform")
+                project_id = arguments.get("project_id")
+                project_name = arguments.get("project_name")
 
                 # Load and parse file
                 loader = DocumentLoaderService()
 
                 if not loader.can_load(file_path):
-                    return [TextContent(type="text", text=f"Error: Cannot load file type: {file_path.suffix}")]
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Unsupported file type",
+                        "file_type": file_path.suffix
+                    }))]
 
                 try:
                     content = loader.load(file_path)
@@ -2456,55 +3618,117 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     if not doc_type:
                         doc_type = loader.determine_type(file_path)
 
-                    # Create document in database
-                    async for session in get_db_session():
-                        # Find project
-                        project_repo = ProjectRepository(session)
-                        projects = await project_repo.get_all()
+                    # Determine target project
+                    target_project_id = None
 
-                        target_project = None
+                    # Priority 1: Use project_id if provided
+                    if project_id:
+                        target_project_id = project_id
+
+                    # Priority 2: If project scoping is active and only one project allowed, use that
+                    elif ALLOWED_PROJECT_IDS and len(ALLOWED_PROJECT_IDS) == 1:
+                        target_project_id = list(ALLOWED_PROJECT_IDS)[0]
+
+                    # Priority 3: Search by project name via API
+                    elif project_name:
+                        projects_response = await client.get(f"{TURBO_API_URL}/projects/")
+                        projects_response.raise_for_status()
+                        projects = projects_response.json()
+
+                        # Filter to allowed projects
+                        projects = filter_projects(projects)
+
                         for project in projects:
-                            if project_name.lower() in project.name.lower():
-                                target_project = project
+                            if project_name.lower() in project["name"].lower():
+                                target_project_id = project["id"]
                                 break
 
-                        if not target_project:
-                            return [TextContent(type="text", text=f"Error: Project '{project_name}' not found")]
+                    # Default: Get first allowed project
+                    else:
+                        projects_response = await client.get(f"{TURBO_API_URL}/projects/")
+                        projects_response.raise_for_status()
+                        projects = projects_response.json()
 
-                        # Create document
-                        doc_repo = DocumentRepository(session)
-                        doc_service = DocumentService(doc_repo, project_repo)
+                        # Filter to allowed projects
+                        projects = filter_projects(projects)
 
-                        doc_data = DocumentCreate(
-                            title=title,
-                            content=content,
-                            type=doc_type,
-                            format="markdown",
-                            version="1.0",
-                            project_id=target_project.id,
-                        )
+                        if projects:
+                            # Try to find "Turbo" project or use first
+                            for project in projects:
+                                if "turbo" in project["name"].lower():
+                                    target_project_id = project["id"]
+                                    break
 
-                        doc = await doc_service.create_document(doc_data)
+                            if not target_project_id:
+                                target_project_id = projects[0]["id"]
 
-                        result = {
-                            "success": True,
-                            "document_id": str(doc.id),
-                            "title": doc.title,
-                            "type": doc.type,
-                            "project": target_project.name,
-                            "url": f"http://localhost:3001/documents",
+                    if not target_project_id:
+                        return [TextContent(type="text", text=json.dumps({
+                            "error": "No project found",
+                            "message": "Could not determine target project. Specify project_id or project_name."
+                        }))]
+
+                    # Check access
+                    if not is_project_allowed(target_project_id):
+                        return [TextContent(type="text", text=json.dumps({
+                            "error": "Access denied",
+                            "message": f"You do not have access to create documents in this project"
+                        }))]
+
+                    # Create document via API
+                    doc_data = {
+                        "title": title,
+                        "content": content,
+                        "type": doc_type,
+                        "format": "markdown",
+                        "project_id": target_project_id,
+                    }
+
+                    response = await client.post(f"{TURBO_API_URL}/documents/", json=doc_data)
+                    response.raise_for_status()
+                    doc = response.json()
+
+                    return [TextContent(type="text", text=json.dumps({
+                        "success": True,
+                        "message": "Document loaded successfully!",
+                        "document": {
+                            "id": doc["id"],
+                            "title": doc["title"],
+                            "type": doc["type"],
+                            "project_id": doc["project_id"],
                         }
-
-                        return [TextContent(type="text", text=f"Document loaded successfully!\n\nID: {doc.id}\nTitle: {doc.title}\nType: {doc.type}\n\nView at: http://localhost:3001/documents")]
+                    }))]
 
                 except Exception as e:
-                    return [TextContent(type="text", text=f"Error loading document: {str(e)}")]
+                    import traceback
+                    error_trace = traceback.format_exc()
+                    return [TextContent(type="text", text=json.dumps({
+                        "error": "Failed to load document",
+                        "message": str(e),
+                        "traceback": error_trace
+                    }))]
 
             elif name == "list_documents":
                 params = {k: v for k, v in arguments.items() if v is not None}
                 response = await client.get(f"{TURBO_API_URL}/documents/", params=params)
                 response.raise_for_status()
-                return [TextContent(type="text", text=response.text)]
+
+                # Strip content field to reduce token usage
+                documents = response.json()
+                # Filter to allowed projects
+                documents = filter_entities_by_project(documents)
+
+                # Return only metadata (exclude full content)
+                metadata_only = []
+                for doc in documents:
+                    metadata = {k: v for k, v in doc.items() if k != 'content'}
+                    # Add content length indicator instead of full content
+                    if 'content' in doc and doc['content']:
+                        metadata['content_length'] = len(doc['content'])
+                        metadata['content_preview'] = doc['content'][:200] + '...' if len(doc['content']) > 200 else doc['content']
+                    metadata_only.append(metadata)
+
+                return [TextContent(type="text", text=json.dumps(metadata_only))]
 
             elif name == "get_document":
                 document_id = arguments["document_id"]
@@ -2614,6 +3838,217 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 response.raise_for_status()
                 return [TextContent(type="text", text=response.text)]
 
+            # Career Management - Companies
+            elif name == "create_company":
+                response = await client.post(f"{TURBO_API_URL}/companies/", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "list_companies":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/companies/", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_company":
+                company_id = arguments["company_id"]
+                response = await client.get(f"{TURBO_API_URL}/companies/{company_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "update_company":
+                company_id = arguments.pop("company_id")
+                response = await client.put(f"{TURBO_API_URL}/companies/{company_id}", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "delete_company":
+                company_id = arguments["company_id"]
+                response = await client.delete(f"{TURBO_API_URL}/companies/{company_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text="Company deleted successfully")]
+
+            # Career Management - Job Applications
+            elif name == "create_job_application":
+                response = await client.post(f"{TURBO_API_URL}/job-applications/", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "list_job_applications":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/job-applications/", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_job_application":
+                application_id = arguments["application_id"]
+                response = await client.get(f"{TURBO_API_URL}/job-applications/{application_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "update_job_application":
+                application_id = arguments.pop("application_id")
+                response = await client.put(f"{TURBO_API_URL}/job-applications/{application_id}", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "delete_job_application":
+                application_id = arguments["application_id"]
+                response = await client.delete(f"{TURBO_API_URL}/job-applications/{application_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text="Job application deleted successfully")]
+
+            elif name == "get_applications_needing_followup":
+                response = await client.get(f"{TURBO_API_URL}/job-applications/followups/pending")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            # Career Management - Network Contacts
+            elif name == "create_network_contact":
+                response = await client.post(f"{TURBO_API_URL}/network-contacts/", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "list_network_contacts":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/network-contacts/", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_network_contact":
+                contact_id = arguments["contact_id"]
+                response = await client.get(f"{TURBO_API_URL}/network-contacts/{contact_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "update_network_contact":
+                contact_id = arguments.pop("contact_id")
+                response = await client.put(f"{TURBO_API_URL}/network-contacts/{contact_id}", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "delete_network_contact":
+                contact_id = arguments["contact_id"]
+                response = await client.delete(f"{TURBO_API_URL}/network-contacts/{contact_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text="Network contact deleted successfully")]
+
+            elif name == "get_contacts_needing_followup":
+                response = await client.get(f"{TURBO_API_URL}/network-contacts/followups/pending")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            # Email Templates
+            elif name == "create_email_template":
+                params = {
+                    "project_id": arguments["project_id"],
+                    "name": arguments["name"],
+                    "content": arguments["content"],
+                    "category": arguments["category"],
+                }
+                if "variables" in arguments:
+                    params["variables"] = arguments["variables"]
+                if "version" in arguments:
+                    params["version"] = arguments["version"]
+                response = await client.post(f"{TURBO_API_URL}/email-templates/", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "list_email_templates":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/email-templates/", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "get_email_template":
+                template_id = arguments["template_id"]
+                response = await client.get(f"{TURBO_API_URL}/email-templates/{template_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "render_email_template":
+                template_id = arguments["template_id"]
+                variables = arguments["variables"]
+                response = await client.post(
+                    f"{TURBO_API_URL}/email-templates/{template_id}/render",
+                    json={"variables": variables}
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "update_email_template":
+                template_id = arguments.pop("template_id")
+                response = await client.put(
+                    f"{TURBO_API_URL}/email-templates/{template_id}",
+                    json=arguments
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "delete_email_template":
+                template_id = arguments["template_id"]
+                response = await client.delete(f"{TURBO_API_URL}/email-templates/{template_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text="Email template deleted successfully")]
+
+            # Resume Generation
+            elif name == "generate_tailored_resume":
+                payload = {
+                    "base_resume_id": arguments["base_resume_id"],
+                    "job_description": arguments["job_description"],
+                }
+                if "job_title" in arguments:
+                    payload["job_title"] = arguments["job_title"]
+                if "company_name" in arguments:
+                    payload["company_name"] = arguments["company_name"]
+                if "job_application_id" in arguments:
+                    payload["job_application_id"] = arguments["job_application_id"]
+                if "output_format" in arguments:
+                    payload["output_format"] = arguments["output_format"]
+                else:
+                    payload["output_format"] = "markdown"
+
+                response = await client.post(
+                    f"{TURBO_API_URL}/resume-generation/generate",
+                    json=payload
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "generate_resume_from_application":
+                application_id = arguments["application_id"]
+                payload = {}
+                if "base_resume_id" in arguments:
+                    payload["base_resume_id"] = arguments["base_resume_id"]
+                if "output_format" in arguments:
+                    payload["output_format"] = arguments["output_format"]
+                else:
+                    payload["output_format"] = "markdown"
+
+                response = await client.post(
+                    f"{TURBO_API_URL}/resume-generation/generate/application/{application_id}",
+                    json=payload
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
+            elif name == "batch_generate_resumes":
+                payload = {
+                    "base_resume_id": arguments["base_resume_id"],
+                    "application_ids": arguments["application_ids"],
+                }
+                if "output_format" in arguments:
+                    payload["output_format"] = arguments["output_format"]
+                else:
+                    payload["output_format"] = "markdown"
+
+                response = await client.post(
+                    f"{TURBO_API_URL}/resume-generation/generate/batch",
+                    json=payload
+                )
+                response.raise_for_status()
+                return [TextContent(type="text", text=response.text)]
+
             # Forms
             elif name == "create_form":
                 response = await client.post(f"{TURBO_API_URL}/forms/", json=arguments)
@@ -2693,7 +4128,6 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     timeout=60.0  # Longer timeout for analysis
                 )
                 response.raise_for_status()
-                import json
                 result = response.json()
 
                 # Format response for better readability
@@ -2924,7 +4358,6 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
             elif name == "get_blocking_issues":
                 from uuid import UUID as PyUUID
-                import json
                 from turbo.core.database.connection import get_db_session
                 from turbo.core.repositories.issue_dependency import IssueDependencyRepository
 
@@ -2947,7 +4380,6 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
 
             elif name == "get_blocked_issues":
                 from uuid import UUID as PyUUID
-                import json
                 from turbo.core.database.connection import get_db_session
                 from turbo.core.repositories.issue_dependency import IssueDependencyRepository
 
@@ -3076,6 +4508,169 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 response.raise_for_status()
                 return [TextContent(type="text", text=f"Blueprint {blueprint_id} deactivated")]
 
+            # Git Worktree Management (runs locally, not via API)
+            elif name == "start_work_on_issue":
+                issue_id = arguments["issue_id"]
+                started_by = arguments["started_by"]
+                project_path = arguments.get("project_path")
+
+                # Get issue details first
+                issue_response = await client.get(f"{TURBO_API_URL}/issues/{issue_id}")
+                issue_response.raise_for_status()
+                issue_data = issue_response.json()
+
+                # Get project details
+                project_response = await client.get(f"{TURBO_API_URL}/projects/{issue_data['project_id']}")
+                project_response.raise_for_status()
+                project_data = project_response.json()
+
+                # Create worktree locally if project_path provided
+                worktree_info = None
+                if project_path:
+                    try:
+                        worktree_info = create_worktree_local(
+                            issue_key=issue_data["issue_key"],
+                            issue_title=issue_data["title"],
+                            project_name=project_data["name"],
+                            project_path=project_path,
+                            base_branch="main"
+                        )
+                    except Exception as e:
+                        return [TextContent(type="text", text=f"Failed to create worktree: {str(e)}")]
+
+                # Update issue via API (status change, work log creation)
+                payload = {
+                    "started_by": started_by,
+                }
+                if worktree_info:
+                    payload["project_path"] = worktree_info["worktree_path"]
+
+                response = await client.post(
+                    f"{TURBO_API_URL}/issues/{issue_id}/start-work",
+                    json=payload
+                )
+                response.raise_for_status()
+
+                # Return combined response
+                api_result = response.json()
+                if worktree_info:
+                    api_result["worktree"] = worktree_info
+
+                return [TextContent(type="text", text=json.dumps(api_result, indent=2))]
+
+            elif name == "submit_issue_for_review":
+                issue_id = arguments["issue_id"]
+                commit_url = arguments["commit_url"]
+                cleanup_worktree = arguments.get("cleanup_worktree", True)
+
+                # Get issue details to find worktree path
+                issue_response = await client.get(f"{TURBO_API_URL}/issues/{issue_id}")
+                issue_response.raise_for_status()
+                issue_data = issue_response.json()
+
+                # Update issue via API first (status change, end work log)
+                response = await client.post(
+                    f"{TURBO_API_URL}/issues/{issue_id}/submit-review",
+                    json={"commit_url": commit_url, "cleanup_worktree": False}  # We'll handle cleanup locally
+                )
+                response.raise_for_status()
+                api_result = response.json()
+
+                # Clean up worktree locally if requested
+                worktree_removed = False
+                if cleanup_worktree:
+                    # Try to get worktree path from work logs
+                    work_logs = issue_data.get("work_logs", [])
+                    if work_logs:
+                        latest_log = work_logs[-1]
+                        worktree_path = latest_log.get("worktree_path")
+                        if worktree_path:
+                            try:
+                                # Check for uncommitted changes first
+                                status = get_worktree_status_local(worktree_path)
+                                if status["has_changes"]:
+                                    return [TextContent(type="text", text=f"Warning: Worktree at {worktree_path} has {status['uncommitted_files']} uncommitted files. Please commit or stash changes before submitting for review.")]
+
+                                # Remove worktree
+                                worktree_removed = remove_worktree_local(worktree_path, force=False)
+                                api_result["worktree_removed"] = worktree_removed
+                            except Exception as e:
+                                api_result["worktree_cleanup_error"] = str(e)
+
+                return [TextContent(type="text", text=json.dumps(api_result, indent=2))]
+
+            elif name == "list_worktrees":
+                project_path = arguments["project_path"]
+                try:
+                    worktrees = list_worktrees_local(project_path)
+                    return [TextContent(type="text", text=json.dumps(worktrees, indent=2))]
+                except Exception as e:
+                    return [TextContent(type="text", text=f"Error listing worktrees: {str(e)}")]
+
+            elif name == "get_worktree_status":
+                worktree_path = arguments["worktree_path"]
+                try:
+                    status = get_worktree_status_local(worktree_path)
+                    return [TextContent(type="text", text=json.dumps(status, indent=2))]
+                except Exception as e:
+                    return [TextContent(type="text", text=f"Error getting worktree status: {str(e)}")]
+
+            # Job Search Tools
+            elif name == "create_search_criteria":
+                response = await client.post(f"{TURBO_API_URL}/job-search/criteria", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "list_search_criteria":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/job-search/criteria", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "get_search_criteria":
+                criteria_id = arguments["criteria_id"]
+                response = await client.get(f"{TURBO_API_URL}/job-search/criteria/{criteria_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "update_search_criteria":
+                criteria_id = arguments.pop("criteria_id")
+                response = await client.put(f"{TURBO_API_URL}/job-search/criteria/{criteria_id}", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "execute_job_search":
+                criteria_id = arguments["criteria_id"]
+                sources = arguments.get("sources")
+                params = {"sources": sources} if sources else {}
+                response = await client.post(f"{TURBO_API_URL}/job-search/execute/{criteria_id}", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "list_job_postings":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/job-search/postings", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "get_job_posting":
+                posting_id = arguments["posting_id"]
+                response = await client.get(f"{TURBO_API_URL}/job-search/postings/{posting_id}")
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "update_job_posting":
+                posting_id = arguments.pop("posting_id")
+                response = await client.put(f"{TURBO_API_URL}/job-search/postings/{posting_id}", json=arguments)
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
+            elif name == "get_job_search_history":
+                params = {k: v for k, v in arguments.items() if v is not None}
+                response = await client.get(f"{TURBO_API_URL}/job-search/history", params=params)
+                response.raise_for_status()
+                return [TextContent(type="text", text=json.dumps(response.json(), indent=2))]
+
             else:
                 return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
@@ -3089,7 +4684,9 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     error_msg = f"API Error: {e.response.text}"
             return [TextContent(type="text", text=error_msg)]
         except Exception as e:
-            return [TextContent(type="text", text=f"Unexpected error: {str(e)}")]
+            import traceback
+            error_trace = traceback.format_exc()
+            return [TextContent(type="text", text=f"Unexpected error: {str(e)}\n\nTraceback:\n{error_trace}")]
 
 
 async def main():

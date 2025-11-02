@@ -370,6 +370,95 @@ async def fetch_mentor_context(mentor_id: str) -> dict[str, Any]:
         }
 
 
+async def fetch_enhanced_mentor_context(mentor_id: str) -> dict[str, Any]:
+    """
+    Fetch enhanced mentor context with memory, knowledge graph, and career data.
+
+    This replaces the old fetch_mentor_context function for mentors that need
+    access to career management data (applications, resumes, companies, contacts).
+
+    Args:
+        mentor_id: UUID of the mentor
+
+    Returns:
+        Dict with mentor info, enhanced context, and metadata
+    """
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        # Fetch mentor details
+        mentor_response = await client.get(f"{TURBO_API_URL}/mentors/{mentor_id}")
+        mentor_response.raise_for_status()
+        mentor = mentor_response.json()
+
+        # Get messages to determine if we need enhanced context
+        messages_response = await client.get(
+            f"{TURBO_API_URL}/mentors/{mentor_id}/messages",
+            params={"limit": 100}
+        )
+        messages_response.raise_for_status()
+        messages_data = messages_response.json()
+        messages = messages_data.get("messages", [])
+
+        if not messages:
+            return {
+                "mentor": mentor,
+                "context": None,
+                "conversation_history": "_No previous conversation_",
+                "message_count": 0
+            }
+
+        # Use async generator to get database session
+        async for db in get_db_session():
+            try:
+                # Initialize services
+                graph_service = GraphService()
+                memory_service = ConversationMemoryService(db, ANTHROPIC_API_KEY)
+                context_manager = ConversationContextManager(db, memory_service, graph_service)
+
+                # Get current message
+                current_message = messages[-1]["content"] if messages else ""
+
+                # Build enhanced context (includes career data based on context_preferences)
+                context = await context_manager.build_context(
+                    entity_type="mentor",
+                    entity_id=UUID(mentor_id),
+                    current_message=current_message
+                )
+
+                # Trigger memory extraction every 10 messages
+                if len(messages) % 10 == 0 and len(messages) > 0:
+                    await context_manager.trigger_memory_extraction(
+                        entity_type="mentor",
+                        entity_id=UUID(mentor_id)
+                    )
+
+                return {
+                    "mentor": mentor,
+                    "context": context,
+                    "message_count": len(messages)
+                }
+
+            except Exception as e:
+                logger.error(f"Failed to build enhanced mentor context: {e}", exc_info=True)
+                # Fallback to basic context
+                conversation_lines = []
+                for msg in messages[-20:]:
+                    role = "User" if msg["role"] == "user" else "Mentor"
+                    conversation_lines.append(f"**{role}:** {msg['content']}\n")
+
+                conversation_history = "\n".join(conversation_lines) if conversation_lines else "_No previous conversation_"
+
+                return {
+                    "mentor": mentor,
+                    "context": None,
+                    "conversation_history": conversation_history,
+                    "message_count": len(messages)
+                }
+
+            finally:
+                # Make sure to break after first iteration
+                break
+
+
 async def fetch_enhanced_staff_context(staff_id: str) -> dict[str, Any]:
     """
     Fetch enhanced context with memory and knowledge graph integration.
@@ -666,6 +755,208 @@ Respond to the user's latest message as {staff_name}:
 - Reference specific context when helpful
 
 **Important**: The conversation history above is already complete - you do NOT need to call get_staff or get_staff_messages. Just respond based on the context provided.
+"""
+
+    return user_prompt
+
+
+def build_enhanced_mentor_prompt(mentor: dict, context: dict) -> str:
+    """
+    Build enhanced mentor prompt with career data and full context integration.
+
+    Args:
+        mentor: Mentor data
+        context: Enhanced context from ConversationContextManager (includes career data)
+
+    Returns:
+        Formatted user prompt
+    """
+    mentor_name = mentor.get("name", "Unknown")
+    mentor_persona = mentor.get("persona", "")
+    mentor_workspace = mentor.get("workspace", "personal")
+
+    # 1. Format recent messages
+    recent_messages = context.get("recent_messages", [])
+    recent_text = "\n\n".join([
+        f"**{'User' if msg.get('role') == 'user' else 'Mentor'}:** {msg['content']}"
+        for msg in recent_messages
+    ])
+
+    # 2. Format conversation summary (if available)
+    summary = context.get("conversation_summary")
+    summary_text = ""
+    if summary:
+        summary_text = f"""
+## Previous Conversation Summary (Messages {summary['message_range']})
+
+{summary['summary_text']}
+
+**Key Topics Discussed**: {', '.join(summary.get('key_topics', []))}
+"""
+        if summary.get('decisions'):
+            summary_text += f"\n**Decisions Made**: {', '.join(summary['decisions'])}\n"
+
+    # 3. Format long-term memories
+    memories = context.get("memories", [])
+    memory_text = ""
+    if memories:
+        memory_items = "\n".join([
+            f"- **[{m['type'].upper()}]** {m['content']} (importance: {m['importance']:.1f})"
+            for m in memories
+        ])
+        memory_text = f"""
+## Long-term Memory & Key Facts
+
+{memory_items}
+"""
+
+    # 4. Format user's active work
+    user_context = context.get("user_context", {})
+    career_data_text = ""
+
+    # Career-specific data (for Career Coach and similar mentors)
+    if user_context.get("job_applications"):
+        career_data_text += "\n## Job Applications\n\n"
+        for app in user_context["job_applications"][:10]:
+            career_data_text += f"  - **{app['position_title']}** at {app['company_name']} [{app['status']}]"
+            if app.get('application_date'):
+                career_data_text += f" (applied: {app['application_date']})"
+            career_data_text += "\n"
+
+    if user_context.get("resumes"):
+        career_data_text += "\n## Resumes\n\n"
+        for resume in user_context["resumes"][:5]:
+            career_data_text += f"  - {resume['title']}"
+            if resume.get('is_primary'):
+                career_data_text += " **(PRIMARY)**"
+            if resume.get('target_role') or resume.get('target_company'):
+                career_data_text += f" - targeting: {resume.get('target_role', 'any role')} at {resume.get('target_company', 'any company')}"
+            career_data_text += "\n"
+
+    if user_context.get("companies"):
+        career_data_text += "\n## Companies Tracking\n\n"
+        for company in user_context["companies"][:10]:
+            career_data_text += f"  - **{company['name']}** [{company['target_status']}]"
+            if company.get('industry'):
+                career_data_text += f" - {company['industry']}"
+            if company.get('application_count', 0) > 0:
+                career_data_text += f" ({company['application_count']} applications)"
+            career_data_text += "\n"
+
+    if user_context.get("network_contacts"):
+        career_data_text += "\n## Network Contacts\n\n"
+        for contact in user_context["network_contacts"][:10]:
+            career_data_text += f"  - **{contact['name']}**"
+            if contact.get('current_title'):
+                career_data_text += f" - {contact['current_title']}"
+            if contact.get('current_company'):
+                career_data_text += f" at {contact['current_company']}"
+            career_data_text += f" [{contact['relationship_strength']} relationship, {contact['contact_type']}]"
+            if contact.get('referral_status') and contact['referral_status'] != 'none':
+                career_data_text += f" (referral: {contact['referral_status']})"
+            career_data_text += "\n"
+
+    # Standard work context (projects and issues)
+    work_context_text = ""
+    if user_context.get("active_projects") or user_context.get("active_issues"):
+        work_context_text = "\n## Current Active Work\n\n"
+
+        if user_context.get("active_projects"):
+            work_context_text += "**Active Projects**:\n"
+            for proj in user_context["active_projects"][:3]:
+                work_context_text += f"  - {proj['name']} [{proj['status']}] ({proj.get('completion', 0)}% complete)\n"
+
+        if user_context.get("active_issues"):
+            work_context_text += "\n**In-Progress Issues**:\n"
+            for issue in user_context["active_issues"][:3]:
+                work_context_text += f"  - {issue['title']} [{issue['status']}] (priority: {issue['priority']})\n"
+
+    # 5. Build final prompt
+    metadata = context.get("metadata", {})
+    context_stats = f"(Total messages: {context.get('total_message_count', 0)}, Memories: {metadata.get('memory_count', 0)})"
+
+    user_prompt = f"""A user has sent a message to their mentor "{mentor_name}".
+
+## Mentor Persona
+
+{mentor_persona}
+
+## Workspace
+
+{mentor_workspace}
+
+{summary_text}
+
+{memory_text}
+
+{career_data_text}
+
+{work_context_text}
+
+## Recent Conversation {context_stats}
+
+{recent_text}
+
+---
+
+## Your Task
+
+Respond to the user's latest message as this mentor:
+1. Use the MCP tool `add_mentor_message` with mentor_id to post your response
+2. Your response should:
+   - **Match the mentor's persona and communication style** defined above
+   - **Leverage all available context**: career data, work progress, conversation history, and memories
+   - **Provide personalized, data-driven guidance** based on their specific situation
+   - **Be conversational and supportive** while being honest and actionable
+   - **Reference specific context** when helpful (e.g., their applications, network contacts, current projects)
+   - **Use web search** when you need current information, industry trends, or specific company/role details
+
+**Context Note**: You have access to {context.get('total_message_count', 0)} total messages plus comprehensive career and work data. The information above represents their complete tracked career search and professional development activities.
+
+**Important**: All context is already provided above - respond directly using the `add_mentor_message` tool. Use WebSearch only when you need current external information.
+"""
+
+    return user_prompt
+
+
+def build_basic_mentor_prompt(mentor: dict, conversation_history: str) -> str:
+    """
+    Build basic mentor prompt (fallback when enhanced context unavailable).
+
+    Args:
+        mentor: Mentor data
+        conversation_history: Formatted conversation history string
+
+    Returns:
+        Formatted user prompt
+    """
+    mentor_name = mentor.get("name", "Unknown")
+    mentor_persona = mentor.get("persona", "")
+    mentor_workspace = mentor.get("workspace", "personal")
+
+    user_prompt = f"""A user has sent a message to their mentor "{mentor_name}".
+
+## Mentor Persona
+{mentor_persona}
+
+## Workspace
+{mentor_workspace}
+
+## Conversation History (Last 20 Messages)
+{conversation_history}
+
+## Your Task
+Please respond to the user's latest message as this mentor:
+1. Use the MCP tool `add_mentor_message` to post your response
+2. Your response should:
+   - Match the mentor's persona and communication style defined above
+   - Build naturally on the conversation history
+   - Be conversational and supportive
+   - Provide actionable guidance relevant to their work
+   - Reference specific context when helpful
+   - Use web search when you need current information, industry trends, or specific technical details
+
+**Important**: The conversation history above is already complete - you do NOT need to call get_mentor or get_mentor_messages. Just respond based on the context provided.
 """
 
     return user_prompt
@@ -1027,41 +1318,22 @@ You help with technical blueprints and architecture planning:
     elif entity_type == "mentor":
         # Extract pre-fetched context
         mentor = extra_context.get("mentor", {}) if extra_context else {}
-        conversation_history = extra_context.get("conversation_history", "_No previous conversation_") if extra_context else "_No previous conversation_"
+        context = extra_context.get("context")
 
-        mentor_name = mentor.get("name", "Unknown")
-        mentor_persona = mentor.get("persona", "")
-        mentor_workspace = mentor.get("workspace", "personal")
+        # Build prompt based on whether we have enhanced context
+        if context:
+            # Enhanced context with memory, knowledge graph, and career data
+            user_prompt = build_enhanced_mentor_prompt(mentor, context)
+        else:
+            # Fallback to basic context
+            conversation_history = extra_context.get("conversation_history", "_No previous conversation_")
+            user_prompt = build_basic_mentor_prompt(mentor, conversation_history)
 
-        user_prompt = f"""A user has sent a message to their mentor "{mentor_name}".
-
-## Mentor Persona
-{mentor_persona}
-
-## Workspace
-{mentor_workspace}
-
-## Conversation History (Last 20 Messages)
-{conversation_history}
-
-## Your Task
-Please respond to the user's latest message as this mentor:
-1. Use the MCP tool `add_mentor_message` with mentor_id: {entity_id} to post your response
-2. Your response should:
-   - Match the mentor's persona and communication style defined above
-   - Build naturally on the conversation history
-   - Be conversational and supportive
-   - Provide actionable guidance relevant to their work
-   - Reference specific context when helpful
-   - Use web search when you need current information, industry trends, or specific technical details
-
-**Important:** The conversation history above is already complete - you do NOT need to call get_mentor or get_mentor_messages. Just respond based on the context provided.
-"""
         system_prompt = base_system_prompt + """
 **Your Role for Mentors:**
 You act as a personalized AI mentor for the user:
 - Adopt the mentor's defined persona and communication style
-- Use workspace context (projects, issues, documents) to give specific guidance
+- Use workspace context (projects, issues, documents, career data) to give specific, personalized guidance
 - Provide coaching, feedback, and strategic advice
 - Help with career development and technical growth
 - Be supportive and encouraging while being honest
@@ -1072,15 +1344,17 @@ You have access to web search via the WebSearch tool. Use it when:
 - User asks about current events, trends, or recent developments
 - You need up-to-date information about technologies, tools, or frameworks
 - Looking for specific examples, documentation, or best practices
-- Researching company information, industry standards, or market data
+- Researching company information, industry standards, market data, or salary information
 - Finding relevant articles, tutorials, or resources
+- Getting details about specific job opportunities or companies
 
 **Important Guidelines:**
 - Read the mentor's persona carefully and embody it in your responses
-- Reference specific projects, issues, or work from their workspace
+- Reference specific projects, issues, applications, or contacts from their data
+- Leverage career data (applications, resumes, companies, contacts) for personalized guidance
 - Ask clarifying questions when needed
 - Provide actionable next steps
-- Remember conversation context
+- Remember conversation context and long-term memories
 - Search the web proactively when it would enhance your guidance
 """
         # Include web search for mentors to access current information
@@ -1582,6 +1856,45 @@ async def auto_rank_issues_tool() -> dict:
         return result
 
 
+async def create_issue_tool(
+    project_id: str,
+    title: str,
+    description: str,
+    type: str = "feature",
+    priority: str = "medium",
+    status: str = "open"
+) -> dict:
+    """Tool for staff to create a new issue via API.
+
+    Args:
+        project_id: UUID of the project
+        title: Issue title
+        description: Issue description
+        type: Issue type (feature, bug, discovery, task, epic)
+        priority: Priority level (low, medium, high, critical)
+        status: Initial status (open, in_progress, review, testing, closed)
+
+    Returns:
+        Created issue
+    """
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(
+            f"{TURBO_API_URL}/issues/",
+            json={
+                "project_id": project_id,
+                "title": title,
+                "description": description,
+                "type": type,
+                "priority": priority,
+                "status": status
+            }
+        )
+        response.raise_for_status()
+        issue = response.json()
+        logger.info(f"Created issue '{issue.get('title')}' (ID: {issue.get('id')})")
+        return issue
+
+
 async def call_claude_api_with_tools(
     system_prompt: str,
     user_prompt: str,
@@ -1725,6 +2038,13 @@ async def call_claude_api_with_tools(
                                 })
                             elif tool_name == "auto_rank_issues":
                                 result = await auto_rank_issues_tool(**tool_input)
+                                tool_results.append({
+                                    "type": "tool_result",
+                                    "tool_use_id": tool_use_id,
+                                    "content": json.dumps(result)
+                                })
+                            elif tool_name == "create_issue":
+                                result = await create_issue_tool(**tool_input)
                                 tool_results.append({
                                     "type": "tool_result",
                                     "tool_use_id": tool_use_id,
@@ -1992,9 +2312,9 @@ async def handle_comment_webhook(request: web.Request) -> web.Response:
         # Special cases with custom message formats (mentor, staff)
         if entity_type == "mentor":
             try:
-                logger.info(f"Fetching mentor context for {entity_id}")
-                extra_context = await fetch_mentor_context(entity_id)
-                logger.info(f"Fetched {extra_context['message_count']} messages for mentor {entity_id}")
+                logger.info(f"Fetching enhanced mentor context for {entity_id}")
+                extra_context = await fetch_enhanced_mentor_context(entity_id)
+                logger.info(f"Fetched context with {extra_context['message_count']} messages for mentor {entity_id}")
             except httpx.HTTPError as e:
                 logger.error(f"Failed to fetch mentor context: {e}")
                 return web.json_response({"error": f"Failed to fetch mentor context: {str(e)}"}, status=500)
@@ -2369,6 +2689,73 @@ Should you respond? If yes, what do you say?"""
         )
 
 
+async def handle_issue_ready_webhook(request: web.Request) -> web.Response:
+    """
+    Handle issue.ready event - automatically start work on issue with worktree.
+
+    When an issue status changes to 'ready', this handler:
+    1. Fetches issue and project details
+    2. Creates a git worktree for isolated development
+    3. Updates issue status to 'in_progress'
+    4. Creates a work log entry
+    """
+    try:
+        data = await request.json()
+        issue_data = data.get("issue", {})
+        issue_id = issue_data.get("id")
+        project_id = data.get("project_id")
+
+        if not issue_id:
+            logger.error("Missing issue ID in webhook request")
+            return web.json_response({"error": "Missing issue ID"}, status=400)
+
+        logger.info(f"Received issue.ready event for issue {issue_id}")
+
+        # Get project path from environment or config
+        # This should be the path to the turboCode project
+        project_path = os.getenv("TURBO_PROJECT_PATH", "/app")
+
+        # Call the Turbo API to start work on the issue (creates worktree)
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            response = await client.post(
+                f"{TURBO_API_URL}/issues/{issue_id}/start-work",
+                json={
+                    "started_by": "ai:context",
+                    "project_path": project_path
+                }
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                worktree_path = result.get("worktree_path")
+                issue_key = result.get("issue_key")
+
+                logger.info(f"✓ Started work on {issue_key}")
+                logger.info(f"  Worktree: {worktree_path}")
+                logger.info(f"  Status: ready → in_progress")
+
+                return web.json_response({
+                    "success": True,
+                    "issue_id": issue_id,
+                    "issue_key": issue_key,
+                    "worktree_path": worktree_path,
+                    "status": "in_progress"
+                })
+            else:
+                error_msg = response.text
+                logger.error(f"Failed to start work on issue: {error_msg}")
+                return web.json_response({
+                    "success": False,
+                    "error": error_msg
+                }, status=response.status_code)
+
+    except Exception as e:
+        logger.error(f"Issue ready webhook failed: {e}", exc_info=True)
+        return web.json_response(
+            {"success": False, "error": str(e)}, status=500
+        )
+
+
 async def startup_fetch_api_key(app):
     """Fetch API key from Turbo API at startup."""
     global ANTHROPIC_API_KEY
@@ -2387,6 +2774,7 @@ def main():
     app = web.Application()
     app.router.add_post("/webhook/comment", handle_comment_webhook)
     app.router.add_post("/webhook/group-discussion", handle_group_discussion_webhook)
+    app.router.add_post("/webhook/issue-ready", handle_issue_ready_webhook)
     app.router.add_get("/health", health_check)
 
     # Register startup hook to fetch API key
@@ -2397,6 +2785,7 @@ def main():
     logger.info(f"Endpoints:")
     logger.info(f"  - http://localhost:{WEBHOOK_PORT}/webhook/comment")
     logger.info(f"  - http://localhost:{WEBHOOK_PORT}/webhook/group-discussion")
+    logger.info(f"  - http://localhost:{WEBHOOK_PORT}/webhook/issue-ready")
     logger.info(f"Turbo API: {TURBO_API_URL}")
 
     web.run_app(app, host="0.0.0.0", port=WEBHOOK_PORT)

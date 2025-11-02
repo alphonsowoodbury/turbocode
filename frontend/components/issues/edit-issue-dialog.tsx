@@ -194,6 +194,7 @@ export function EditIssueDialog({ issue, open, onOpenChange }: EditIssueDialogPr
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="open">Open</SelectItem>
+                  <SelectItem value="ready">Ready</SelectItem>
                   <SelectItem value="in_progress">In Progress</SelectItem>
                   <SelectItem value="review">Review</SelectItem>
                   <SelectItem value="testing">Testing</SelectItem>

@@ -18,6 +18,7 @@ class Project(Base):
 
     # Required fields
     name = Column(String(100), nullable=False, index=True)
+    project_key = Column(String(10), nullable=False, unique=True, index=True)  # e.g., "CNTXT", "TURBO"
     description = Column(String, nullable=False)
     status = Column(String(20), nullable=False, default="active", index=True)
 
@@ -25,6 +26,9 @@ class Project(Base):
     priority = Column(String(10), default="medium")
     completion_percentage = Column(Float, default=0.0)
     is_archived = Column(Boolean, default=False, index=True)
+
+    # Git repository configuration
+    repository_path = Column(String(500), nullable=True)  # Local filesystem path to git repo
 
     # Workspace fields for context filtering
     workspace = Column(String(20), nullable=False, default="personal", index=True)  # personal, freelance, work

@@ -47,6 +47,74 @@ MCP/API → Services → Repositories → Models → Database
 - **MCP Server**: `turbo/mcp_server.py` - MCP tools for Claude
 - **Database**: `turbo/core/database/connection.py:69` - Session management
 
+## ⚠️ CRITICAL: Git Worktree Workflow
+
+### Workspace Rules - READ THIS FIRST
+
+**NEVER edit files directly in the main working directory.** All code changes MUST happen in isolated git worktrees.
+
+### Before Making ANY Code Changes:
+
+1. **Check your current directory**:
+   ```bash
+   pwd
+   ```
+
+2. **If you're NOT in `~/worktrees/*`**:
+   - ❌ STOP immediately
+   - ❌ DO NOT make any edits
+   - ✅ Create a worktree first (see workflow below)
+
+3. **If you ARE in `~/worktrees/*`**:
+   - ✅ Proceed with changes
+   - ✅ Commit your work when done
+   - ✅ Submit for review
+
+### Required Workflow for Code Changes
+
+```python
+# Step 1: Find an issue to work on
+mcp__turbo__list_issues(status="open", priority="high")
+
+# Step 2: Create a worktree for the issue
+mcp__turbo__start_work_on_issue(
+    issue_id="TURBOCODE-X",  # Can use key or UUID
+    started_by="ai:claude",
+    project_path="/Users/alphonso/Documents/Code/PycharmProjects/turboCode"
+)
+# This creates: ~/worktrees/turboCode-TURBOCODE-X/
+
+# Step 3: Change to the worktree directory
+cd ~/worktrees/turboCode-TURBOCODE-X
+
+# Step 4: Make your code changes
+# ... edit files ...
+
+# Step 5: Commit your changes
+git add .
+git commit -m "TURBOCODE-X: Description of changes"
+
+# Step 6: Submit for review (removes worktree)
+mcp__turbo__submit_issue_for_review(
+    issue_id="TURBOCODE-X",
+    commit_url="https://github.com/org/repo/commit/abc123"
+)
+```
+
+### Why This Matters
+
+- **Isolation**: Each issue gets its own branch and working directory
+- **Safety**: Main working directory stays clean
+- **Parallel Work**: Multiple issues can be worked on simultaneously
+- **Tracking**: Work logs automatically track time and changes
+- **Cleanup**: Worktrees are automatically removed after review
+
+### Enforcement
+
+A pre-edit hook at `~/.config/claude-code/hooks/pre-edit.sh` will **block** any file edits outside of worktrees. If you see an error about editing outside worktrees, follow the workflow above.
+
+---
+
 ## MCP Integration (Primary Interface)
 
 ### Using MCP Tools

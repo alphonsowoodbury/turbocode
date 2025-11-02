@@ -33,12 +33,14 @@ class MilestoneService:
         issue_repository: IssueRepository,
         tag_repository: TagRepository,
         document_repository: DocumentRepository,
+        key_generator_service=None,  # Optional - for key generation
     ) -> None:
         self._milestone_repository = milestone_repository
         self._project_repository = project_repository
         self._issue_repository = issue_repository
         self._tag_repository = tag_repository
         self._document_repository = document_repository
+        self._key_generator = key_generator_service
 
     async def create_milestone(self, milestone_data: MilestoneCreate) -> MilestoneResponse:
         """Create a new milestone."""
@@ -58,8 +60,16 @@ class MilestoneService:
         tag_ids = milestone_data.tag_ids
         document_ids = milestone_data.document_ids
 
-        # Create milestone without association fields
+        # Generate milestone key if key generator is available
         milestone_dict = milestone_data.model_dump(exclude={"issue_ids", "tag_ids", "document_ids"})
+        if self._key_generator:
+            milestone_key, milestone_number = await self._key_generator.generate_entity_key(
+                milestone_data.project_id, "milestone"
+            )
+            milestone_dict["milestone_key"] = milestone_key
+            milestone_dict["milestone_number"] = milestone_number
+
+        # Create milestone without association fields
         milestone = await self._milestone_repository.create(MilestoneCreate(**milestone_dict))
 
         # Commit the milestone first
@@ -108,6 +118,8 @@ class MilestoneService:
             "start_date": milestone.start_date,
             "due_date": milestone.due_date,
             "project_id": milestone.project_id,
+            "milestone_key": milestone.milestone_key,
+            "milestone_number": milestone.milestone_number,
             "created_at": milestone.created_at,
             "updated_at": milestone.updated_at,
             "issue_count": len(issue_ids) if issue_ids else 0,
@@ -317,6 +329,8 @@ class MilestoneService:
             "start_date": milestone.start_date,
             "due_date": milestone.due_date,
             "project_id": milestone.project_id,
+            "milestone_key": milestone.milestone_key,
+            "milestone_number": milestone.milestone_number,
             "created_at": milestone.created_at,
             "updated_at": milestone.updated_at,
             "issue_count": issue_count,

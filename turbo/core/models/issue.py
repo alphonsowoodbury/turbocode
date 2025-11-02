@@ -3,7 +3,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from typing import Optional
@@ -19,6 +19,8 @@ class Issue(Base):
 
     # Required fields
     title = Column(String(200), nullable=False, index=True)
+    issue_key = Column(String(20), nullable=True, unique=True, index=True)  # e.g., "CNTXT-1", "TURBO-42" (nullable for discovery issues)
+    issue_number = Column(Integer, nullable=True)  # Sequential per project: 1, 2, 3... (nullable for discovery issues)
     description = Column(String, nullable=False)
     type = Column(String(20), nullable=False, default="task")
     status = Column(String(20), nullable=False, default="open", index=True)
@@ -67,6 +69,13 @@ class Issue(Base):
 
     terminal_sessions = relationship(
         "TerminalSession",
+        back_populates="issue",
+        cascade="all, delete-orphan",
+        lazy="select",
+    )
+
+    work_logs = relationship(
+        "WorkLog",
         back_populates="issue",
         cascade="all, delete-orphan",
         lazy="select",

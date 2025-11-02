@@ -140,3 +140,10 @@ class InitiativeRepository(BaseRepository[Initiative, InitiativeCreate, Initiati
 
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_by_key(self, initiative_key: str) -> Initiative | None:
+        """Get initiative by its human-readable key (e.g., 'CNTXT-I1')."""
+        stmt = select(self._model).where(self._model.initiative_key == initiative_key)
+        result = await self._session.execute(stmt)
+        return result.scalar_one_or_none()
+

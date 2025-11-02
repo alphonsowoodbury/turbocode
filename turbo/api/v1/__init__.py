@@ -10,8 +10,10 @@ from turbo.api.v1.endpoints import (
     calendar,
     calendar_events,
     comments,
+    companies,
     dependencies,
     documents,
+    email_templates,
     favorites,
     forms,
     graph,
@@ -20,13 +22,18 @@ from turbo.api.v1.endpoints import (
     issue_implementation,
     issue_refinement,
     issues,
+    job_applications,
+    job_search,
     literature,
     mentors,
     milestones,
     my_queue,
+    network_contacts,
+    notes,
     staff,
     podcasts,
     projects,
+    resume_generation,
     resumes,
     saved_filters,
     script_runs,
@@ -37,7 +44,9 @@ from turbo.api.v1.endpoints import (
     terminal,
     webhooks,
     websocket,
+    work_experiences,
     work_queue,
+    worktrees,
 )
 
 # Create the main API router
@@ -56,6 +65,7 @@ router.include_router(dependencies.router)
 router.include_router(milestones.router, prefix="/milestones", tags=["milestones"])
 router.include_router(initiatives.router, prefix="/initiatives", tags=["initiatives"])
 router.include_router(documents.router, prefix="/documents", tags=["documents"])
+router.include_router(notes.router, prefix="/notes", tags=["notes"])
 router.include_router(literature.router)
 router.include_router(podcasts.router)
 router.include_router(mentors.router, prefix="/mentors", tags=["mentors"])
@@ -79,3 +89,13 @@ router.include_router(subagents.router)
 router.include_router(terminal.router)
 router.include_router(webhooks.router, prefix="/webhooks", tags=["webhooks"])
 router.include_router(websocket.router, tags=["websocket"])
+router.include_router(worktrees.router, prefix="/worktrees", tags=["worktrees"])
+
+# Career management endpoints
+router.include_router(companies.router, prefix="/companies", tags=["companies", "career"])
+router.include_router(job_applications.router, prefix="/job-applications", tags=["job-applications", "career"])
+router.include_router(job_search.router, tags=["job-search", "career"])
+router.include_router(network_contacts.router, prefix="/network-contacts", tags=["network-contacts", "career"])
+router.include_router(work_experiences.router, prefix="/work-experiences", tags=["work-experiences", "career"])
+router.include_router(email_templates.router, prefix="/email-templates", tags=["email-templates", "career"])
+router.include_router(resume_generation.router, prefix="/resume-generation", tags=["resume-generation", "career"])

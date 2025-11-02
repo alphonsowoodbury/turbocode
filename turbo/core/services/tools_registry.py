@@ -330,6 +330,524 @@ def get_turbo_tools() -> list[dict[str, Any]]:
                 "properties": {},
                 "required": []
             }
+        },
+        {
+            "name": "list_job_applications",
+            "description": "List job applications with optional filtering by status or company",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": ["saved", "applied", "screening", "interviewing", "offered", "accepted", "rejected", "withdrawn"],
+                        "description": "Filter applications by status"
+                    },
+                    "company_name": {
+                        "type": "string",
+                        "description": "Filter by company name (partial match)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of applications to return (default: 50)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_job_application",
+            "description": "Get detailed information about a specific job application including all tracking data",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "application_id": {
+                        "type": "string",
+                        "description": "UUID of the job application to retrieve"
+                    }
+                },
+                "required": ["application_id"]
+            }
+        },
+        {
+            "name": "create_job_application",
+            "description": "Create a new job application record to track your job search",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "position_title": {
+                        "type": "string",
+                        "description": "Job title/position name"
+                    },
+                    "company_name": {
+                        "type": "string",
+                        "description": "Company name"
+                    },
+                    "job_url": {
+                        "type": "string",
+                        "description": "URL to job posting"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["saved", "applied", "screening", "interviewing", "offered", "accepted", "rejected", "withdrawn"],
+                        "description": "Current application status (default: saved)"
+                    },
+                    "salary_range_min": {
+                        "type": "integer",
+                        "description": "Minimum salary in dollars"
+                    },
+                    "salary_range_max": {
+                        "type": "integer",
+                        "description": "Maximum salary in dollars"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Notes about this application"
+                    }
+                },
+                "required": ["position_title", "company_name"]
+            }
+        },
+        {
+            "name": "update_job_application",
+            "description": "Update an existing job application with new information or status",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "application_id": {
+                        "type": "string",
+                        "description": "UUID of the application to update"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": ["saved", "applied", "screening", "interviewing", "offered", "accepted", "rejected", "withdrawn"],
+                        "description": "New status"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Updated notes"
+                    }
+                },
+                "required": ["application_id"]
+            }
+        },
+        {
+            "name": "list_resumes",
+            "description": "List all resumes with their metadata",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of resumes to return (default: 50)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_resume",
+            "description": "Get detailed information about a specific resume including all sections and parsed data",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "resume_id": {
+                        "type": "string",
+                        "description": "UUID of the resume to retrieve"
+                    }
+                },
+                "required": ["resume_id"]
+            }
+        },
+        {
+            "name": "list_companies",
+            "description": "List companies with optional filtering by target status or industry",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "target_status": {
+                        "type": "string",
+                        "enum": ["researching", "targeting", "applied", "interviewing", "not_interested"],
+                        "description": "Filter by target status"
+                    },
+                    "industry": {
+                        "type": "string",
+                        "description": "Filter by industry"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of companies to return (default: 50)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_company",
+            "description": "Get detailed information about a specific company including notes and application history",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "company_id": {
+                        "type": "string",
+                        "description": "UUID of the company to retrieve"
+                    }
+                },
+                "required": ["company_id"]
+            }
+        },
+        {
+            "name": "create_company",
+            "description": "Create a new company record to track for job search",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Company name"
+                    },
+                    "industry": {
+                        "type": "string",
+                        "description": "Industry/sector"
+                    },
+                    "size": {
+                        "type": "string",
+                        "description": "Company size (e.g., '100-500', '1000+')"
+                    },
+                    "website": {
+                        "type": "string",
+                        "description": "Company website URL"
+                    },
+                    "target_status": {
+                        "type": "string",
+                        "enum": ["researching", "targeting", "applied", "interviewing", "not_interested"],
+                        "description": "Current target status (default: researching)"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Notes about this company"
+                    }
+                },
+                "required": ["name"]
+            }
+        },
+        {
+            "name": "list_network_contacts",
+            "description": "List network contacts with optional filtering by company or contact type",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "current_company": {
+                        "type": "string",
+                        "description": "Filter by current company (partial match)"
+                    },
+                    "contact_type": {
+                        "type": "string",
+                        "enum": ["recruiter", "hiring_manager", "employee", "alumni", "referral", "other"],
+                        "description": "Filter by contact type"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "description": "Filter by active status (default: true)"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of contacts to return (default: 50)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_network_contact",
+            "description": "Get detailed information about a specific network contact",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "contact_id": {
+                        "type": "string",
+                        "description": "UUID of the contact to retrieve"
+                    }
+                },
+                "required": ["contact_id"]
+            }
+        },
+        {
+            "name": "create_network_contact",
+            "description": "Create a new network contact to track for job search and networking",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "first_name": {
+                        "type": "string",
+                        "description": "Contact's first name"
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "description": "Contact's last name"
+                    },
+                    "email": {
+                        "type": "string",
+                        "description": "Contact's email address"
+                    },
+                    "current_company": {
+                        "type": "string",
+                        "description": "Current company where contact works"
+                    },
+                    "current_title": {
+                        "type": "string",
+                        "description": "Current job title"
+                    },
+                    "contact_type": {
+                        "type": "string",
+                        "enum": ["recruiter", "hiring_manager", "employee", "alumni", "referral", "other"],
+                        "description": "Type of contact"
+                    },
+                    "linkedin_url": {
+                        "type": "string",
+                        "description": "LinkedIn profile URL"
+                    },
+                    "notes": {
+                        "type": "string",
+                        "description": "Notes about this contact"
+                    }
+                },
+                "required": ["first_name", "last_name"]
+            }
+        },
+        {
+            "name": "list_skills",
+            "description": "List skills with optional filtering by category or proficiency level",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "category": {
+                        "type": "string",
+                        "enum": ["technical", "soft_skills", "tools", "languages", "certifications", "other"],
+                        "description": "Filter by skill category"
+                    },
+                    "proficiency_level": {
+                        "type": "string",
+                        "enum": ["beginner", "intermediate", "advanced", "expert"],
+                        "description": "Filter by proficiency level"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of skills to return (default: 100)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "list_work_experiences",
+            "description": "List work experiences (employment history) with optional filtering by company, current status, or employment type",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "company_id": {
+                        "type": "string",
+                        "description": "Filter by company UUID"
+                    },
+                    "is_current": {
+                        "type": "boolean",
+                        "description": "Filter by current employment status"
+                    },
+                    "employment_type": {
+                        "type": "string",
+                        "enum": ["full_time", "part_time", "contract", "freelance"],
+                        "description": "Filter by employment type"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default: 100)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_work_experience",
+            "description": "Get detailed information about a specific work experience including all achievements",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "experience_id": {
+                        "type": "string",
+                        "description": "UUID of the work experience"
+                    }
+                },
+                "required": ["experience_id"]
+            }
+        },
+        {
+            "name": "create_work_experience",
+            "description": "Create a new work experience entry. Use this to document employment history.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "company_id": {
+                        "type": "string",
+                        "description": "Company UUID (optional)"
+                    },
+                    "role_title": {
+                        "type": "string",
+                        "description": "Job title/role"
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "description": "Start date (YYYY-MM-DD format)"
+                    },
+                    "end_date": {
+                        "type": "string",
+                        "description": "End date (YYYY-MM-DD format, null if current)"
+                    },
+                    "is_current": {
+                        "type": "boolean",
+                        "description": "Whether this is current employment"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Work location"
+                    },
+                    "employment_type": {
+                        "type": "string",
+                        "enum": ["full_time", "part_time", "contract", "freelance"],
+                        "description": "Employment type"
+                    },
+                    "team_context": {
+                        "type": "object",
+                        "description": "Team structure context (team_size, reporting_to, etc.)"
+                    },
+                    "technologies": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Technologies/tools used"
+                    }
+                },
+                "required": ["role_title", "start_date"]
+            }
+        },
+        {
+            "name": "list_achievements",
+            "description": "List achievement facts with filtering by work experience, metric type, dimensions (leadership, technical, etc.), leadership principles, or skills used. These are granular, factual accomplishments that prevent AI hallucination.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "experience_id": {
+                        "type": "string",
+                        "description": "Filter by work experience UUID"
+                    },
+                    "metric_type": {
+                        "type": "string",
+                        "description": "Filter by metric type (cost_savings, time_reduction, scale, etc.)"
+                    },
+                    "dimensions": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Filter by dimensions (must contain all) - e.g., ['leadership', 'technical', 'cost_optimization']"
+                    },
+                    "leadership_principles": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Filter by Amazon Leadership Principles - e.g., ['frugality', 'bias_for_action']"
+                    },
+                    "skills_used": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Filter by skills used"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default: 100)"
+                    }
+                },
+                "required": []
+            }
+        },
+        {
+            "name": "get_achievement",
+            "description": "Get detailed information about a specific achievement fact",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "achievement_id": {
+                        "type": "string",
+                        "description": "UUID of the achievement fact"
+                    }
+                },
+                "required": ["achievement_id"]
+            }
+        },
+        {
+            "name": "create_achievement",
+            "description": "Create a new achievement fact for a work experience. Use this to document specific, quantifiable accomplishments with metrics. These factual statements prevent hallucination and enable multi-dimensional extraction for leadership stories, technical examples, etc.",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "experience_id": {
+                        "type": "string",
+                        "description": "Work experience UUID this achievement belongs to"
+                    },
+                    "fact_text": {
+                        "type": "string",
+                        "description": "Core factual statement - atomic, verifiable, quantifiable"
+                    },
+                    "metric_type": {
+                        "type": "string",
+                        "description": "Type of metric (cost_savings, time_reduction, scale, performance_improvement, etc.)"
+                    },
+                    "metric_value": {
+                        "type": "number",
+                        "description": "Numerical value of the metric"
+                    },
+                    "metric_unit": {
+                        "type": "string",
+                        "description": "Unit of measurement (percentage, dollars, days, gigabytes_daily, etc.)"
+                    },
+                    "dimensions": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Dimensional tags (leadership, technical, customer_obsession, innovation, etc.)"
+                    },
+                    "leadership_principles": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Amazon Leadership Principles demonstrated (frugality, bias_for_action, deliver_results, etc.)"
+                    },
+                    "skills_used": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Skills demonstrated in this achievement"
+                    },
+                    "context": {
+                        "type": "string",
+                        "description": "Situation/Task context for STAR format"
+                    },
+                    "impact": {
+                        "type": "string",
+                        "description": "Result/Impact for STAR format"
+                    }
+                },
+                "required": ["experience_id", "fact_text"]
+            }
+        },
+        {
+            "name": "search_achievements",
+            "description": "Search achievement facts by text query across fact_text, context, and impact fields",
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query text"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Maximum number of results (default: 100)"
+                    }
+                },
+                "required": ["query"]
+            }
         }
     ]
 
@@ -347,9 +865,11 @@ def filter_tools_by_capabilities(tools: list[dict[str, Any]], capabilities: list
     """
     # Capability to tool mapping
     capability_tool_map = {
-        "team_coordination": ["list_projects", "list_issues", "get_project", "get_issue", "get_work_queue", "get_next_issue"],
-        "resource_allocation": ["list_projects", "list_issues", "update_issue", "get_work_queue", "set_issue_rank", "auto_rank_issues"],
-        "priority_alignment": ["list_issues", "update_issue", "get_work_queue", "get_next_issue", "set_issue_rank", "auto_rank_issues"],
+        "team_coordination": ["list_projects", "list_issues", "get_project", "get_issue", "create_issue", "get_work_queue", "get_next_issue"],
+        "resource_allocation": ["list_projects", "list_issues", "create_issue", "update_issue", "get_work_queue", "set_issue_rank", "auto_rank_issues"],
+        "priority_alignment": ["list_issues", "create_issue", "update_issue", "get_work_queue", "get_next_issue", "set_issue_rank", "auto_rank_issues"],
+        "capacity_planning": ["list_projects", "list_issues", "create_issue", "update_issue", "get_work_queue", "get_next_issue", "set_issue_rank", "auto_rank_issues", "list_documents", "get_document", "search_documents"],
+        "technical_prioritization": ["list_projects", "list_issues", "create_issue", "update_issue", "get_work_queue", "get_next_issue", "set_issue_rank", "list_documents", "get_document", "search_documents"],
         "staff_recruitment": [],  # No direct tools - conversational capability
         "cross_functional_analysis": ["semantic_search", "list_documents", "get_document", "search_documents", "get_work_queue"],
         "conflict_resolution": ["list_issues", "get_issue", "get_work_queue"],
@@ -360,6 +880,19 @@ def filter_tools_by_capabilities(tools: list[dict[str, Any]], capabilities: list
         "architecture": ["list_documents", "search_documents", "semantic_search", "get_work_queue"],
         "testing": ["list_issues", "create_issue", "update_issue", "get_work_queue", "get_next_issue"],
         "design": ["list_documents", "search_documents", "get_work_queue"],
+        # Engineering Manager specific capabilities
+        "architecture_review": ["list_documents", "get_document", "search_documents", "semantic_search", "list_issues", "get_issue", "get_work_queue"],
+        "code_quality_oversight": ["list_documents", "get_document", "search_documents", "list_issues", "get_issue", "update_issue"],
+        "engineering_standards": ["list_documents", "get_document", "search_documents"],
+        "performance_analysis": ["list_documents", "get_document", "search_documents", "list_issues", "get_issue"],
+        "technical_mentorship": ["list_documents", "get_document", "search_documents", "list_issues", "get_issue"],
+        # Career Coach capabilities
+        "career_guidance": ["list_job_applications", "get_job_application", "create_job_application", "update_job_application", "list_resumes", "get_resume", "list_companies", "get_company", "create_company", "list_network_contacts", "get_network_contact", "create_network_contact", "list_skills", "list_work_experiences", "get_work_experience", "create_work_experience", "list_achievements", "get_achievement", "create_achievement", "search_achievements", "list_documents", "get_document", "search_documents"],
+        "resume_review": ["list_resumes", "get_resume", "list_skills", "list_work_experiences", "get_work_experience", "list_achievements", "search_achievements", "list_documents", "get_document", "search_documents"],
+        "interview_prep": ["list_job_applications", "get_job_application", "list_companies", "get_company", "list_network_contacts", "get_network_contact", "list_work_experiences", "get_work_experience", "list_achievements", "get_achievement", "search_achievements", "list_documents", "get_document", "search_documents"],
+        "salary_negotiation": ["list_job_applications", "get_job_application", "update_job_application", "list_companies", "get_company", "list_work_experiences", "get_work_experience", "list_achievements", "search_achievements", "list_documents", "get_document", "search_documents"],
+        "job_search_strategy": ["list_job_applications", "get_job_application", "create_job_application", "update_job_application", "list_companies", "get_company", "create_company", "list_network_contacts", "get_network_contact", "create_network_contact", "list_work_experiences", "get_work_experience", "create_work_experience", "list_achievements", "create_achievement", "list_documents", "get_document", "search_documents"],
+        "networking_advice": ["list_network_contacts", "get_network_contact", "create_network_contact", "list_companies", "get_company", "list_work_experiences", "get_work_experience", "list_achievements", "search_achievements", "list_documents", "get_document", "search_documents"],
     }
 
     # Collect all allowed tool names

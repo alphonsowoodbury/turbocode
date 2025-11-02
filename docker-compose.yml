@@ -45,6 +45,14 @@ services:
       - CLAUDE_WEBHOOK_URL=http://webhook:9002/webhook/comment
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - WORKTREE_BASE_PATH=/Users/alphonso/worktrees
+      - ADZUNA_APP_ID=${ADZUNA_APP_ID:-}
+      - ADZUNA_APP_KEY=${ADZUNA_APP_KEY:-}
+      - RAPIDAPI_KEY=${RAPIDAPI_KEY:-}
+      - REED_API_KEY=${REED_API_KEY:-}
+      - USAJOBS_API_KEY=${USAJOBS_API_KEY:-}
+      - USAJOBS_USER_AGENT=${USAJOBS_USER_AGENT:-}
+      - WWR_API_TOKEN=${WWR_API_TOKEN:-}
     ports:
       - "8001:8000"
     depends_on:
@@ -57,6 +65,8 @@ services:
     volumes:
       - api_data:/app/.turbo
       - api_logs:/app/logs
+      - /Users/alphonso/Documents/Code/PycharmProjects/turboCode:/workspace/turboCode
+      - /Users/alphonso/worktrees:/Users/alphonso/worktrees
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
@@ -238,10 +248,14 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - TURBO_API_URL=http://api:8000/api/v1
       - WEBHOOK_PORT=9002
+      - TURBO_PROJECT_PATH=/workspace/turboCode
     ports:
       - "9002:9002"
     networks:
       - turbo-network
+    volumes:
+      - /Users/alphonso/Documents/Code/PycharmProjects/turboCode:/workspace/turboCode
+      - /Users/alphonso/worktrees:/Users/alphonso/worktrees
     depends_on:
       api:
         condition: service_healthy

@@ -52,8 +52,8 @@ async def get_streaming_response(
     Stream AI response for a conversation message.
 
     Args:
-        entity_type: Type of entity ("staff" or "mentor")
-        entity_id: UUID of the staff member or mentor
+        entity_type: Type of entity ("staff" - mentor is deprecated)
+        entity_id: UUID of the staff member
         user_message_content: The user's message content
 
     Yields:
@@ -64,27 +64,16 @@ async def get_streaming_response(
 
     # Fetch entity and build enhanced context
     async with httpx.AsyncClient(timeout=30.0) as client:
-        # Fetch entity details
-        if entity_type == "staff":
-            entity_response = await client.get(f"{TURBO_API_URL}/staff/{entity_id}")
-        else:
-            entity_response = await client.get(f"{TURBO_API_URL}/mentors/{entity_id}")
-
+        # Fetch staff member details
+        entity_response = await client.get(f"{TURBO_API_URL}/staff/{entity_id}")
         entity_response.raise_for_status()
         entity = entity_response.json()
 
         # Get messages for context
-        if entity_type == "staff":
-            messages_response = await client.get(
-                f"{TURBO_API_URL}/staff/{entity_id}/messages",
-                params={"limit": 100}
-            )
-        else:
-            messages_response = await client.get(
-                f"{TURBO_API_URL}/mentors/{entity_id}/messages",
-                params={"limit": 100}
-            )
-
+        messages_response = await client.get(
+            f"{TURBO_API_URL}/staff/{entity_id}/messages",
+            params={"limit": 100}
+        )
         messages_response.raise_for_status()
         messages_data = messages_response.json()
         messages = messages_data.get("messages", [])
@@ -116,22 +105,21 @@ async def get_streaming_response(
             break
 
     # Build prompt from context
-    if entity_type == "staff":
-        from scripts.claude_webhook_server import build_enhanced_staff_prompt, build_basic_staff_prompt
+    from scripts.claude_webhook_server import build_enhanced_staff_prompt, build_basic_staff_prompt
 
-        if context:
-            user_prompt = build_enhanced_staff_prompt(entity, context)
-        else:
-            # Fallback to basic prompt
-            conversation_lines = []
-            for msg in messages[-20:]:
-                role = "User" if msg["message_type"] == "user" else "Staff"
-                conversation_lines.append(f"**{role}:** {msg['content']}\n")
-            conversation_history = "\n".join(conversation_lines) if conversation_lines else "_No previous conversation_"
+    if context:
+        user_prompt = build_enhanced_staff_prompt(entity, context)
+    else:
+        # Fallback to basic prompt
+        conversation_lines = []
+        for msg in messages[-20:]:
+            role = "User" if msg["message_type"] == "user" else "Staff"
+            conversation_lines.append(f"**{role}:** {msg['content']}\n")
+        conversation_history = "\n".join(conversation_lines) if conversation_lines else "_No previous conversation_"
 
-            user_prompt = build_basic_staff_prompt(entity, conversation_history)
+        user_prompt = build_basic_staff_prompt(entity, conversation_history)
 
-        system_prompt = f"""You are {entity.get('name', 'Unknown')}, a {entity.get('role_type', 'leadership')} staff member.
+    system_prompt = f"""You are {entity.get('name', 'Unknown')}, a {entity.get('role_type', 'leadership')} staff member.
 
 **Your Role**:
 - Adopt the staff member's defined persona and communication style
@@ -146,93 +134,11 @@ async def get_streaming_response(
 **Your Capabilities**:
 {', '.join(entity.get('capabilities', []))}
 """
-    else:
-        # Mentor prompt building (enhanced with context)
-        if context:
-            # Build enhanced mentor prompt with context
-            context_sections = []
 
-            # Add workspace context
-            if context.get("workspace_context"):
-                workspace_info = context["workspace_context"]
-                context_sections.append(f"**Workspace**: {workspace_info.get('name', 'Unknown')}")
-                if workspace_info.get("description"):
-                    context_sections.append(f"_{workspace_info['description']}_")
-
-            # Add relevant entities from context
-            if context.get("relevant_entities"):
-                entities_info = []
-                for entity_data in context["relevant_entities"][:5]:  # Top 5 most relevant
-                    entity_type = entity_data.get("entity_type", "unknown")
-                    if entity_type == "issue":
-                        entities_info.append(f"- Issue: {entity_data.get('title', 'Untitled')}")
-                    elif entity_type == "project":
-                        entities_info.append(f"- Project: {entity_data.get('name', 'Untitled')}")
-                    elif entity_type == "document":
-                        entities_info.append(f"- Document: {entity_data.get('title', 'Untitled')}")
-
-                if entities_info:
-                    context_sections.append("\n**Relevant Context**:\n" + "\n".join(entities_info))
-
-            # Add conversation summary if available
-            if context.get("conversation_summary"):
-                context_sections.append(f"\n**Conversation Summary**:\n{context['conversation_summary']}")
-
-            # Build conversation history
-            conversation_lines = []
-            for msg in messages[-10:]:  # Last 10 messages for context
-                role = "User" if msg["message_type"] == "user" else "Mentor"
-                conversation_lines.append(f"**{role}:** {msg['content']}\n")
-            conversation_history = "\n".join(conversation_lines) if conversation_lines else "_No previous conversation_"
-
-            # Combine into user prompt
-            context_text = "\n".join(context_sections) if context_sections else ""
-            user_prompt = f"""The user has sent you a message: "{user_message_content}"
-
-{context_text}
-
-**Recent Conversation**:
-{conversation_history}
-
-Respond to the user's latest message with your expertise and characteristic style."""
-        else:
-            # Fallback to basic mentor prompt
-            conversation_lines = []
-            for msg in messages[-10:]:
-                role = "User" if msg["message_type"] == "user" else "Mentor"
-                conversation_lines.append(f"**{role}:** {msg['content']}\n")
-            conversation_history = "\n".join(conversation_lines) if conversation_lines else "_No previous conversation_"
-
-            user_prompt = f"""The user has sent you a message: "{user_message_content}"
-
-**Previous Conversation**:
-{conversation_history}
-
-Respond as the mentor with your characteristic style and expertise."""
-
-        system_prompt = f"""You are {entity.get('name', 'a mentor')}, an expert mentor and guide.
-
-**Your Persona**:
-{entity.get('persona', 'A knowledgeable and supportive mentor.')}
-
-**Your Role**:
-- Provide expert guidance and mentorship based on your expertise
-- Adopt your defined persona and communication style
-- Help the user grow and develop their skills
-- Be supportive, insightful, and action-oriented
-- Draw on relevant context when available
-
-**Context Preferences**:
-{entity.get('context_preferences', 'General mentorship and guidance')}"""
-
-    # Get tools based on entity capabilities
+    # Get tools based on staff capabilities
     all_tools = get_turbo_tools()
-    if entity_type == "staff":
-        entity_capabilities = entity.get("capabilities", [])
-        filtered_tools = filter_tools_by_capabilities(all_tools, entity_capabilities)
-    else:
-        # Mentors get basic tools (no MCP tools for now, can be expanded later)
-        filtered_tools = []
+    entity_capabilities = entity.get("capabilities", [])
+    filtered_tools = filter_tools_by_capabilities(all_tools, entity_capabilities)
 
     # Stream from Claude API
     headers = {

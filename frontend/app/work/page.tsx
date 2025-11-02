@@ -14,7 +14,9 @@ import {
   Users,
   Briefcase,
   Target,
-  ArrowRight
+  ArrowRight,
+  MessageSquare,
+  Sparkles
 } from "lucide-react";
 import Link from "next/link";
 
@@ -77,10 +79,42 @@ export default function WorkDashboardPage() {
           </Card>
         </div>
 
+        {/* Career Coach Highlight */}
+        <Card className="mb-6 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 border-purple-200 dark:border-purple-800">
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                  <Sparkles className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="flex-1">
+                  <CardTitle className="text-xl mb-2">Career Coach</CardTitle>
+                  <CardDescription className="text-base">
+                    Get personalized career advice, resume reviews, interview prep, and job search strategy from your AI career coach.
+                  </CardDescription>
+                  <div className="mt-4 flex gap-2">
+                    <Link href="/mentors/e187f910-2c51-4656-aa02-30a181b3251a">
+                      <Button className="gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Chat with Career Coach
+                      </Button>
+                    </Link>
+                    <Link href="/work/applications">
+                      <Button variant="outline">
+                        View Applications
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
         {/* Quick Links */}
         <div className="grid gap-4 md:grid-cols-3 mb-6">
           <Card className="cursor-pointer hover:bg-accent transition-colors">
-            <Link href="/work/job-search">
+            <Link href="/work/applications">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
@@ -88,8 +122,8 @@ export default function WorkDashboardPage() {
                       <Search className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <CardTitle>Job Search</CardTitle>
-                      <CardDescription>Active applications</CardDescription>
+                      <CardTitle>Applications</CardTitle>
+                      <CardDescription>Track job applications</CardDescription>
                     </div>
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />
@@ -99,16 +133,16 @@ export default function WorkDashboardPage() {
           </Card>
 
           <Card className="cursor-pointer hover:bg-accent transition-colors">
-            <Link href="/work/jobs">
+            <Link href="/work/resumes">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
-                      <Briefcase className="h-6 w-6 text-primary" />
+                      <FileCheck className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <CardTitle>Jobs</CardTitle>
-                      <CardDescription>Employment history</CardDescription>
+                      <CardTitle>Resumes</CardTitle>
+                      <CardDescription>Manage & generate</CardDescription>
                     </div>
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />
@@ -118,16 +152,16 @@ export default function WorkDashboardPage() {
           </Card>
 
           <Card className="cursor-pointer hover:bg-accent transition-colors">
-            <Link href="/work/freelance">
+            <Link href="/work/network">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
-                      <Package className="h-6 w-6 text-primary" />
+                      <Users className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <CardTitle>Freelance</CardTitle>
-                      <CardDescription>Contracts & clients</CardDescription>
+                      <CardTitle>Network</CardTitle>
+                      <CardDescription>Companies & contacts</CardDescription>
                     </div>
                   </div>
                   <ArrowRight className="h-5 w-5 text-muted-foreground" />

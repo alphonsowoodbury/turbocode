@@ -2,92 +2,37 @@
 
 import { useState } from "react";
 import { PageLayout } from "@/components/layout/page-layout";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Plus, Filter, Users2 } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CompaniesTab } from "@/components/work/companies-tab";
+import { ContactsTab } from "@/components/work/contacts-tab";
+import { Building2, Users2 } from "lucide-react";
 
 export default function NetworkPage() {
-  const [createDialogOpen, setCreateDialogOpen] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState<string>("name");
-  const [groupBy, setGroupBy] = useState<string>("none");
+  const [activeTab, setActiveTab] = useState("companies");
 
   return (
-    <PageLayout title="Network">
+    <PageLayout title="Professional Network">
       <div className="p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Contact
-          </Button>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
-            <span className="text-sm text-muted-foreground">Sort:</span>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-32 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="name">Name</SelectItem>
-                <SelectItem value="company">Company</SelectItem>
-                <SelectItem value="recent">Recent Contact</SelectItem>
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-muted-foreground">Group:</span>
-            <Select value={groupBy} onValueChange={setGroupBy}>
-              <SelectTrigger className="w-32 h-8">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                <SelectItem value="company">Company</SelectItem>
-                <SelectItem value="relationship">Relationship</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="companies" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Companies
+            </TabsTrigger>
+            <TabsTrigger value="contacts" className="flex items-center gap-2">
+              <Users2 className="h-4 w-4" />
+              Contacts
+            </TabsTrigger>
+          </TabsList>
 
-        {showFilters && (
-          <Card className="mb-4">
-            <CardContent className="pt-6">
-              <div className="text-sm text-muted-foreground">
-                Filters will appear here when backend is implemented
-              </div>
-            </CardContent>
-          </Card>
-        )}
+          <TabsContent value="companies" className="space-y-4">
+            <CompaniesTab />
+          </TabsContent>
 
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-center">
-            <Users2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground">
-              No contacts yet. Add one to build your professional network!
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4"
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Contact
-            </Button>
-          </div>
-        </div>
+          <TabsContent value="contacts" className="space-y-4">
+            <ContactsTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </PageLayout>
   );

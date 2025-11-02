@@ -31,7 +31,7 @@ class BulkRerankRequest(BaseModel):
 
 @router.get("/", response_model=list[IssueResponse])
 async def get_work_queue(
-    status_filter: str | None = Query(None, pattern="^(open|in_progress|review|testing|closed)$"),
+    status_filter: str | None = Query(None, pattern="^(open|ready|in_progress|review|testing|closed)$"),
     priority_filter: str | None = Query(None, pattern="^(low|medium|high|critical)$"),
     limit: int | None = Query(100, ge=1, le=500),
     offset: int | None = Query(0, ge=0),

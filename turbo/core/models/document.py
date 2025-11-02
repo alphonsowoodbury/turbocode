@@ -3,7 +3,7 @@
 
 from typing import Optional
 
-from sqlalchemy import Column, ForeignKey, String, Text
+from sqlalchemy import Column, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -18,6 +18,8 @@ class Document(Base):
 
     # Required fields
     title = Column(String(200), nullable=False, index=True)
+    document_key = Column(String(20), nullable=False, unique=True, index=True)  # e.g., "CNTXT-D1"
+    document_number = Column(Integer, nullable=False)  # Sequential per project: 1, 2, 3...
     content = Column(Text, nullable=False)
     type = Column(String(50), nullable=False, default="specification")
     format = Column(String(20), nullable=False, default="markdown")

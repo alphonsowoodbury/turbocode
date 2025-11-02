@@ -21,9 +21,11 @@ class DocumentService:
         self,
         document_repository: DocumentRepository,
         project_repository: ProjectRepository,
+        key_generator_service=None,  # Optional - for key generation
     ) -> None:
         self._document_repository = document_repository
         self._project_repository = project_repository
+        self._key_generator = key_generator_service
 
     async def create_document(self, document_data: DocumentCreate) -> DocumentResponse:
         """Create a new document."""
@@ -35,6 +37,14 @@ class DocumentService:
         project = await self._project_repository.get_by_id(document_data.project_id)
         if not project:
             raise ProjectNotFoundError(document_data.project_id)
+
+        # Generate document key if key generator is available
+        if self._key_generator:
+            document_key, document_number = await self._key_generator.generate_entity_key(
+                document_data.project_id, "document"
+            )
+            document_data.document_key = document_key
+            document_data.document_number = document_number
 
         document = await self._document_repository.create(document_data)
         return DocumentResponse.model_validate(document)

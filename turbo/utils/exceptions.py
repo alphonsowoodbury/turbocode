@@ -88,6 +88,13 @@ class StaffNotFoundError(ResourceNotFoundError):
         self.staff_id = staff_id
 
 
+class NoteNotFoundError(TurboBaseException):
+    """Raised when a note cannot be found."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, "NOTE_NOT_FOUND")
+
+
 class GroupDiscussionNotFoundError(TurboBaseException):
     """Raised when a group discussion cannot be found."""
 
@@ -162,3 +169,27 @@ class ConfigurationError(TurboBaseException):
     def __init__(self, message: str, config_key: str | None = None) -> None:
         super().__init__(message, "CONFIGURATION_ERROR")
         self.config_key = config_key
+
+
+class CompanyNotFoundError(ResourceNotFoundError):
+    """Raised when a company cannot be found."""
+
+    def __init__(self, company_id: UUID) -> None:
+        super().__init__("Company", company_id, "COMPANY_NOT_FOUND")
+        self.company_id = company_id
+
+
+class JobApplicationNotFoundError(ResourceNotFoundError):
+    """Raised when a job application cannot be found."""
+
+    def __init__(self, application_id: UUID) -> None:
+        super().__init__("JobApplication", application_id, "JOB_APPLICATION_NOT_FOUND")
+        self.application_id = application_id
+
+
+class NetworkContactNotFoundError(ResourceNotFoundError):
+    """Raised when a network contact cannot be found."""
+
+    def __init__(self, contact_id: UUID) -> None:
+        super().__init__("NetworkContact", contact_id, "NETWORK_CONTACT_NOT_FOUND")
+        self.contact_id = contact_id

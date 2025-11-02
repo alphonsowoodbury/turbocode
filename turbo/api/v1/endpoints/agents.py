@@ -9,12 +9,29 @@ import os
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from turbo.api.dependencies import get_db_session
 from turbo.core.services.agent_activity import tracker
 
 router = APIRouter(prefix="/agents", tags=["agents"])
+
+
+class StartSessionRequest(BaseModel):
+    session_id: str
+    entity_type: str
+    entity_id: str
+    entity_title: str | None = None
+    started_by: str | None = None
+
+
+class CompleteSessionRequest(BaseModel):
+    session_id: str
+    status: str
+    input_tokens: int = 0
+    output_tokens: int = 0
+    error: str | None = None
 
 
 def load_subagents_registry():
@@ -121,3 +138,33 @@ async def get_agent_sessions(
         "sessions": sessions,
         "count": len(sessions)
     }
+
+
+@router.post("/activity/start")
+async def start_agent_session(request: StartSessionRequest):
+    """Start tracking a new agent session."""
+    tracker.start_session(
+        session_id=request.session_id,
+        entity_type=request.entity_type,
+        entity_id=request.entity_id,
+        entity_title=request.entity_title,
+        started_by=request.started_by or "AutoCoder"
+    )
+    return {"status": "started", "session_id": request.session_id}
+
+
+@router.post("/activity/complete")
+async def complete_agent_session(
+    request: CompleteSessionRequest,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Mark an agent session as complete and save to database."""
+    await tracker.complete_session(
+        db=db,
+        session_id=request.session_id,
+        status=request.status,
+        input_tokens=request.input_tokens,
+        output_tokens=request.output_tokens,
+        error=request.error
+    )
+    return {"status": "completed", "session_id": request.session_id}

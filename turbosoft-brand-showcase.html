@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TurboSoft Brand Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Montserrat:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&family=Poppins:wght@400;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f0f0f;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #9CA3AF;
+            margin-bottom: 60px;
+        }
+
+        .section {
+            margin-bottom: 80px;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #F3F4F6;
+        }
+
+        .section-description {
+            color: #9CA3AF;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        /* Color Palettes */
+        .palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .palette-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid #2a2a2a;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .palette-card:hover {
+            transform: translateY(-5px);
+            border-color: #3a3a3a;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .palette-card.selected {
+            border: 2px solid #06B6D4;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+
+        .palette-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+
+        .palette-colors {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .color-swatch {
+            flex: 1;
+            height: 80px;
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-end;
+            padding: 10px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            font-family: 'JetBrains Mono', monospace;
+            transition: transform 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.05);
+        }
+
+        .palette-description {
+            color: #9CA3AF;
+            font-size: 0.95rem;
+        }
+
+        /* Typography */
+        .font-grid {
+            display: grid;
+            gap: 30px;
+        }
+
+        .font-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 40px;
+            border: 1px solid #2a2a2a;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .font-card:hover {
+            border-color: #3a3a3a;
+        }
+
+        .font-card.selected {
+            border: 2px solid #06B6D4;
+        }
+
+        .font-name {
+            font-size: 1rem;
+            color: #9CA3AF;
+            margin-bottom: 15px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+
+        .font-sample {
+            color: #9CA3AF;
+            font-size: 1.1rem;
+            margin-top: 20px;
+        }
+
+        /* Logo Mockups */
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+        }
+
+        .logo-card {
+            background: #1a1a1a;
+            border-radius: 16px;
+            padding: 50px;
+            border: 1px solid #2a2a2a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logo-card:hover {
+            transform: translateY(-5px);
+            border-color: #3a3a3a;
+        }
+
+        .logo-card.selected {
+            border: 2px solid #06B6D4;
+        }
+
+        .logo-mockup {
+            margin-bottom: 30px;
+        }
+
+        .logo-wordmark {
+            font-size: 4rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .logo-lettermark {
+            font-size: 5rem;
+            font-weight: 800;
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 24px;
+        }
+
+        .logo-icon-text {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .logo-text {
+            font-size: 3rem;
+            font-weight: 800;
+        }
+
+        .logo-label {
+            color: #9CA3AF;
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        /* Selection Summary */
+        .selection-summary {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #1a1a1a;
+            border: 2px solid #06B6D4;
+            border-radius: 16px;
+            padding: 25px;
+            min-width: 300px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            display: none;
+        }
+
+        .selection-summary.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .summary-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #06B6D4;
+        }
+
+        .summary-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            color: #9CA3AF;
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .summary-value {
+            color: #F3F4F6;
+            font-weight: 600;
+        }
+
+        .export-button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: transform 0.2s;
+        }
+
+        .export-button:hover {
+            transform: scale(1.02);
+        }
+
+        .export-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .section-title {
+                font-size: 1.5rem;
+            }
+
+            .logo-wordmark {
+                font-size: 2.5rem;
+            }
+
+            .selection-summary {
+                left: 20px;
+                right: 20px;
+                bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TurboSoft Brand Explorer</h1>
+        <p class="subtitle">Click to select your preferred colors, fonts, and logo styles</p>
+
+        <!-- Color Palettes Section -->
+        <div class="section">
+            <h2 class="section-title">Color Palettes</h2>
+            <p class="section-description">Choose a color palette that represents your brand's personality</p>
+
+            <div class="palette-grid">
+                <div class="palette-card" data-palette="tech-blue" onclick="selectPalette(this)">
+                    <div class="palette-name">Tech Blue</div>
+                    <div class="palette-colors">
+                        <div class="color-swatch" style="background: #0066CC; color: white;">#0066CC</div>
+                        <div class="color-swatch" style="background: #2196F3; color: white;">#2196F3</div>
+                        <div class="color-swatch" style="background: #1F2937; color: white;">#1F2937</div>
+                    </div>
+                    <div class="palette-description">Professional, trustworthy, classic tech company feel</div>
+                </div>
+
+                <div class="palette-card" data-palette="electric-purple" onclick="selectPalette(this)">
+                    <div class="palette-name">Electric Purple</div>
+                    <div class="palette-colors">
+                        <div class="color-swatch" style="background: #7C3AED; color: white;">#7C3AED</div>
+                        <div class="color-swatch" style="background: #A855F7; color: white;">#A855F7</div>
+                        <div class="color-swatch" style="background: #1F2937; color: white;">#1F2937</div>
+                    </div>
+                    <div class="palette-description">Innovative, creative, cutting-edge technology</div>
+                </div>
+
+                <div class="palette-card" data-palette="vibrant-teal" onclick="selectPalette(this)">
+                    <div class="palette-name">Vibrant Teal</div>
+                    <div class="palette-colors">
+                        <div class="color-swatch" style="background: #06B6D4; color: white;">#06B6D4</div>
+                        <div class="color-swatch" style="background: #14B8A6; color: white;">#14B8A6</div>
+                        <div class="color-swatch" style="background: #0F172A; color: white;">#0F172A</div>
+                    </div>
+                    <div class="palette-description">Modern, fresh, approachable yet professional</div>
+                </div>
+
+                <div class="palette-card" data-palette="bold-orange" onclick="selectPalette(this)">
+                    <div class="palette-name">Bold Orange</div>
+                    <div class="palette-colors">
+                        <div class="color-swatch" style="background: #FF6B35; color: white;">#FF6B35</div>
+                        <div class="color-swatch" style="background: #F97316; color: white;">#F97316</div>
+                        <div class="color-swatch" style="background: #1F2937; color: white;">#1F2937</div>
+                    </div>
+                    <div class="palette-description">Energetic, fast-moving, attention-grabbing</div>
+                </div>
+
+                <div class="palette-card" data-palette="deep-blue-cyan" onclick="selectPalette(this)">
+                    <div class="palette-name">Deep Blue + Cyan</div>
+                    <div class="palette-colors">
+                        <div class="color-swatch" style="background: #1E40AF; color: white;">#1E40AF</div>
+                        <div class="color-swatch" style="background: #06B6D4; color: white;">#06B6D4</div>
+                        <div class="color-swatch" style="background: #0F172A; color: white;">#0F172A</div>
+                    </div>
+                    <div class="palette-description">Recommended: Professional depth with modern accent</div>
+                </div>
+
+                <div class="palette-card" data-palette="neon-green" onclick="selectPalette(this)">
+                    <div class="palette-name">Neon Green</div>
+                    <div class="palette-colors">
+                        <div class="color-swatch" style="background: #10B981; color: white;">#10B981</div>
+                        <div class="color-swatch" style="background: #34D399; color: white;">#34D399</div>
+                        <div class="color-swatch" style="background: #111827; color: white;">#111827</div>
+                    </div>
+                    <div class="palette-description">Growth, speed, developer-focused</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Typography Section -->
+        <div class="section">
+            <h2 class="section-title">Typography</h2>
+            <p class="section-description">Select the font that best represents your brand voice</p>
+
+            <div class="font-grid">
+                <div class="font-card" data-font="Inter" onclick="selectFont(this)">
+                    <div class="font-name">Inter — Modern & Versatile</div>
+                    <div class="font-display" style="font-family: 'Inter', sans-serif;">TurboSoft</div>
+                    <div class="font-sample" style="font-family: 'Inter', sans-serif;">
+                        Build faster. Ship smarter. Scale effortlessly.
+                    </div>
+                </div>
+
+                <div class="font-card" data-font="Space Grotesk" onclick="selectFont(this)">
+                    <div class="font-name">Space Grotesk — Tech-Forward</div>
+                    <div class="font-display" style="font-family: 'Space Grotesk', sans-serif;">TurboSoft</div>
+                    <div class="font-sample" style="font-family: 'Space Grotesk', sans-serif;">
+                        Build faster. Ship smarter. Scale effortlessly.
+                    </div>
+                </div>
+
+                <div class="font-card" data-font="Outfit" onclick="selectFont(this)">
+                    <div class="font-name">Outfit — Geometric & Clean</div>
+                    <div class="font-display" style="font-family: 'Outfit', sans-serif;">TurboSoft</div>
+                    <div class="font-sample" style="font-family: 'Outfit', sans-serif;">
+                        Build faster. Ship smarter. Scale effortlessly.
+                    </div>
+                </div>
+
+                <div class="font-card" data-font="Montserrat" onclick="selectFont(this)">
+                    <div class="font-name">Montserrat — Bold & Strong</div>
+                    <div class="font-display" style="font-family: 'Montserrat', sans-serif;">TurboSoft</div>
+                    <div class="font-sample" style="font-family: 'Montserrat', sans-serif;">
+                        Build faster. Ship smarter. Scale effortlessly.
+                    </div>
+                </div>
+
+                <div class="font-card" data-font="Poppins" onclick="selectFont(this)">
+                    <div class="font-name">Poppins — Friendly & Approachable</div>
+                    <div class="font-display" style="font-family: 'Poppins', sans-serif;">TurboSoft</div>
+                    <div class="font-sample" style="font-family: 'Poppins', sans-serif;">
+                        Build faster. Ship smarter. Scale effortlessly.
+                    </div>
+                </div>
+
+                <div class="font-card" data-font="JetBrains Mono" onclick="selectFont(this)">
+                    <div class="font-name">JetBrains Mono — Developer-Centric</div>
+                    <div class="font-display" style="font-family: 'JetBrains Mono', monospace;">TurboSoft</div>
+                    <div class="font-sample" style="font-family: 'JetBrains Mono', monospace;">
+                        Build faster. Ship smarter. Scale effortlessly.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logo Styles Section -->
+        <div class="section">
+            <h2 class="section-title">Logo Styles</h2>
+            <p class="section-description">Choose a logo format that works for your brand</p>
+
+            <div class="logo-grid">
+                <div class="logo-card" data-logo="wordmark" onclick="selectLogo(this)">
+                    <div class="logo-mockup">
+                        <div class="logo-wordmark" style="font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                            TurboSoft
+                        </div>
+                    </div>
+                    <div class="logo-label">Wordmark Only</div>
+                </div>
+
+                <div class="logo-card" data-logo="lettermark" onclick="selectLogo(this)">
+                    <div class="logo-mockup">
+                        <div class="logo-lettermark" style="font-family: 'Space Grotesk', sans-serif; background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%); color: white;">
+                            TS
+                        </div>
+                    </div>
+                    <div class="logo-label">Lettermark (Initials)</div>
+                </div>
+
+                <div class="logo-card" data-logo="icon-text-1" onclick="selectLogo(this)">
+                    <div class="logo-mockup">
+                        <div class="logo-icon-text">
+                            <div class="logo-icon" style="background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%); color: white; font-family: 'Space Grotesk', sans-serif;">
+                                ▶
+                            </div>
+                            <div class="logo-text" style="font-family: 'Space Grotesk', sans-serif; color: white;">
+                                TurboSoft
+                            </div>
+                        </div>
+                    </div>
+                    <div class="logo-label">Icon + Text (Play)</div>
+                </div>
+
+                <div class="logo-card" data-logo="icon-text-2" onclick="selectLogo(this)">
+                    <div class="logo-mockup">
+                        <div class="logo-icon-text">
+                            <div class="logo-icon" style="background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%); color: white; font-family: 'JetBrains Mono', monospace; border-radius: 50%;">
+                                T
+                            </div>
+                            <div class="logo-text" style="font-family: 'Space Grotesk', sans-serif; color: white;">
+                                TurboSoft
+                            </div>
+                        </div>
+                    </div>
+                    <div class="logo-label">Icon + Text (Circle)</div>
+                </div>
+
+                <div class="logo-card" data-logo="icon-text-3" onclick="selectLogo(this)">
+                    <div class="logo-mockup">
+                        <div class="logo-icon-text">
+                            <div class="logo-icon" style="background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%); color: white; font-family: 'Space Grotesk', sans-serif; transform: rotate(45deg);">
+                                ◆
+                            </div>
+                            <div class="logo-text" style="font-family: 'Space Grotesk', sans-serif; color: white;">
+                                TurboSoft
+                            </div>
+                        </div>
+                    </div>
+                    <div class="logo-label">Icon + Text (Geometric)</div>
+                </div>
+
+                <div class="logo-card" data-logo="stacked" onclick="selectLogo(this)">
+                    <div class="logo-mockup">
+                        <div style="text-align: center;">
+                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #06B6D4 0%, #3B82F6 100%); border-radius: 16px; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; color: white; font-family: 'Space Grotesk', sans-serif;">
+                                T
+                            </div>
+                            <div style="font-size: 2rem; font-weight: 800; font-family: 'Space Grotesk', sans-serif; color: white;">
+                                TurboSoft
+                            </div>
+                        </div>
+                    </div>
+                    <div class="logo-label">Stacked Logo</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selection Summary Panel -->
+    <div class="selection-summary" id="summary">
+        <div class="summary-title">Your Brand Selection</div>
+        <div class="summary-item">
+            <div class="summary-label">Color Palette</div>
+            <div class="summary-value" id="selected-palette">None selected</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Typography</div>
+            <div class="summary-value" id="selected-font">None selected</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Logo Style</div>
+            <div class="summary-value" id="selected-logo">None selected</div>
+        </div>
+        <button class="export-button" onclick="exportSelection()">Export Brand Guide</button>
+    </div>
+
+    <script>
+        let selections = {
+            palette: null,
+            font: null,
+            logo: null
+        };
+
+        const paletteData = {
+            'tech-blue': { name: 'Tech Blue', primary: '#0066CC', secondary: '#2196F3', neutral: '#1F2937' },
+            'electric-purple': { name: 'Electric Purple', primary: '#7C3AED', secondary: '#A855F7', neutral: '#1F2937' },
+            'vibrant-teal': { name: 'Vibrant Teal', primary: '#06B6D4', secondary: '#14B8A6', neutral: '#0F172A' },
+            'bold-orange': { name: 'Bold Orange', primary: '#FF6B35', secondary: '#F97316', neutral: '#1F2937' },
+            'deep-blue-cyan': { name: 'Deep Blue + Cyan', primary: '#1E40AF', secondary: '#06B6D4', neutral: '#0F172A' },
+            'neon-green': { name: 'Neon Green', primary: '#10B981', secondary: '#34D399', neutral: '#111827' }
+        };
+
+        function selectPalette(element) {
+            // Remove previous selection
+            document.querySelectorAll('.palette-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Add selection
+            element.classList.add('selected');
+            const paletteKey = element.getAttribute('data-palette');
+            selections.palette = paletteData[paletteKey];
+
+            updateSummary();
+        }
+
+        function selectFont(element) {
+            // Remove previous selection
+            document.querySelectorAll('.font-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Add selection
+            element.classList.add('selected');
+            selections.font = element.getAttribute('data-font');
+
+            updateSummary();
+        }
+
+        function selectLogo(element) {
+            // Remove previous selection
+            document.querySelectorAll('.logo-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+
+            // Add selection
+            element.classList.add('selected');
+            selections.logo = element.getAttribute('data-logo');
+
+            updateSummary();
+        }
+
+        function updateSummary() {
+            const summary = document.getElementById('summary');
+
+            // Update palette
+            document.getElementById('selected-palette').textContent =
+                selections.palette ? selections.palette.name : 'None selected';
+
+            // Update font
+            document.getElementById('selected-font').textContent =
+                selections.font || 'None selected';
+
+            // Update logo
+            const logoLabels = {
+                'wordmark': 'Wordmark Only',
+                'lettermark': 'Lettermark (TS)',
+                'icon-text-1': 'Icon + Text (Play)',
+                'icon-text-2': 'Icon + Text (Circle)',
+                'icon-text-3': 'Icon + Text (Geometric)',
+                'stacked': 'Stacked Logo'
+            };
+            document.getElementById('selected-logo').textContent =
+                selections.logo ? logoLabels[selections.logo] : 'None selected';
+
+            // Show summary if any selection made
+            if (selections.palette || selections.font || selections.logo) {
+                summary.classList.add('active');
+            }
+        }
+
+        function exportSelection() {
+            const brandGuide = `
+TurboSoft Brand Guidelines
+═══════════════════════════════════════════════
+
+COLOR PALETTE: ${selections.palette ? selections.palette.name : 'Not selected'}
+${selections.palette ? `
+  Primary:   ${selections.palette.primary}
+  Secondary: ${selections.palette.secondary}
+  Neutral:   ${selections.palette.neutral}
+` : ''}
+
+TYPOGRAPHY: ${selections.font || 'Not selected'}
+${selections.font ? `
+  Heading:   ${selections.font} - Weights: 600, 700, 800
+  Body:      ${selections.font} - Weights: 400, 500
+  Code:      JetBrains Mono (for technical content)
+` : ''}
+
+LOGO STYLE: ${selections.logo || 'Not selected'}
+  Format: ${selections.logo ? selections.logo.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Not selected'}
+
+USAGE GUIDELINES:
+  - Minimum logo size: 32px height
+  - Clear space: 50% of logo height on all sides
+  - Always maintain proper contrast ratios
+  - Create dark and light mode variants
+  - Ensure logo works in monochrome
+
+VOICE & TONE:
+  - Professional yet approachable
+  - Technical but accessible
+  - Confident and innovative
+  - Developer-focused
+
+FILE FORMATS NEEDED:
+  ☐ Logo SVG (scalable)
+  ☐ Logo PNG (various sizes: 512px, 256px, 128px, 64px, 32px)
+  ☐ Favicon (16x16, 32x32)
+  ☐ Social media assets (1200x630 for OG images)
+  ☐ Dark mode variants
+  ☐ Monochrome versions
+
+NEXT STEPS:
+  1. Review this brand guide
+  2. Create logo mockups in Figma or hire a designer
+  3. Generate logo files in all required formats
+  4. Test logo at various sizes
+  5. Document additional brand guidelines
+  6. Create brand asset library
+            `.trim();
+
+            // Create download
+            const blob = new Blob([brandGuide], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'turbosoft-brand-guide.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('Brand guide exported! Check your downloads folder.');
+        }
+    </script>
+</body>
+</html>

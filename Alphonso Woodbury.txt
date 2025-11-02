@@ -1,0 +1,43 @@
+# Alphonso Woodbury
+USA | 937-286-6928 | alphonso.woodbury@icloud.com | [GitHub](~https://github.com/alphonsowoodbury~) | [LinkedIn](~https://www.linkedin.com/in/alphonsowoodbury/~)
+---
+## Data Platform Engineer
+Platform strategist with 5+ years designing and scaling enterprise-grade, multi-tenant data infrastructure. Proven record of transforming one-off systems into reusable platforms that support unlimited business units, reduce infrastructure costs by 70%, and accelerate compliance in regulated industries. Deep expertise in serverless and distributed systems design, event-driven architectures, and raising engineering excellence through reusable patterns, technical leadership, and organizational influence.
+---
+## Technical Expertise
+****Languages & Frameworks:**** Python, SQL, Bash, Terraform  
+****Cloud Architecture:**** AWS (Lambda, Step Functions, S3, Glue, DynamoDB, EventBridge, ECS)  
+****Data Infrastructure:**** Event-driven Architecture, Multi-tenant Systems, Data Lakes, ETL/ELT  
+****Platform Engineering:**** Scalable Design Patterns, Self-Service APIs, Developer Tooling  
+****Risk & Compliance:**** Defense-in-Depth Security, Audit/Logging Frameworks, Data Governance  
+****DevOps & Reliability:**** Infrastructure as Code, CI/CD, Multi-Region Deployment, Production Operations
+---
+## Professional Experience
+### JPMorgan Chase — **Sr. Software Engineer, Data Platform**  
+****Nov 2020 – Present****
+****Architected enterprise-scale data platforms****  
+- Defined and delivered a three-tier, event-driven processing ecosystem (Lambda ingestion, Step Function orchestration, AWS Glue framework) that became the ****enterprise standard**** for onboarding and processing new data sources  
+- Redesigned a ****single-team pipeline into a SEAL-agnostic, multi-tenant platform****, eliminating scaling bottlenecks and enabling adoption across unlimited business units  
+- Expanded platform capabilities to support 5+ file formats, multi-region deployments, and automated metadata generation, ensuring compliance across diverse regulatory requirements  
+- Created a ****metadata enrichment framework for 150K+ datasets****, automating discovery, governance, and compliance workflows across the bank  
+****Elevated organizational engineering maturity****  
+- Optimized distributed Solr search infrastructure from multi-second latency to ****sub-2 second queries at millions of daily requests****, driving adoption of search by additional product lines  
+- Introduced ****reusable architectural patterns**** (Factory, Strategy, Observer) to accelerate feature delivery, reduce duplicated engineering, and standardize best practices  
+- Championed ****data contract modeling**** with multiple stakeholders, ensuring consistency, schema quality, and interoperability across diverse data pipelines  
+****Institutionalized operational excellence and risk management****  
+- Established enterprise-wide ****error handling and compliance frameworks**** (custom exception library, JSON logging, automated data scrubbing), reducing production incidents while meeting audit standards  
+- Designed ****defense-in-depth safeguards**** (tenant isolation, validation pipelines, graceful degradation) to mitigate technical and operational risks at scale  
+- Implemented proactive validation, schema inference, and intelligent auditing systems that minimized data quality issues before reaching production  
+****Drove cross-organizational alignment and influence****  
+- Identified and resolved critical SEAL multi-tenancy bottlenecks, prototyped solutions, and socialized the architecture across teams — setting the ****enterprise direction for platform scalability****  
+- Collaborated with compliance, security, and infrastructure teams on AWS optimization, regulatory audit trails, and data governance guardrails  
+- Demonstrated ownership beyond scope by shaping unified platform capabilities from diverse business-unit requirements, ensuring solutions met ****enterprise-wide, not just local, needs****
+---
+## Projects
+****RxVision – ML Infrastructure Pipeline****  
+- Designed and deployed an end-to-end ML infrastructure pipeline processing 131K NIH medical images  
+- Implemented advanced feature engineering and augmentation strategies in TensorFlow/Keras that achieved ****93% classification accuracy****, blending platform scalability with applied ML innovation
+---
+## Education & Certifications
+****BA, Biological Sciences**** – Wright State University  
+****AWS Certifications:**** Solutions Architect Associate, Developer Associate

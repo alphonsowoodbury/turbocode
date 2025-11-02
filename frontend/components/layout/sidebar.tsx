@@ -42,11 +42,13 @@ import {
   UsersRound,
   Code2,
   ListOrdered,
+  GitBranch,
 } from "lucide-react";
 import { useFavorites } from "@/hooks/use-favorites";
 import { useIssues } from "@/hooks/use-issues";
 import { useDocuments } from "@/hooks/use-documents";
 import { useProjects } from "@/hooks/use-projects";
+import { useNotes } from "@/hooks/use-notes";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { WidgetContainer, type Widget } from "@/components/widgets/widget-container";
@@ -93,6 +95,12 @@ export function Sidebar() {
   });
   const { data: allDocuments = [] } = useDocuments();
   const { data: allProjects = [] } = useProjects();
+  const { data: allNotes = [] } = useNotes({
+    ...(workspace !== "all" && {
+      workspace,
+      ...(workspace === "work" && workCompany && { work_company: workCompany })
+    })
+  });
 
   // Map favorites to their actual entities
   const favoriteItems = favorites
@@ -111,6 +119,10 @@ export function Sidebar() {
         item = allProjects.find((p) => p.id === f.item_id);
         href = `/projects/${f.item_id}`;
         icon = FolderKanban;
+      } else if (f.item_type === "note") {
+        item = allNotes.find((n) => n.id === f.item_id);
+        href = `/notes?id=${f.item_id}`;
+        icon = StickyNote;
       } else if (f.item_type === "tag") {
         href = `/tags/${f.item_id}`;
         icon = Tags;
@@ -131,7 +143,8 @@ export function Sidebar() {
                            pathname.startsWith("/milestones") ||
                            pathname.startsWith("/initiatives") ||
                            pathname.startsWith("/blueprints") ||
-                           pathname.startsWith("/documents");
+                           pathname.startsWith("/documents") ||
+                           pathname.startsWith("/worktrees");
 
   const isWorkActive = pathname.startsWith("/work");
 
@@ -311,6 +324,95 @@ export function Sidebar() {
           </Button>
         </Link>
 
+        {/* Notes */}
+        <Link href="/notes">
+          <Button
+            variant={pathname === "/notes" ? "secondary" : "ghost"}
+            className={cn(
+              "w-full gap-3",
+              isCollapsed ? "justify-center px-2" : "justify-start",
+              pathname === "/notes" && "bg-secondary"
+            )}
+          >
+            <StickyNote className="h-4 w-4 flex-shrink-0" />
+            {!isCollapsed && "Notes"}
+          </Button>
+        </Link>
+
+        {/* Agents Section with Submenu */}
+        {!isCollapsed ? (
+          <div>
+            <div
+              className={cn(
+                "flex items-center w-full rounded-md",
+                isTeamsActive && "bg-secondary"
+              )}
+            >
+              <Link href="/agents" className="flex-1">
+                <Button
+                  variant={isTeamsActive ? "secondary" : "ghost"}
+                  className={cn(
+                    "w-full justify-start gap-3 rounded-r-none",
+                    isTeamsActive && "bg-secondary hover:bg-secondary"
+                  )}
+                >
+                  <Activity className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1 text-left">Agents</span>
+                </Button>
+              </Link>
+              <Button
+                variant={isTeamsActive ? "secondary" : "ghost"}
+                size="sm"
+                className={cn(
+                  "px-2 rounded-l-none border-l",
+                  isTeamsActive && "bg-secondary hover:bg-secondary"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTeamsExpanded(!teamsExpanded);
+                }}
+              >
+                <ChevronDown
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    teamsExpanded ? "rotate-0" : "-rotate-90"
+                  )}
+                />
+              </Button>
+            </div>
+
+            {/* Agents Submenu */}
+            {teamsExpanded && (
+              <div className="ml-4 mt-1 space-y-1 border-l border-border pl-2">
+                <Link href="/agents/sessions">
+                  <Button
+                    variant={pathname.startsWith("/agents/sessions") ? "secondary" : "ghost"}
+                    className={cn(
+                      "w-full justify-start gap-3 text-sm",
+                      pathname.startsWith("/agents/sessions") && "bg-secondary"
+                    )}
+                  >
+                    <Activity className="h-4 w-4" />
+                    Sessions
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link href="/agents">
+            <Button
+              variant={isTeamsActive ? "secondary" : "ghost"}
+              className={cn(
+                "w-full justify-center px-2",
+                isTeamsActive && "bg-secondary"
+              )}
+            >
+              <Activity className="h-4 w-4 flex-shrink-0" />
+            </Button>
+          </Link>
+        )}
+
         {/* Projects Section with Submenu */}
         {shouldShowProjects && (
           !isCollapsed ? (
@@ -419,6 +521,19 @@ export function Sidebar() {
                     >
                       <FileCode2 className="h-4 w-4" />
                       Blueprints
+                    </Button>
+                  </Link>
+
+                  <Link href="/worktrees">
+                    <Button
+                      variant={pathname.startsWith("/worktrees") ? "secondary" : "ghost"}
+                      className={cn(
+                        "w-full justify-start gap-3 text-sm",
+                        pathname.startsWith("/worktrees") && "bg-secondary"
+                      )}
+                    >
+                      <GitBranch className="h-4 w-4" />
+                      Worktrees
                     </Button>
                   </Link>
                 </div>

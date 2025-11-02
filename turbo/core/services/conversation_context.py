@@ -10,10 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from turbo.core.models.conversation_memory import ConversationMemory, ConversationSummary
 from turbo.core.models.staff_conversation import StaffConversation
+from turbo.core.models.staff import Staff
 from turbo.core.models.issue import Issue
 from turbo.core.models.project import Project
 from turbo.core.models.document import Document
 from turbo.core.models.milestone import Milestone
+from turbo.core.models.job_application import JobApplication
+from turbo.core.models.company import Company
+from turbo.core.models.network_contact import NetworkContact
+from turbo.core.models.resume import Resume
 from turbo.core.services.conversation_memory import ConversationMemoryService
 from turbo.core.services.graph import GraphService
 
@@ -61,8 +66,8 @@ class ConversationContextManager:
         Build optimized conversation context.
 
         Args:
-            entity_type: "staff" or "mentor"
-            entity_id: UUID of the staff member or mentor
+            entity_type: "staff" (mentor is deprecated)
+            entity_id: UUID of the staff member
             current_message: The current user message being responded to
             max_messages: Maximum number of messages to fetch
             max_tokens: Target token budget for context
@@ -74,7 +79,7 @@ class ConversationContextManager:
                 - key_facts: Important facts from old messages
                 - related_entities: Entities from knowledge graph
                 - memories: Relevant long-term memories
-                - user_context: Active projects, issues
+                - user_context: Active projects, issues, career data (if staff has career capabilities)
                 - total_message_count: Total messages in conversation
         """
         logger.info(f"Building context for {entity_type} {entity_id}")
@@ -151,8 +156,8 @@ class ConversationContextManager:
         )
         logger.info(f"Retrieved {len(memories)} relevant memories")
 
-        # 7. User context (active work)
-        user_context = await self._get_user_context()
+        # 7. User context (active work and career data for mentors)
+        user_context = await self._get_user_context(entity_type, entity_id)
 
         # 8. Extract entities mentioned in conversation
         entities_discussed = self._extract_all_entities(messages + [
@@ -185,25 +190,20 @@ class ConversationContextManager:
         """Fetch messages from database.
 
         Args:
-            entity_type: "staff" or "mentor"
-            entity_id: UUID of the entity
+            entity_type: "staff" (mentor is deprecated)
+            entity_id: UUID of the staff member
             limit: Maximum number of messages to fetch
 
         Returns:
             List of message objects ordered by creation time
         """
-        if entity_type == "staff":
-            result = await self.db.execute(
-                select(StaffConversation)
-                .where(StaffConversation.staff_id == entity_id)
-                .order_by(StaffConversation.created_at.asc())
-                .limit(limit)
-            )
-            return list(result.scalars().all())
-        else:
-            # Handle mentor messages (different model)
-            # For now, return empty - you can add MentorConversation support later
-            return []
+        result = await self.db.execute(
+            select(StaffConversation)
+            .where(StaffConversation.staff_id == entity_id)
+            .order_by(StaffConversation.created_at.asc())
+            .limit(limit)
+        )
+        return list(result.scalars().all())
 
     async def _search_graph_for_related(
         self,
@@ -405,14 +405,25 @@ class ConversationContextManager:
 
         return self._extract_entity_ids(messages, "")
 
-    async def _get_user_context(self) -> dict[str, Any]:
+    async def _get_user_context(
+        self,
+        entity_type: str,
+        entity_id: UUID
+    ) -> dict[str, Any]:
         """
         Get user's current work context (active projects, issues).
+        For staff with career capabilities, also includes career data.
+
+        Args:
+            entity_type: "staff" (mentor is deprecated)
+            entity_id: UUID of the staff member
 
         Returns:
             Dict with user context information
         """
         try:
+            context = {}
+
             # Get active projects
             project_result = await self.db.execute(
                 select(Project)
@@ -422,8 +433,7 @@ class ConversationContextManager:
             )
             active_projects = project_result.scalars().all()
 
-            # Get open issues assigned to user (if we had user context)
-            # For now, get recently updated open issues
+            # Get open issues
             issue_result = await self.db.execute(
                 select(Issue)
                 .where(Issue.status.in_(["open", "in_progress"]))
@@ -432,29 +442,124 @@ class ConversationContextManager:
             )
             active_issues = issue_result.scalars().all()
 
-            return {
-                "active_projects": [
-                    {
-                        "id": str(p.id),
-                        "name": p.name,
-                        "status": p.status,
-                        "completion": p.completion_percentage
-                    }
-                    for p in active_projects
-                ],
-                "active_issues": [
-                    {
-                        "id": str(i.id),
-                        "title": i.title,
-                        "status": i.status,
-                        "priority": i.priority
-                    }
-                    for i in active_issues
+            context["active_projects"] = [
+                {
+                    "id": str(p.id),
+                    "name": p.name,
+                    "status": p.status,
+                    "completion": p.completion_percentage
+                }
+                for p in active_projects
+            ]
+
+            context["active_issues"] = [
+                {
+                    "id": str(i.id),
+                    "title": i.title,
+                    "status": i.status,
+                    "priority": i.priority
+                }
+                for i in active_issues
+            ]
+
+            # For staff with career capabilities, include career data
+            staff_result = await self.db.execute(
+                select(Staff).where(Staff.id == entity_id)
+            )
+            staff = staff_result.scalar_one_or_none()
+
+            if staff and staff.capabilities:
+                # Check if staff has career-related capabilities
+                career_capabilities = [
+                    "career_guidance", "resume_review", "interview_prep",
+                    "salary_negotiation", "job_search_strategy"
                 ]
-            }
+                has_career_capability = any(
+                    cap in staff.capabilities for cap in career_capabilities
+                )
+
+                if has_career_capability:
+                    max_items = 20
+
+                    # Include job applications
+                    app_result = await self.db.execute(
+                        select(JobApplication)
+                        .order_by(desc(JobApplication.updated_at))
+                        .limit(max_items)
+                    )
+                    applications = app_result.scalars().all()
+                    context["job_applications"] = [
+                        {
+                            "id": str(a.id),
+                            "position_title": a.position_title,
+                            "company_name": a.company_name,
+                            "status": a.status,
+                            "application_date": a.application_date.isoformat() if a.application_date else None
+                        }
+                        for a in applications
+                    ]
+
+                    # Include resumes
+                    resume_result = await self.db.execute(
+                        select(Resume)
+                        .order_by(desc(Resume.updated_at))
+                        .limit(max_items)
+                    )
+                    resumes = resume_result.scalars().all()
+                    context["resumes"] = [
+                        {
+                            "id": str(r.id),
+                            "title": r.title,
+                            "is_primary": r.is_primary,
+                            "target_role": r.target_role,
+                            "target_company": r.target_company
+                        }
+                        for r in resumes
+                    ]
+
+                    # Include companies
+                    company_result = await self.db.execute(
+                        select(Company)
+                        .order_by(desc(Company.updated_at))
+                        .limit(max_items)
+                    )
+                    companies = company_result.scalars().all()
+                    context["companies"] = [
+                        {
+                            "id": str(c.id),
+                            "name": c.name,
+                            "target_status": c.target_status,
+                            "industry": c.industry,
+                            "application_count": c.application_count
+                        }
+                        for c in companies
+                    ]
+
+                    # Include contacts
+                    contact_result = await self.db.execute(
+                        select(NetworkContact)
+                        .where(NetworkContact.is_active == True)
+                        .order_by(desc(NetworkContact.updated_at))
+                        .limit(max_items)
+                    )
+                    contacts = contact_result.scalars().all()
+                    context["network_contacts"] = [
+                        {
+                            "id": str(c.id),
+                            "name": f"{c.first_name} {c.last_name}",
+                            "current_title": c.current_title,
+                            "current_company": c.current_company,
+                            "contact_type": c.contact_type,
+                            "relationship_strength": c.relationship_strength,
+                            "referral_status": c.referral_status
+                        }
+                        for c in contacts
+                    ]
+
+            return context
 
         except Exception as e:
-            logger.warning(f"Failed to get user context: {e}")
+            logger.warning(f"Failed to get user context: {e}", exc_info=True)
             return {"active_projects": [], "active_issues": []}
 
     def _message_to_dict(self, message: StaffConversation) -> dict[str, Any]:
@@ -516,8 +621,8 @@ class ConversationContextManager:
         Should be called periodically (e.g., every 10-20 messages).
 
         Args:
-            entity_type: "staff" or "mentor"
-            entity_id: UUID of the entity
+            entity_type: "staff" (mentor is deprecated)
+            entity_id: UUID of the staff member
             force: Force extraction even if recently done
         """
         messages = await self._get_messages(entity_type, entity_id, limit=100)

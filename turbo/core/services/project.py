@@ -24,10 +24,12 @@ class ProjectService:
         project_repository: ProjectRepository,
         issue_repository: IssueRepository,
         document_repository: DocumentRepository,
+        key_generator_service=None,  # Optional - for key validation
     ) -> None:
         self._project_repository = project_repository
         self._issue_repository = issue_repository
         self._document_repository = document_repository
+        self._key_generator = key_generator_service
 
     async def create_project(self, project_data: ProjectCreate) -> ProjectResponse:
         """Create a new project."""
@@ -36,6 +38,18 @@ class ProjectService:
             project_data.name = strip_emojis(project_data.name)
         if project_data.description:
             project_data.description = strip_emojis(project_data.description)
+
+        # Validate project key if key generator is available
+        if self._key_generator and project_data.project_key:
+            # Validate format
+            is_valid, error_msg = self._key_generator.validate_project_key(project_data.project_key)
+            if not is_valid:
+                raise ValueError(f"Invalid project key: {error_msg}")
+
+            # Check availability
+            is_available = await self._key_generator.is_project_key_available(project_data.project_key)
+            if not is_available:
+                raise ValueError(f"Project key '{project_data.project_key}' is already in use")
 
         project = await self._project_repository.create(project_data)
         return ProjectResponse.model_validate(project)

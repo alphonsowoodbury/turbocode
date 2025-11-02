@@ -2,7 +2,7 @@
 
 from typing import Optional
 
-from sqlalchemy import Column, DateTime, ForeignKey, String
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
@@ -17,6 +17,8 @@ class Milestone(Base):
 
     # Required fields
     name = Column(String(100), nullable=False, index=True)
+    milestone_key = Column(String(20), nullable=False, unique=True, index=True)  # e.g., "CNTXT-M1"
+    milestone_number = Column(Integer, nullable=False)  # Sequential per project: 1, 2, 3...
     description = Column(String, nullable=False)
     status = Column(String(20), nullable=False, default="planned", index=True)
 

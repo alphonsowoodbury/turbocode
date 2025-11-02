@@ -101,10 +101,12 @@ async def init_database() -> None:
             PodcastShow,
             PodcastEpisode,
             Project,
+            ProjectEntityCounter,
             SavedFilter,
             ScriptRun,
             Tag,
             TerminalSession,
+            WorkLog,
         )
 
         # Create all tables

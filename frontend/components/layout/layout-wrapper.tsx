@@ -10,6 +10,8 @@ import { useTerminalPanel } from "@/hooks/use-terminal-panel";
 import { useChatSidebar } from "@/hooks/use-chat-sidebar";
 import { useTerminalShortcuts } from "@/hooks/use-terminal-shortcuts";
 import { useChatShortcuts } from "@/hooks/use-chat-shortcuts";
+import { useUnifiedCreateShortcut } from "@/hooks/use-unified-create";
+import { UnifiedCreateModal } from "@/components/unified-create/unified-create-modal";
 
 interface LayoutWrapperProps {
   children: ReactNode;
@@ -22,31 +24,35 @@ export function LayoutWrapper({ children }: LayoutWrapperProps) {
   // Enable keyboard shortcuts
   useTerminalShortcuts();
   useChatShortcuts();
+  useUnifiedCreateShortcut();
 
   return (
-    <WorkspaceLayout
-      sidebar={<Sidebar />}
-      statusBar={
-        <StatusBar
-          terminalCount={sessions.length}
-          terminalOpen={isOpen}
-          onTerminalToggle={toggle}
-          chatOpen={chatOpen}
-          onChatToggle={toggleChat}
-          gitBranch="main"
-          projectName="Turbo Code"
-          issuesCount={5}
-          isLive={true}
-        />
-      }
-      terminalPanel={<TerminalPanel />}
-      terminalOpen={isOpen}
-      terminalHeight={height}
-      chatSidebar={<ChatSidebar />}
-      chatOpen={chatOpen}
-      chatWidth={chatWidth}
-    >
-      {children}
-    </WorkspaceLayout>
+    <>
+      <WorkspaceLayout
+        sidebar={<Sidebar />}
+        statusBar={
+          <StatusBar
+            terminalCount={sessions.length}
+            terminalOpen={isOpen}
+            onTerminalToggle={toggle}
+            chatOpen={chatOpen}
+            onChatToggle={toggleChat}
+            gitBranch="main"
+            projectName="Turbo Code"
+            issuesCount={5}
+            isLive={true}
+          />
+        }
+        terminalPanel={<TerminalPanel />}
+        terminalOpen={isOpen}
+        terminalHeight={height}
+        chatSidebar={<ChatSidebar />}
+        chatOpen={chatOpen}
+        chatWidth={chatWidth}
+      >
+        {children}
+      </WorkspaceLayout>
+      <UnifiedCreateModal />
+    </>
   );
 }

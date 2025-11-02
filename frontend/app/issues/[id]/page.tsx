@@ -41,6 +41,7 @@ const priorityColors = {
 
 const statusColors = {
   open: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+  ready: "bg-cyan-500/10 text-cyan-500 hover:bg-cyan-500/20",
   in_progress: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
   review: "bg-purple-500/10 text-purple-500 hover:bg-purple-500/20",
   testing: "bg-orange-500/10 text-orange-500 hover:bg-orange-500/20",
@@ -192,6 +193,7 @@ export default function IssueDetailPage() {
                   }}
                 >
                   <DropdownMenuRadioItem value="open">Open</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="ready">Ready</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="in_progress">In Progress</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="review">Review</DropdownMenuRadioItem>
                   <DropdownMenuRadioItem value="testing">Testing</DropdownMenuRadioItem>
